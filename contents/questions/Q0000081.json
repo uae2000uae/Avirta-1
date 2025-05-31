@@ -1,0 +1,18 @@
+{
+  "type": "text",
+  "question": "ما هو أكبر محيط في العالم؟",
+  "correct_answer": "المحيط الهادئ",
+  "alternative_answers": [
+    "الهادئ",
+    "المحيط الهادي",
+    "الهادي"
+  ],
+  "points": 200,
+  "id": "Q0000081",
+  "created_at": "2025-05-13T19:48:58.452503",
+  "updated_at": "2025-05-29T22:36:22.403180",
+  "active": true,
+  "category_id": "معلومات_عامة",
+  "use_count": 1,
+  "explanation": ""
+}

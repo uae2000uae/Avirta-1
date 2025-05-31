@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة عربية يقع جبل الشيخ؟",
+  "options": [
+    "لبنان",
+    "تونس",
+    "المغرب",
+    "السودان"
+  ],
+  "correct_answer": "لبنان",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000536",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.578042",
+  "updated_at": "2025-05-27T02:02:54.578042",
+  "active": true,
+  "use_count": 0
+}

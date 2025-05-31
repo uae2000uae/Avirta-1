@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}AI Generated Questions - Batch Details - Avirta{% endblock %}
+
+{% block content %}
+<h1>AI Generated Questions - Batch Details</h1>
+
+<div class="actions">
+    <a href="{{ url_for('ai_question_history') }}" class="button">Back to History</a>
+    <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+</div>
+
+<div class="data-table">
+    <div class="navigation-controls">
+        {% if prev_batch %}
+        <a href="{{ url_for('ai_question_history_detail', batch_id=prev_batch) }}" class="button nav-button">← Previous Batch</a>
+        {% else %}
+        <span class="button nav-button disabled">← Previous Batch</span>
+        {% endif %}
+        
+        <span class="batch-counter">Batch {{ total_batches - current_index }} of {{ total_batches }}</span>
+        
+        {% if next_batch %}
+        <a href="{{ url_for('ai_question_history_detail', batch_id=next_batch) }}" class="button nav-button">Next Batch →</a>
+        {% else %}
+        <span class="button nav-button disabled">Next Batch →</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="blue-box">
+    <h2>Batch Information</h2>
+    <div class="metadata-grid">
+        <div class="metadata-item">
+            <span class="metadata-label">Date:</span>
+            <span class="metadata-value">{{ metadata.timestamp|replace('T', ' ')|truncate(19, True, '') }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Prompt:</span>
+            <span class="metadata-value">{{ metadata.prompt }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Language:</span>
+            <span class="metadata-value">{{ metadata.language|default('Unknown')|title }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Question Type:</span>
+            <span class="metadata-value">{{ metadata.question_type|default('Mixed')|replace('_', ' ')|title }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Difficulty:</span>
+            <span class="metadata-value">{{ metadata.difficulty|default('Mixed')|title }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Number of Questions:</span>
+            <span class="metadata-value">{{ questions|length }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Batch ID:</span>
+            <span class="metadata-value">{{ batch_id }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="page-section">
+    <h2>Questions</h2>
+    
+    {% for i, question in enumerate(questions) %}
+    <div class="colored-box green">
+        <h3>Question {{ i+1 }}</h3>
+        
+        <div class="text-clear">
+            <p><strong class="status-message">Question:</strong> {{ question.question }}</p>
+            
+            {% if question.type == 'multiple_choice' %}
+            <p><strong class="status-message">Options:</strong></p>
+            <ul>
+                {% for option in question.options %}
+                <li>{{ option }}{% if option == question.correct_answer %} (Correct){% endif %}</li>
+                {% endfor %}
+            </ul>
+            {% elif question.type == 'true_false' %}
+            <p><strong class="status-message">Correct Answer:</strong> {{ question.correct_answer }}</p>
+            {% elif question.type == 'text' %}
+            <p><strong class="status-message">Correct Answer:</strong> {{ question.correct_answer }}</p>
+            {% endif %}
+            
+            {% if question.explanation %}
+            <p><strong>Explanation:</strong> {{ question.explanation }}</p>
+            {% endif %}
+            
+            <p><strong class="status-message">Points:</strong> {{ question.points }}</p>
+        </div>
+    </div>
+	<br>
+    {% endfor %}
+</div>
+{% endblock %}

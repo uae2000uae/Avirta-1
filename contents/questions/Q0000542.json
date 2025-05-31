@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي عاصمة السودان؟",
+  "options": [
+    "الخرطوم",
+    "جوبا",
+    "بورتسودان",
+    "أم درمان"
+  ],
+  "correct_answer": "الخرطوم",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000542",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.607041",
+  "updated_at": "2025-05-27T02:02:54.607041",
+  "active": true,
+  "use_count": 0
+}

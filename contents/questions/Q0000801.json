@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "سورة الكهف من السور المكية.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000801",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.201183",
+  "updated_at": "2025-05-27T19:11:23.201183",
+  "active": true,
+  "use_count": 0
+}

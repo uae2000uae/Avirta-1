@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما هي وحدة قياس القوة في النظام الدولي؟",
+  "correct_answer": "نيوتن",
+  "points": 300,
+  "id": "Q0000090",
+  "created_at": "2025-05-13T19:48:58.457507",
+  "updated_at": "2025-05-29T23:53:29.136611",
+  "active": true,
+  "category_id": "علوم_عامة",
+  "use_count": 1,
+  "explanation": ""
+}

@@ -1,0 +1,60 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "What is the largest planet in our solar system?",
+    "options": [
+      "Mercury",
+      "Saturn",
+      "Jupiter",
+      "Mars"
+    ],
+    "correct_answer": "Jupiter",
+    "explanation": "Jupiter is the largest planet in our solar system, with a diameter of about 86,881 miles.",
+    "points": 200,
+    "difficulty": "medium"
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: The Milky Way is a spiral galaxy.",
+    "correct_answer": "True",
+    "explanation": "The Milky Way is indeed a spiral galaxy, containing billions of stars.",
+    "points": 300,
+    "difficulty": "medium"
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which celestial body is known as Earth's natural satellite?",
+    "options": [
+      "Mars",
+      "Venus",
+      "Moon",
+      "Neptune"
+    ],
+    "correct_answer": "Moon",
+    "explanation": "The Moon is Earth's natural satellite, orbiting the Earth at an average distance of about 238,855 miles.",
+    "points": 400,
+    "difficulty": "medium"
+  },
+  {
+    "type": "text",
+    "question": "What is the name of the first artificial satellite launched into space?",
+    "correct_answer": "Sputnik 1",
+    "explanation": "Sputnik 1 was launched by the Soviet Union on October 4, 1957, marking the beginning of the space age.",
+    "points": 500,
+    "difficulty": "medium"
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which planet is known as the 'Red Planet'?",
+    "options": [
+      "Jupiter",
+      "Mars",
+      "Saturn",
+      "Neptune"
+    ],
+    "correct_answer": "Mars",
+    "explanation": "Mars is often referred to as the 'Red Planet' due to its reddish appearance caused by iron oxide on its surface.",
+    "points": 100,
+    "difficulty": "medium"
+  }
+]

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avirta Game - Access Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: #5c2d91;
+            color: white;
+            padding: 1rem;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #7c4dff;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 10px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background-color: #5e35b1;
+        }
+
+        .instructions {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        footer {
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #ffeeba;
+            border-radius: 4px;
+        }
+
+        .button-note {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .server-running {
+            background-color: #28a745;
+        }
+
+        .server-running:hover {
+            background-color: #218838;
+        }
+
+        .server-not-running {
+            background-color: #dc3545;
+            cursor: not-allowed;
+        }
+
+        .server-not-running:hover {
+            background-color: #c82333;
+        }
+    </style>
+    <link href="static/css/style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <script>
+        // Function to check if the Flask server is running
+        function checkServerStatus() {
+            const accessButton = document.getElementById('access-button');
+            const buttonNote = document.querySelector('.button-note');
+
+            // Try to fetch the server status
+            fetch('http://localhost:5000/ping', { 
+                method: 'GET',
+                mode: 'no-cors', // This is needed because we're making a cross-origin request
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer'
+            })
+            .then(response => {
+                // If we get here, the server is likely running
+                accessButton.classList.remove('server-not-running');
+                accessButton.classList.add('server-running');
+                accessButton.innerHTML = 'Access the Game (Server Running)';
+                accessButton.disabled = false;
+                accessButton.style.pointerEvents = 'auto';
+                buttonNote.innerHTML = 'The server is running! Click to access the game.';
+                buttonNote.style.color = '#155724';
+            })
+            .catch(error => {
+                // If we get here, the server is likely not running
+                accessButton.classList.remove('server-running');
+                accessButton.classList.add('server-not-running');
+                accessButton.innerHTML = 'Access the Game (Server Not Running)';
+                // Prevent the button from being clicked when server is not running
+                accessButton.onclick = function(e) {
+                    e.preventDefault();
+                    alert('The Flask server is not running. Please start the server first by following the instructions above.');
+                    return false;
+                };
+                buttonNote.innerHTML = 'The server is NOT running. Please start the server first.';
+                buttonNote.style.color = '#721c24';
+            });
+        }
+
+        // Check server status when the page loads
+        window.onload = function() {
+            checkServerStatus();
+
+            // Check server status every 5 seconds
+            setInterval(checkServerStatus, 5000);
+        };
+    </script>
+    <header>
+        <h1>Avirta Game</h1>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            <h2>Welcome to Avirta!</h2>
+            <p>Avirta is an interactive trivia game where you can test your knowledge across various categories.</p>
+
+            <div class="instructions">
+                <h3>How to Start the Game Server</h3>
+                <div class="warning">
+                    <strong>Important:</strong> You must start the Flask server before accessing the game!
+                </div>
+                <ol>
+                    <li>Make sure you have Flask installed:
+                        <br>
+                        <code>pip install flask</code>
+                    </li>
+                    <li>Navigate to the project root directory in your terminal or command prompt</li>
+                    <li>Run the Flask application:
+                        <br>
+                        <code>python app.py</code>
+                    </li>
+                    <li>Once the server is running, click the "Access the Game" button below:
+                    </li>
+                </ol>
+
+                <div class="access-buttons">
+                    <a href="http://localhost:5000" class="button" id="access-button">Access the Game</a>
+                    <p class="button-note">This button will only work if the Flask server is running at <code>http://localhost:5000</code></p>
+                </div>
+
+                <h3>Game Features</h3>
+                <ul>
+                    <li>Create custom game rooms with up to 5 categories</li>
+                    <li>Join existing game rooms</li>
+                    <li>Answer trivia questions to earn points</li>
+                    <li>Use special tools like Double Points, Change Question, and Steal Question</li>
+                    <li>Compete with friends to see who can get the highest score</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Avirta. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

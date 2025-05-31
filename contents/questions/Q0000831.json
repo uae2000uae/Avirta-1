@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما اسم السورة التي فيها آية الكرسي؟",
+  "correct_answer": "البقرة",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000831",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.319174",
+  "updated_at": "2025-05-27T19:11:23.319174",
+  "active": true,
+  "use_count": 0
+}

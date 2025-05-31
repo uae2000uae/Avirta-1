@@ -1,0 +1,221 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "كم هو ناتج جمع 5 + 3؟",
+    "options": [
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "correct_answer": "8",
+    "explanation": "",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو ناتج طرح 9 من 15؟",
+    "options": [
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "correct_answer": "6",
+    "explanation": "",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "١٠ × ١ يساوي ١٠.",
+    "correct_answer": "True",
+    "explanation": "",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو العدد الزوجي بين الأعداد التالية: 3، 5، 8، 11؟",
+    "options": [
+      "3",
+      "5",
+      "8",
+      "11"
+    ],
+    "correct_answer": "8",
+    "explanation": "",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو ناتج قسمة 20 على 4؟",
+    "options": [
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "correct_answer": "5",
+    "explanation": "",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "الصفر عدد أولي.",
+    "correct_answer": "False",
+    "explanation": "",
+    "points": 200
+  },
+  {
+    "type": "multiple_choice",
+    "question": "كم يساوي نصف العدد 18؟",
+    "options": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "correct_answer": "9",
+    "explanation": "",
+    "points": 200
+  },
+  {
+    "type": "multiple_choice",
+    "question": "إذا كان لديك خمسة تفاحات وأعطيت اثنتين، كم تبقى لديك؟",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "correct_answer": "3",
+    "explanation": "",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "مجموع العددين 7 و 9 هو 16.",
+    "correct_answer": "True",
+    "explanation": "",
+    "points": 200
+  },
+  {
+    "type": "multiple_choice",
+    "question": "إذا كان س = 4، فما قيمة 2 × س؟",
+    "options": [
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "correct_answer": "8",
+    "explanation": "",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "ما هو العدد الذي إذا ضربته في نفسه يعطي 49؟",
+    "correct_answer": "7",
+    "explanation": "",
+    "points": 300
+  },
+  {
+    "type": "multiple_choice",
+    "question": "أي من الأعداد التالية مضاعف للعدد 3؟ 14، 21، 25، 28",
+    "options": [
+      "14",
+      "21",
+      "25",
+      "28"
+    ],
+    "correct_answer": "21",
+    "explanation": "",
+    "points": 300
+  },
+  {
+    "type": "true_false",
+    "question": "العدد 2 هو أصغر عدد أولي.",
+    "correct_answer": "True",
+    "explanation": "",
+    "points": 300
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو مجموع الأعداد: 8، 5، 7؟",
+    "options": [
+      "18",
+      "19",
+      "20",
+      "21"
+    ],
+    "correct_answer": "20",
+    "explanation": "",
+    "points": 300
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو العدد التالي في التسلسل: 2، 4، 6، ؟",
+    "options": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "correct_answer": "8",
+    "explanation": "",
+    "points": 400
+  },
+  {
+    "type": "multiple_choice",
+    "question": "إذا اشترى أحمد 3 دفاتر وسعر كل دفتر 5 ريالات، كم دفع أحمد؟",
+    "options": [
+      "10",
+      "12",
+      "15",
+      "18"
+    ],
+    "correct_answer": "15",
+    "explanation": "",
+    "points": 400
+  },
+  {
+    "type": "true_false",
+    "question": "العدد 15 يقبل القسمة على 4 بدون باقي.",
+    "correct_answer": "False",
+    "explanation": "",
+    "points": 400
+  },
+  {
+    "type": "text",
+    "question": "إذا جمعت 12 و 13 ما الناتج؟",
+    "correct_answer": "25",
+    "explanation": "",
+    "points": 400
+  },
+  {
+    "type": "multiple_choice",
+    "question": "كم عدد الزوايا في المثلث؟",
+    "options": [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "correct_answer": "3",
+    "explanation": "",
+    "points": 500
+  },
+  {
+    "type": "true_false",
+    "question": "١٠٠ - ٥٠ = ٤٠",
+    "correct_answer": "False",
+    "explanation": "",
+    "points": 500
+  },
+  {
+    "type": "text",
+    "question": "ما هو ناتج ضرب 9 × 6؟",
+    "correct_answer": "54",
+    "explanation": "",
+    "points": 500
+  }
+]

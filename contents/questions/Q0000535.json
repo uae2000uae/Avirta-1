@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي عاصمة العراق؟",
+  "options": [
+    "بغداد",
+    "دمشق",
+    "الدوحة",
+    "القاهرة"
+  ],
+  "correct_answer": "بغداد",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000535",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.574042",
+  "updated_at": "2025-05-27T02:02:54.574042",
+  "active": true,
+  "use_count": 0
+}

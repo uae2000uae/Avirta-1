@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع برج إيفل؟",
+  "options": [
+    "فرنسا",
+    "إيطاليا",
+    "إسبانيا",
+    "بلجيكا"
+  ],
+  "correct_answer": "فرنسا",
+  "points": 100,
+  "id": "Q0000930",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:31.883133",
+  "updated_at": "2025-05-27T21:37:31.883133",
+  "active": true,
+  "use_count": 0
+}

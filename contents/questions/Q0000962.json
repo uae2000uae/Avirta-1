@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع سد أسوان العالي؟",
+  "options": [
+    "مصر",
+    "السودان",
+    "إثيوبيا",
+    "نيجيريا"
+  ],
+  "correct_answer": "مصر",
+  "points": 100,
+  "id": "Q0000962",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:32.025420",
+  "updated_at": "2025-05-27T21:37:32.025420",
+  "active": true,
+  "use_count": 0
+}

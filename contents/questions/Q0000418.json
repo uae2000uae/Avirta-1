@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما معنى كلمة \"الحق\" في القرآن؟",
+  "options": [
+    "الصواب",
+    "المال",
+    "الطعام",
+    "الظلم"
+  ],
+  "correct_answer": "الصواب",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000418",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.589729",
+  "updated_at": "2025-05-20T02:38:24.589729",
+  "active": true,
+  "use_count": 0
+}

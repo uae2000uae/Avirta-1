@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "كم ثانية في 5 دقائق؟",
+  "correct_answer": "300",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000862",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.363755",
+  "updated_at": "2025-05-27T19:30:14.363755",
+  "active": true,
+  "use_count": 0
+}

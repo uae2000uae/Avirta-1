@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "كم مرة ذكرت كلمة \"الصلاة\" في القرآن؟",
+  "options": [
+    "67",
+    "99",
+    "77",
+    "55"
+  ],
+  "correct_answer": "67",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0000832",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.323190",
+  "updated_at": "2025-05-27T19:11:23.323190",
+  "active": true,
+  "use_count": 0
+}

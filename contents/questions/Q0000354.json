@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي منتخب فاز بكأس العالم 1982؟",
+  "options": [
+    "الأرجنتين",
+    "إيطاليا",
+    "البرازيل",
+    "ألمانيا"
+  ],
+  "correct_answer": "إيطاليا",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000354",
+  "category_id": "كأس_العالم",
+  "created_at": "2025-05-17T20:18:17.636938",
+  "updated_at": "2025-05-19T01:00:12.806094",
+  "active": true,
+  "use_count": 1
+}

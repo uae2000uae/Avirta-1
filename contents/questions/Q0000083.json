@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما هو العنصر الكيميائي الذي رمزه Fe؟",
+  "correct_answer": "الحديد",
+  "points": 200,
+  "id": "Q0000083",
+  "created_at": "2025-05-13T19:48:58.453504",
+  "updated_at": "2025-05-29T22:36:50.959789",
+  "active": true,
+  "category_id": "معلومات_عامة",
+  "use_count": 1,
+  "explanation": ""
+}

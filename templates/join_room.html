@@ -1,0 +1,29 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Avirta - Join Room{% endblock %}
+
+{% block content %}
+<div class="join-room-section">
+    <h2>Join a Game Room</h2>
+    <p>Enter the Room ID provided by the host and your name to join an existing game room.</p>
+
+    <form action="{{ url_for('join_room') }}" method="post">
+        <div class="form-group">
+            <label for="room_id">Room ID:</label>
+            <input type="text" id="room_id" name="room_id" required placeholder="Enter the Room ID">
+        </div>
+
+        <div class="form-group">
+            <label for="player_name">Your Name:</label>
+            <input type="text" id="player_name" name="player_name" required placeholder="Enter your name">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Join Room</button>
+            <button class="button secondary"><a href="{{ url_for('index') }}" class="text-clear">Cancel</a></button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

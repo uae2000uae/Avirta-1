@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the name of the group that illegally clones dinosaurs in Jurassic World: Dominion?",
+  "correct_answer": "BioSyn",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0001046",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.717423",
+  "updated_at": "2025-05-29T20:28:45.717423",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي عاصمة سلطنة عمان؟",
+  "options": [
+    "مسقط",
+    "صلالة",
+    "نزوى",
+    "صور"
+  ],
+  "correct_answer": "مسقط",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000537",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.583042",
+  "updated_at": "2025-05-27T02:02:54.583042",
+  "active": true,
+  "use_count": 0
+}

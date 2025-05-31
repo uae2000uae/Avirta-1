@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هو أطول نهر في العالم؟",
+  "options": [
+    "الأمازون",
+    "النيجر",
+    "النيل",
+    "الدانوب"
+  ],
+  "correct_answer": "النيل",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000489",
+  "category_id": "معلومات_عامة",
+  "created_at": "2025-05-23T21:26:30.230207",
+  "updated_at": "2025-05-29T22:58:16.272427",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "إذا كان لديك 20 قطعة نقدية من فئة 1 ريال، كم ريال لديك؟",
+  "correct_answer": "20",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000847",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.305812",
+  "updated_at": "2025-05-27T19:30:14.305812",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,15 @@
+{
+  "type": "text",
+  "question": "من هو العالم المسلم الذي اخترع الكاميرا المظلمة؟",
+  "correct_answer": "ابن الهيثم",
+  "alternative_answers": [
+    "الحسن بن الهيثم"
+  ],
+  "points": 400,
+  "id": "Q0000103",
+  "created_at": "2025-05-13T19:48:58.465507",
+  "updated_at": "2025-05-27T01:12:21.931498",
+  "active": true,
+  "category_id": "تاريخ_الإسلام",
+  "use_count": 1
+}

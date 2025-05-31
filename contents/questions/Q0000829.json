@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي سورة سميت بسورة النعم؟",
+  "options": [
+    "النحل",
+    "يوسف",
+    "الحج",
+    "الأنعام"
+  ],
+  "correct_answer": "الأنعام",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000829",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.312720",
+  "updated_at": "2025-05-27T19:11:23.312720",
+  "active": true,
+  "use_count": 0
+}

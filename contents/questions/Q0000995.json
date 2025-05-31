@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي عضو هو مركز السمع في الجسم؟",
+  "options": [
+    "العين",
+    "الأذن",
+    "الفم",
+    "الأنف"
+  ],
+  "correct_answer": "الأذن",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000995",
+  "category_id": "جسم_الإنسان",
+  "created_at": "2025-05-27T23:51:40.094034",
+  "updated_at": "2025-05-27T23:51:40.094034",
+  "active": true,
+  "use_count": 0
+}

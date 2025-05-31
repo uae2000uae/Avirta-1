@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي من الدول العربية ليست عضوًا في الاتحاد المغاربي؟",
+  "options": [
+    "مصر",
+    "المغرب",
+    "تونس",
+    "الجزائر"
+  ],
+  "correct_answer": "مصر",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000548",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.635046",
+  "updated_at": "2025-05-27T02:02:54.635046",
+  "active": true,
+  "use_count": 0
+}

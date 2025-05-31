@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "في أي سورة ورد ذكر \"العسل\"؟",
+  "correct_answer": "النحل",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000828",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.309720",
+  "updated_at": "2025-05-27T19:11:23.309720",
+  "active": true,
+  "use_count": 0
+}

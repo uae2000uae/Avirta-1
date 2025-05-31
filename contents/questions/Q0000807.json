@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "سورة المجادلة هي السورة الوحيدة في القرآن التي ذكر في كل آية منها لفظ الجلالة.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000807",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.226709",
+  "updated_at": "2025-05-27T19:11:23.226709",
+  "active": true,
+  "use_count": 0
+}

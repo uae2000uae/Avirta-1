@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي السورة التي لا تبدأ بالبسملة؟",
+  "options": [
+    "التوبة",
+    "الرحمن",
+    "الفلق",
+    "المجادلة"
+  ],
+  "correct_answer": "التوبة",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000797",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.181181",
+  "updated_at": "2025-05-27T19:11:23.181181",
+  "active": true,
+  "use_count": 0
+}

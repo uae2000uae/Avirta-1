@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي عضو مسؤول عن ضخ الدم في جميع أنحاء الجسم؟",
+  "options": [
+    "الدماغ",
+    "القلب",
+    "الكبد",
+    "الكلى"
+  ],
+  "correct_answer": "القلب",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000976",
+  "category_id": "جسم_الإنسان",
+  "created_at": "2025-05-27T23:51:40.001730",
+  "updated_at": "2025-05-27T23:51:40.001730",
+  "active": true,
+  "use_count": 0
+}

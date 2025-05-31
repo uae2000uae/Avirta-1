@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي سورة في القرآن ليس فيها حرف الميم؟",
+  "options": [
+    "الكافرون",
+    "الإخلاص",
+    "الكوثر",
+    "الحمد"
+  ],
+  "correct_answer": "الكوثر",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000822",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.287714",
+  "updated_at": "2025-05-27T19:11:23.287714",
+  "active": true,
+  "use_count": 0
+}

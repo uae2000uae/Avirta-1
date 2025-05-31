@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما عدد السور التي تبدأ بحروف مقطعة؟",
+  "correct_answer": "29",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000823",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.291725",
+  "updated_at": "2025-05-27T19:11:23.291725",
+  "active": true,
+  "use_count": 0
+}

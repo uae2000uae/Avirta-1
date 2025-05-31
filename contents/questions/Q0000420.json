@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما معنى كلمة \"الأبرار\" في القرآن؟",
+  "options": [
+    "الصالحون",
+    "الأقوياء",
+    "الأغنياء",
+    "الأشرار"
+  ],
+  "correct_answer": "الصالحون",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000420",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.596731",
+  "updated_at": "2025-05-20T02:38:24.596731",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "سورة الإسراء تسمى أيضاً بسورة بني إسرائيل.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000815",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.262711",
+  "updated_at": "2025-05-27T19:11:23.262711",
+  "active": true,
+  "use_count": 0
+}

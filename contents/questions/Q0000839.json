@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما هو العدد الذي إذا قسمته على 2 وضربته في 3 تحصل على 12؟",
+  "correct_answer": "8",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000839",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.274684",
+  "updated_at": "2025-05-27T19:30:14.274684",
+  "active": true,
+  "use_count": 0
+}

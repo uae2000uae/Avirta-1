@@ -1,0 +1,58 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Bulk Import Questions - Avirta{% endblock %}
+
+{% block content %}
+<h1>Bulk Import Questions</h1>
+
+<div class="actions">
+    <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+</div>
+
+<div class="import-section">
+    <h2>Import Questions from File</h2>
+    <p>Upload a CSV or Excel file containing questions to import them in bulk.</p>
+
+    <div class="template-links">
+        <h3>Template</h3>
+        <p>Use this template to format your questions correctly:</p>
+        <div class="template-buttons">
+            <a href="{{ url_for('export_template_route', format='csv') }}" class="button">Export Template</a>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('bulk_import_page') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Select File:</label>
+            <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required>
+            <small>Accepted formats: CSV, Excel (.xlsx, .xls)</small>
+        </div>
+<div class="form-actions">
+      <button type="submit" class="button">Import Questions</button>
+        </div>
+    </form>
+</div>
+
+<div class="import-instructions">
+    <h2>Instructions</h2>
+    <ol>
+        <li>Download the template file</li>
+        <li>Fill in the template with your questions</li>
+        <li>Upload the completed file using the form above</li>
+        <li>Click "Import Questions" to begin the import process</li>
+    </ol>
+
+    <h3>File Format</h3>
+    <p>Your file should contain the following columns:</p>
+    <ul>
+        <li><strong>question</strong> (required): The text of the question</li>
+        <li><strong>type</strong> (required): The question type (multiple_choice, true_false)</li>
+        <li><strong>category</strong> (optional): The category for the question</li>
+        <li><strong>points</strong> (optional): The point value (100, 200, 300, 400, 500)</li>
+        <li><strong>options</strong> (for multiple choice): Comma-separated list of options</li>
+        <li><strong>correct_answer</strong> (required): The correct answer</li>
+    </ul>
+</div>
+
+{% endblock %}

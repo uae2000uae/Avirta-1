@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي سورة تبدأ بكلمة \"ا ل م ر\"؟",
+  "options": [
+    "الرعد",
+    "إبراهيم",
+    "الحجر",
+    "يونس"
+  ],
+  "correct_answer": "الرعد",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000800",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.197182",
+  "updated_at": "2025-05-29T01:59:11.107570",
+  "active": true,
+  "use_count": 0
+}

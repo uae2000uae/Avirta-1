@@ -1,0 +1,144 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Reported Questions - Avirta{% endblock %}
+
+{% block extra_head %}
+<style>
+    .no-reports {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: var(--bg-color-light);
+        border-radius: 5px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Reported Questions</h1>
+
+{% if not is_authenticated %}
+<div class="login-form">
+    <h2>Admin Login</h2>
+    {% if login_error %}
+    <div class="error-message">{{ login_error }}</div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('admin_controls') }}">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <br>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">Login</button>
+        </div>
+    </form>
+</div>
+{% else %}
+<div class="admin-dashboard">
+    <div class="page-section">
+       <div>
+            <form class="form-group stack" method="GET" action="{{ url_for('reported_questions') }}">
+				<div><label class="fill" for="status">Filter by Status:</label></div>
+	            <div class="fill">
+                    <select id="status" name="status">
+                        <option value="">All</option>
+                        <option value="pending" selected>Pending</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button type="submit" class="button">Filter</button>
+                </div>
+            </form>
+        </div>
+        <br>
+        {% if reports %}
+        <div class="sextion">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Category</th>
+                        <th>Reported At</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.question_data.question if report.question_data else 'Question deleted' }}</td>
+                        <td>{{ report.question_data.category_id if report.question_data else 'N/A' }}</td>
+                        <td>{{ report.reported_at }}</td>
+                        <td>
+                            <span class="status-badge status-{{ report.status }}">{{ report.status }}</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if report.question_data %}
+                                <button class="button"><a href="{{ url_for('edit_reported_question', report_id=report.report_id) }}" class="text-clear">Edit</a></button>
+                                {% else %}
+                                <button class="button" disabled title="Question has been deleted">Edit</button>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('update_report_status') }}" class="form-group clear">
+                                    <input type="hidden" name="report_id" value="{{ report.report_id }}">
+                                    <input type="hidden" name="status" value="reviewed">
+                                    <button type="submit" class="button">Reviewed</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('update_report_status') }}" class="form-group clear">
+                                    <input type="hidden" name="report_id" value="{{ report.report_id }}">
+                                    <input type="hidden" name="status" value="rejected">
+                                    <button type="submit" class="button">Reject</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="section">
+            <p>No reported questions found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+<script>
+/**
+ * Setup scroll position saving functionality
+ * Saves the scroll position when navigating away from a page
+ * Restores the scroll position when returning to a page
+ */
+function setupScrollPositionSaving() {
+    // Get the current page path to use as a unique key
+    const pagePath = window.location.pathname;
+    const scrollKey = 'avirta_scroll_' + pagePath;
+
+    // Restore scroll position if it exists in localStorage
+    const savedScrollPosition = localStorage.getItem(scrollKey);
+    if (savedScrollPosition) {
+        // Use setTimeout to ensure the page has fully loaded before scrolling
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(savedScrollPosition));
+        }, 100);
+    }
+
+    // Save scroll position when user navigates away or refreshes
+    window.addEventListener('beforeunload', function() {
+        localStorage.setItem(scrollKey, window.scrollY);
+    });
+
+    // Also save scroll position periodically (every 1 second)
+    setInterval(function() {
+        localStorage.setItem(scrollKey, window.scrollY);
+    }, 3000);
+}
+</script>
+{% endblock %}

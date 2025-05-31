@@ -1,0 +1,69 @@
+/* Avirta Game - Green Dark Theme */
+
+:root {
+    /* Primary Colors */
+    --primary-color: #2e7d32;
+    --primary-color-light: #1b4b1e;
+    --primary-color-dark: #0d260f;
+
+    /* Secondary Colors */
+    --secondary-color: #6c757d;
+    --secondary-color-hover: #4f565c;
+    --secondary-color-light: #363639;
+
+    /* Background Colors */
+    --bg-color: #0d1f0e;
+    --bg-color-lighter: #2e7d32;
+    --bg-color-light: #1b4b1e;
+    --bg-color-dark: #f6efdd;
+    --bg-color-darker: #e2c695;
+    --bg-color-darkest: #c58e3f;
+
+    /* Text Colors */
+    --text-color: #c4e0c6;
+    --text-color-light: #8fc791;
+    --text-color-white: #ffffff;
+
+    /* Status Colors */
+    --success-color: #489e5c;
+    --success-color-light: #d4edda;
+    --success-color-dark: #155724;
+    --success-bg: #243c1e;
+    --success-text: #a3d6a9;
+
+    --error-color: #dc3545;
+    --error-color-light: #f8d7da;
+    --error-color-dark: #721c24;
+    --error-bg: #680000;
+    --error-text: #ff7373;
+
+    --info-color: #4caf50;
+    --info-color-light: #2e7d32;
+    --info-color-dark: #e8f5e9;
+
+    /* Border Colors */
+    --border-color: #ddd;
+    --border-color-light: #eee;
+
+    /* Common Styling */
+    --border-radius-small: 5px;
+    --border-radius: 10px;
+    --border-radius-large: 20px;
+    --border-radius-xlarge: 40px;
+
+    --box-shadow: 0 0px 10px rgba(0, 0, 0, 50);
+
+    /* Spacing */
+    --spacing-xs: 3px;
+    --spacing-sm: 6px;
+    --spacing-md: 9px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+}
+
+/* Base Typography */
+body {
+    font-family: Cairo, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}

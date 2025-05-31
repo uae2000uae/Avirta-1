@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "كم عدد الأحزاب في القرآن الكريم؟",
+  "correct_answer": "60",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000821",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.283714",
+  "updated_at": "2025-05-27T19:11:23.283714",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "إذا كان مجموع ثلاثة أعداد فردية متتالية هو 27، فما هي؟",
+  "correct_answer": "7، 9، 11",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000858",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.349751",
+  "updated_at": "2025-05-27T19:30:14.349751",
+  "active": true,
+  "use_count": 0
+}

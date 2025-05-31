@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما معنى كلمة \"العباد\" في القرآن؟",
+  "options": [
+    "الناس",
+    "الملائكة",
+    "الحيوانات",
+    "الجن فقط"
+  ],
+  "correct_answer": "الناس",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000410",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.559731",
+  "updated_at": "2025-05-20T02:38:24.559731",
+  "active": true,
+  "use_count": 0
+}

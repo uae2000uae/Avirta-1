@@ -1,0 +1,202 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}{% if editing %}Edit Question{% else %}Add Question{% endif %} - Avirta{% endblock %}
+
+{% block content %}
+<h1>{% if editing %}Edit Question{% else %}Add New Question{% endif %}</h1>
+
+<div class="actions">
+    <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+</div>
+
+<form action="{{ url_for('add_question_page', question_id=question.id if editing else None) }}" method="POST" class="form-group-xx">
+    {% if editing %}
+    <input type="hidden" name="question_id" value="{{ question.id }}">
+    <div class="form-group-equal-sm">
+        <label for="display_question_id">Question ID:</label>
+        <input type="text" id="display_question_id" value="{{ question.id }}" readonly>
+    </div>
+    {% endif %}
+    
+
+    <div class="form-group-equal-sm">
+      <label for="type">Question Type:</label>
+        <select id="type" name="type" required onchange="toggleQuestionType()">
+            <option value="">Select a type</option>
+            <option value="multiple_choice" {% if editing and question.type == 'multiple_choice' %}selected{% endif %}>Multiple Choice</option>
+            <option value="true_false" {% if editing and question.type == 'true_false' %}selected{% endif %}>True/False</option>
+            <option value="text" {% if editing and question.type == 'text' %}selected{% endif %}>Text</option>
+        </select>
+    </div>
+
+    <div class="form-group-equal-sm">
+        <label for="category_id">Category:</label>
+        <select id="category_id" name="category_id" required>
+            <option value="">Select a category</option>
+            {% for category_id, category in categories.items() %}
+                <option value="{{ category_id }}" {% if editing and question.category_id == category_id %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group-equal-sm">
+        <label for="points">Points:</label>
+        <select id="points" name="points" required>
+            <option value="">Select points</option>
+            <option value="100" {% if editing and question.points == 100 %}selected{% endif %}>100 points</option>
+            <option value="200" {% if editing and question.points == 200 %}selected{% endif %}>200 points</option>
+            <option value="300" {% if editing and question.points == 300 %}selected{% endif %}>300 points</option>
+            <option value="400" {% if editing and question.points == 400 %}selected{% endif %}>400 points</option>
+            <option value="500" {% if editing and question.points == 500 %}selected{% endif %}>500 points</option>
+        </select>
+    </div>
+    <div class="form-group-inline">
+      <label for="question">Question Text:</label>
+      <textarea id="question" name="question" rows="3" required>{% if editing %}{{ question.question }}{% endif %}</textarea>
+    </div>
+    <div id="multiple_choice_options" style="display: none;" class="form-group-grid">
+        <div class="form-group-equal-sm">
+            <label for="option_1">Option 1:</label>
+            <input type="text" id="option_1" name="option_1" {% if editing and question.type == 'multiple_choice' and question.options|length > 0 %}value="{{ question.options[0] }}"{% endif %}>
+        </div>
+        <div class="form-group-equal-sm">
+            <label for="option_2">Option 2:</label>
+            <input type="text" id="option_2" name="option_2" {% if editing and question.type == 'multiple_choice' and question.options|length > 1 %}value="{{ question.options[1] }}"{% endif %}>
+        </div>
+        <div class="form-group-equal-sm">
+            <label for="option_3">Option 3:</label>
+            <input type="text" id="option_3" name="option_3" {% if editing and question.type == 'multiple_choice' and question.options|length > 2 %}value="{{ question.options[2] }}"{% endif %}>
+        </div>
+        <div class="form-group-equal-sm">
+            <label for="option_4">Option 4:</label>
+            <input type="text" id="option_4" name="option_4" {% if editing and question.type == 'multiple_choice' and question.options|length > 3 %}value="{{ question.options[3] }}"{% endif %}>
+        </div>
+		<br>
+        <div class="form-group-equal-sm">
+            <label for="correct_answer">Correct Answer:</label>
+            <select id="correct_answer" name="correct_answer">
+                <option value="">Select correct answer</option>
+                {% if editing and question.type == 'multiple_choice' %}
+                    {% for option in question.options %}
+                        <option value="{{ option }}" {% if question.correct_answer == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                {% else %}
+                    <option value="" class="option-placeholder" disabled>Add options above first</option>
+                {% endif %}
+            </select>
+        </div>
+    </div>
+
+    <div id="true_false_options" style="display: none;" class="form-group-grid">
+        <div class="form-group-equal-sm">
+            <label for="correct_answer_tf">Correct Answer:</label>
+            <select id="correct_answer_tf" name="correct_answer_tf">
+                <option value="">Select correct answer</option>
+                <option value="True" {% if editing and question.type == 'true_false' and question.correct_answer == 'True' %}selected{% endif %}>True</option>
+                <option value="False" {% if editing and question.type == 'true_false' and question.correct_answer == 'False' %}selected{% endif %}>False</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="text_options" style="display: none;" class="form-group-grid">
+        <div class="form-group">
+            <label for="correct_answer">Correct Answer:</label>
+            <input type="text" id="correct_answer_text" name="correct_answer_text" {% if editing and question.type == 'text' %}value="{{ question.correct_answer }}"{% endif %}>
+        </div>
+    </div>
+    <div class="form-group-inline">
+      <label for="explanation">Explanation:</label>
+      <textarea id="explanation" name="explanation" rows="1">{% if editing %}{{ question.explanation }}{% endif %}</textarea>
+    </div>
+		<div class="form-group form-actions">
+        <button type="submit" name="action" value="save_close" class="button">Save and Close</button>
+        <button type="submit" name="action" value="save_next" class="button">{% if editing %}Save and Open Next{% else %}Save and Add Another{% endif %}</button>
+            <button class="button secondary"><a class="text-clear" href="{{ url_for('admin_controls')}}">Cancel</a></button>
+			{% if editing %}
+			<button class="delete-button"><a class="text-clear" href="#" title="Delete Question" data-id="{{ question.id }}" onclick="confirmDelete(this); return false;">Delete</a></button>
+			{% endif %}
+    </div>
+</form>
+<script>
+    function toggleQuestionType() {
+        const questionType = document.getElementById('type').value;
+        const multipleChoiceOptions = document.getElementById('multiple_choice_options');
+        const trueFalseOptions = document.getElementById('true_false_options');
+        const textOptions = document.getElementById('text_options');
+
+        if (questionType === 'multiple_choice') {
+            multipleChoiceOptions.style.display = 'block';
+            trueFalseOptions.style.display = 'none';
+            textOptions.style.display = 'none';
+        } else if (questionType === 'true_false') {
+            multipleChoiceOptions.style.display = 'none';
+            trueFalseOptions.style.display = 'block';
+            textOptions.style.display = 'none';
+        } else if (questionType === 'text') {
+            multipleChoiceOptions.style.display = 'none';
+            trueFalseOptions.style.display = 'none';
+            textOptions.style.display = 'block';
+        } else {
+            multipleChoiceOptions.style.display = 'none';
+            trueFalseOptions.style.display = 'none';
+            textOptions.style.display = 'none';
+        }
+    }
+
+    // Update correct answer dropdown when options change
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize question type display
+        toggleQuestionType();
+        
+        // Initialize options for multiple choice
+        if (document.getElementById('type').value === 'multiple_choice') {
+            updateCorrectAnswerOptions();
+        }
+
+        const optionInputs = [
+            document.getElementById('option_1'),
+            document.getElementById('option_2'),
+            document.getElementById('option_3'),
+            document.getElementById('option_4')
+        ];
+
+        const correctAnswerSelect = document.getElementById('correct_answer');
+
+        optionInputs.forEach(input => {
+            input.addEventListener('input', updateCorrectAnswerOptions);
+        });
+
+        function updateCorrectAnswerOptions() {
+            // Clear existing options
+            correctAnswerSelect.innerHTML = '<option value="">Select correct answer</option>';
+
+            // Add new options based on input values
+            optionInputs.forEach((input, index) => {
+                if (input.value.trim() !== '') {
+                    const option = document.createElement('option');
+                    option.value = input.value;
+                    option.textContent = input.value;
+                    correctAnswerSelect.appendChild(option);
+                }
+            });
+
+            // Show placeholder if no options are available
+            if (correctAnswerSelect.options.length <= 1) {
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Add options above first';
+                placeholder.disabled = true;
+                placeholder.className = 'option-placeholder';
+                correctAnswerSelect.appendChild(placeholder);
+            }
+        }
+    });
+    function confirmDelete(element) {
+        const questionId = element.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+            window.location.href = "{{ url_for('delete_question', question_id='PLACEHOLDER') }}".replace('PLACEHOLDER', questionId);
+        }
+    }
+</script>
+{% endblock %}

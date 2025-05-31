@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي أكبر قارة في العالم؟",
+  "options": [
+    "أفريقيا",
+    "أوروبا",
+    "آسيا",
+    "أمريكا الشمالية"
+  ],
+  "correct_answer": "آسيا",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000495",
+  "category_id": "معلومات_عامة",
+  "created_at": "2025-05-23T21:26:30.252207",
+  "updated_at": "2025-05-29T23:09:34.140155",
+  "active": true,
+  "use_count": 0
+}

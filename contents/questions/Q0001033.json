@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Who is responsible for sabotaging Jurassic Park's security systems in the first film?",
+  "correct_answer": "Dennis Nedry",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0001033",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.632891",
+  "updated_at": "2025-05-29T20:28:45.632891",
+  "active": true,
+  "use_count": 0
+}

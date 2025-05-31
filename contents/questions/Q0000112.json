@@ -1,0 +1,15 @@
+{
+  "type": "text",
+  "question": "ماذا كان يطلق على البحر الأحمر قديما",
+  "correct_answer": "بحر البلطيق",
+  "alternative_answers": [
+    "البلطيق"
+  ],
+  "points": 300,
+  "id": "Q0000112",
+  "created_at": "2025-05-13T19:48:58.470507",
+  "updated_at": "2025-05-27T01:49:53.805661",
+  "active": true,
+  "category_id": "جغرافيا",
+  "use_count": 1
+}

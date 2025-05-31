@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Who is the director of Jurassic World (2015)?",
+  "correct_answer": "Colin Trevorrow",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0001023",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.570872",
+  "updated_at": "2025-05-29T20:28:45.570872",
+  "active": true,
+  "use_count": 0
+}

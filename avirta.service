@@ -1,0 +1,16 @@
+[Unit]
+Description=Avirta Web Application
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/Avirta
+Environment="PATH=/var/www/Avirta/venv/bin"
+ExecStart=/var/www/Avirta/venv/bin/gunicorn -c /var/www/gunicorn_config.py wsgi:app
+Restart=always
+RestartSec=5
+SyslogIdentifier=avirta
+
+[Install]
+WantedBy=multi-user.target

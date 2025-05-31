@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "كم عدد العظام في جسم الإنسان البالغ تقريبًا؟",
+  "options": [
+    "206",
+    "208",
+    "210",
+    "212"
+  ],
+  "correct_answer": "206",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000978",
+  "category_id": "جسم_الإنسان",
+  "created_at": "2025-05-27T23:51:40.011729",
+  "updated_at": "2025-05-27T23:51:40.011729",
+  "active": true,
+  "use_count": 0
+}

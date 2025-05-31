@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما معنى كلمة \"القدر\" في ليلة القدر؟",
+  "options": [
+    "الشرف والمنزلة",
+    "النار",
+    "المال",
+    "الحزن"
+  ],
+  "correct_answer": "الشرف والمنزلة",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000438",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.673256",
+  "updated_at": "2025-05-20T02:38:24.673256",
+  "active": true,
+  "use_count": 0
+}

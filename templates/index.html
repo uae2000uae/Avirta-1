@@ -1,0 +1,37 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Avirta - Home{% endblock %}
+
+{% block content %}
+    <div class="features">
+        <div class="feature">
+            <a href="{{ url_for('create_room') }}" class="button">Create A New Game | ابدأ لعبة جديدة</a>
+
+            <p>Start your own game room and invite friends to join. Select up to 5 categories for your game.</p>
+		</div>
+
+        <div class="feature"> <a href="{{ url_for('join_room') }}" class="button">Join An Active Game | انضم إلى لعبة فعالة</a>
+            <p>Join an existing game room using the room ID provided by the host.</p>
+		</div>
+    </div>
+
+    <div class="how-to-play">
+        <h3>How to Play</h3>
+        <ol>
+            <li>Create a game room or join an existing one</li>
+            <li>Select questions from the game board based on category and point value</li>
+            <li>Answer questions correctly to earn points</li>
+            <li>Use special tools to gain an advantage:
+                <ul>
+                    <li><strong>Double Points</strong>: Double the points for your next question</li>
+                    <li><strong>Change Question</strong>: Swap your current question for a new one</li>
+                    <li><strong>Steal Question</strong>: Take a question from another player</li>
+                </ul>
+            </li>
+            <li>The player with the most points at the end wins!</li>
+        </ol>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي عام فازت الأوروغواي بكأس العالم للمرة الثانية؟",
+  "options": [
+    "1930",
+    "1950",
+    "1966",
+    "1970"
+  ],
+  "correct_answer": "1950",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000352",
+  "category_id": "كأس_العالم",
+  "created_at": "2025-05-17T20:18:17.629937",
+  "updated_at": "2025-05-19T01:00:12.805078",
+  "active": true,
+  "use_count": 1
+}

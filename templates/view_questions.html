@@ -1,0 +1,159 @@
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
+<style>
+    /* Styles for expandable rows */
+    .question-row {
+        cursor: pointer;
+    }
+
+    .question-details-row td {
+        background-color: var(--bg-color-light);
+        padding: 15px;
+    }
+
+    .question-details {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: var(--bg-color-lighter);
+        box-shadow: var(--box-shadow);
+    }
+
+    .question-details ul {
+        margin-top: 5px;
+        padding-left: 20px;
+    }
+
+    .question-details li {
+        margin-bottom: 3px;
+    }
+</style>
+{% extends "base.html" %}
+
+{% block title %}View Questions - {{ category.name }} - Avirta{% endblock %}
+
+{% block content %}
+<h1>Questions in {{ category.name }}</h1>
+
+<div class="actions">
+    <a href="{{ url_for('question_bank_page') }}" class="button">Back to Question Bank</a>
+</div>
+
+<div class="questions-list">
+    {% if questions %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Question</th>
+                    <th>Type</th>
+                    <th>Points</th>
+                    <th>Uses</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for question in questions %}
+                    <tr class="question-row" data-id="{{ question.id }}">
+                        <td>{{ question.id }}</td>
+                        <td>{{ question.question }}</td>
+                        <td>{{ question.type }}</td>
+                        <td>{{ question.points }}</td>
+                        <td>{{ question.use_count|default(0) }}</td>
+                        <td class="question-actions">
+                            <a href="{{ url_for('edit_question', question_id=question.id) }}" class="edit-icon" title="Edit Question">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" class="delete-icon" title="Delete Question" data-id="{{ question.id }}" onclick="confirmDelete(this); return false;">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr class="question-details-row" id="details-{{ question.id }}" style="display: none;">
+                        <td colspan="6">
+                            <div class="question-details">
+                                {% if question.type == 'multiple_choice' %}
+                                    <strong>Options:</strong>
+                                    <ul>
+                                        {% for option in question.options %}
+                                            <li>{{ option }}{% if option == question.correct_answer %} (Correct){% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% elif question.type == 'true_false' %}
+                                    <strong>Answer:</strong> {{ question.correct_answer }}
+                                {% else %}
+                                    <strong>Answer:</strong> {{ question.correct_answer }}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No questions found in this category.</p>
+    {% endif %}
+</div>
+
+<script>
+    function confirmDelete(element) {
+        const questionId = element.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+            window.location.href = "{{ url_for('delete_question', question_id='PLACEHOLDER') }}".replace('PLACEHOLDER', questionId);
+        }
+    }
+
+    // Add click event to question rows to toggle details
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionRows = document.querySelectorAll('.question-row');
+
+        questionRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                // Don't toggle if clicking on action buttons
+                if (event.target.closest('.question-actions') || 
+                    event.target.closest('.edit-icon') || 
+                    event.target.closest('.delete-icon')) {
+                    return;
+                }
+
+                const questionId = this.getAttribute('data-id');
+                const detailsRow = document.getElementById('details-' + questionId);
+
+                // Toggle visibility
+                if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
+                    detailsRow.style.display = 'table-row';
+                } else {
+                    detailsRow.style.display = 'none';
+                }
+            });
+        });
+    });
+/**
+ * Setup scroll position saving functionality
+ * Saves the scroll position when navigating away from a page
+ * Restores the scroll position when returning to a page
+ */
+function setupScrollPositionSaving() {
+    // Get the current page path to use as a unique key
+    const pagePath = window.location.pathname;
+    const scrollKey = 'avirta_scroll_' + pagePath;
+
+    // Restore scroll position if it exists in localStorage
+    const savedScrollPosition = localStorage.getItem(scrollKey);
+    if (savedScrollPosition) {
+        // Use setTimeout to ensure the page has fully loaded before scrolling
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(savedScrollPosition));
+        }, 100);
+    }
+
+    // Save scroll position when user navigates away or refreshes
+    window.addEventListener('beforeunload', function() {
+        localStorage.setItem(scrollKey, window.scrollY);
+    });
+
+    // Also save scroll position periodically (every 1 second)
+    setInterval(function() {
+        localStorage.setItem(scrollKey, window.scrollY);
+    }, 3000);
+}
+</script>
+{% endblock %}

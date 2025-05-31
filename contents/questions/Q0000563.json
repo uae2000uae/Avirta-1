@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي من المدن العربية تقع على نهر دجلة؟",
+  "options": [
+    "بغداد",
+    "دمشق",
+    "الرياض",
+    "القاهرة"
+  ],
+  "correct_answer": "بغداد",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000563",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.693064",
+  "updated_at": "2025-05-27T02:02:54.693064",
+  "active": true,
+  "use_count": 0
+}

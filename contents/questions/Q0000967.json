@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع البحر الميت؟",
+  "options": [
+    "الأردن",
+    "إسرائيل",
+    "فلسطين",
+    "سوريا"
+  ],
+  "correct_answer": "الأردن",
+  "points": 200,
+  "id": "Q0000967",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:32.044423",
+  "updated_at": "2025-05-27T21:37:32.044423",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "إذا كان لديك عددان مجموعهما 17 وحاصل ضربهما 72، ما هما العددان؟",
+  "correct_answer": "9 و8",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0000869",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.388891",
+  "updated_at": "2025-05-27T19:30:14.388891",
+  "active": true,
+  "use_count": 0
+}

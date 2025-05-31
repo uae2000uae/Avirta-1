@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "كم عدد آيات سورة الكوثر؟",
+  "options": [
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "correct_answer": "3",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000803",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.209188",
+  "updated_at": "2025-05-27T19:11:23.209188",
+  "active": true,
+  "use_count": 0
+}

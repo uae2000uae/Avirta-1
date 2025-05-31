@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "كلمة \"الظلمات\" في القرآن تعني النور.",
+  "correct_answer": "False",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000434",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.657257",
+  "updated_at": "2025-05-20T02:38:24.657257",
+  "active": true,
+  "use_count": 0
+}

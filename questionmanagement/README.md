@@ -1,0 +1,101 @@
+# Question Management
+
+This module provides a standalone function for managing Avirta questions, including categorization by topic, difficulty level assignment, and prevention of repeated questions.
+
+## Features
+
+- **Categorization by Topic**: Store questions organized by category (e.g., science, history, geography)
+- **Difficulty Levels**: Assign easy, medium, or hard difficulty to each question
+- **Prevent Repeats**: Dynamically prevent repeated questions from appearing unless no more questions exist in the category
+- **Persistent Storage**: Save questions to disk for later retrieval
+
+## Usage
+
+### Adding Questions
+
+```python
+from questionmanagement.question_bank import add_question
+
+# Add a question with category and difficulty
+add_question({
+    "type": "multiple_choice",
+    "question": "What is the chemical symbol for gold?",
+    "options": ["Au", "Ag", "Fe", "Cu"],
+    "correct_answer": "Au"
+}, "science", "easy")
+```
+
+### Getting Questions
+
+```python
+from questionmanagement.question_bank import get_question, get_questions_by_category
+
+# Get a random question from a category
+question = get_question("science")
+
+# Get a question with specific difficulty
+easy_question = get_question("science", "easy")
+
+# Get all questions in a category
+science_questions = get_questions_by_category("science")
+
+# Get questions filtered by difficulty
+easy_science = get_questions_by_category("science", "easy")
+
+# Get a limited number of questions
+limited_questions = get_questions_by_category("science", limit=5)
+```
+
+### Preventing Repeated Questions
+
+The `get_question` function automatically prevents repeated questions from appearing until all questions in the category have been used. Once all questions have been used, the system will reset and start using questions again.
+
+```python
+# By default, get_question prevents repeats
+question1 = get_question("science")  # First unique question
+question2 = get_question("science")  # Second unique question
+
+# If you want to allow repeats, set prevent_repeats to False
+question = get_question("science", prevent_repeats=False)
+
+# Reset the used questions tracking for a category
+from questionmanagement.question_bank import reset_used_questions
+reset_used_questions("science")
+
+# Reset for all categories
+reset_used_questions()
+```
+
+## Example
+
+See the `examples/question_bank_demo.py` file for a complete demonstration of how to use the question bank.
+
+## API Reference
+
+### Functions
+
+- `add_question(question_data, category_id="general", difficulty="medium")`: Add a new question to the bank
+- `get_question(category_id, difficulty=None, prevent_repeats=True)`: Get a question from the specified category and difficulty
+- `get_questions_by_category(category_id, difficulty=None, limit=None)`: Get all questions in a category, optionally filtered by difficulty
+- `reset_used_questions(category_id=None)`: Reset the used_questions tracking for a category or all categories
+
+### Question Data Format
+
+Questions should be dictionaries with the following structure:
+
+```python
+{
+    "type": "multiple_choice",  # or "true_false", "text"
+    "question": "The question text",
+    "options": ["Option A", "Option B", "Option C", "Option D"],  # for multiple_choice
+    "correct_answer": "The correct answer"
+}
+```
+
+Additional fields will be added automatically:
+- `id`: A unique identifier for the question
+- `category_id`: The category the question belongs to
+- `difficulty`: The difficulty level of the question
+- `created_at`: Timestamp when the question was created
+- `updated_at`: Timestamp when the question was last updated
+- `active`: Whether the question is active

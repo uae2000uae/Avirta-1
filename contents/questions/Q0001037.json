@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the full name of the scientist who cloned the first dinosaur?",
+  "correct_answer": "Dr. Henry Wu",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0001037",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.658416",
+  "updated_at": "2025-05-29T20:28:45.658416",
+  "active": true,
+  "use_count": 0
+}

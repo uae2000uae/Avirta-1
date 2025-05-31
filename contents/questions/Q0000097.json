@@ -1,0 +1,17 @@
+{
+  "type": "text",
+  "question": "من هو أول خليفة في الإسلام؟",
+  "correct_answer": "أبو بكر الصديق",
+  "alternative_answers": [
+    "ابو بكر",
+    "أبو بكر",
+    "ابو بكر الصديق"
+  ],
+  "points": 100,
+  "id": "Q0000097",
+  "created_at": "2025-05-13T19:48:58.462507",
+  "updated_at": "2025-05-27T01:07:20.236687",
+  "active": true,
+  "category_id": "تاريخ_الإسلام",
+  "use_count": 1
+}

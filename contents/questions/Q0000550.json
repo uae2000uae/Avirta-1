@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما المدينة العربية التي تعرف بمدينة الشمس؟",
+  "options": [
+    "بعلبك",
+    "دمشق",
+    "الخرطوم",
+    "مسقط"
+  ],
+  "correct_answer": "بعلبك",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000550",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.643045",
+  "updated_at": "2025-05-27T02:02:54.643045",
+  "active": true,
+  "use_count": 0
+}

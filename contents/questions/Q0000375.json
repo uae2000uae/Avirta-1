@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما معنى كلمة 'الصاعقة' في القرآن؟",
+  "correct_answer": "البرق الشديد",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000375",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-19T18:06:22.790561",
+  "updated_at": "2025-05-19T18:06:22.790561",
+  "active": true,
+  "use_count": 0
+}

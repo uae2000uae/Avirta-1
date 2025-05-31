@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the name of the second Jurassic Park film?",
+  "correct_answer": "The Lost World: Jurassic Park",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0001012",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.497351",
+  "updated_at": "2025-05-29T20:28:45.497351",
+  "active": true,
+  "use_count": 0
+}

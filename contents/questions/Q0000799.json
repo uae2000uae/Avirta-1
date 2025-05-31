@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "من هو النبي الذي ذكر أكثر في القرآن الكريم؟",
+  "options": [
+    "موسى",
+    "محمد",
+    "عيسى",
+    "إبراهيم"
+  ],
+  "correct_answer": "موسى",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000799",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.192184",
+  "updated_at": "2025-05-27T19:11:23.192184",
+  "active": true,
+  "use_count": 0
+}

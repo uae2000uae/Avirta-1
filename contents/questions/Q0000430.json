@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما معنى كلمة \"اليم\" في قوله تعالى: \"فألقيه في اليم\"؟",
+  "options": [
+    "البحر",
+    "النهر",
+    "الجبال",
+    "الصحراء"
+  ],
+  "correct_answer": "البحر",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000430",
+  "category_id": "كلمات_قرآنية",
+  "created_at": "2025-05-20T02:38:24.643255",
+  "updated_at": "2025-05-20T02:38:24.643255",
+  "active": true,
+  "use_count": 0
+}

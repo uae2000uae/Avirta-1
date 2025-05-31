@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي سورة تسمى أيضاً سورة القتال؟",
+  "options": [
+    "محمد",
+    "الأنفال",
+    "التوبة",
+    "الأحزاب"
+  ],
+  "correct_answer": "محمد",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000824",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.295716",
+  "updated_at": "2025-05-27T19:11:23.295716",
+  "active": true,
+  "use_count": 0
+}

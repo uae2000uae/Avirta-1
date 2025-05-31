@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي الدولة العربية التي تضم مدينة سبها؟",
+  "options": [
+    "ليبيا",
+    "تونس",
+    "مصر",
+    "المغرب"
+  ],
+  "correct_answer": "ليبيا",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0000567",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.709063",
+  "updated_at": "2025-05-27T02:02:54.709063",
+  "active": true,
+  "use_count": 0
+}

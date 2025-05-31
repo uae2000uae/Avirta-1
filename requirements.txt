@@ -1,0 +1,14 @@
+# Avirta Project Dependencies
+
+# Web Framework
+flask==2.3.2
+requests==2.31.0
+jinja2==3.1.2
+nltk==3.8.1
+
+# Google Cloud App Engine
+gunicorn==21.2.0
+
+# Development Tools
+black==24.3.0
+flake8==4.0.1

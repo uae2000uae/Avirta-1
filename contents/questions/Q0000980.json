@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هو العضو الذي يستخدمه الإنسان للرؤية؟",
+  "options": [
+    "الأنف",
+    "الأذن",
+    "العين",
+    "اللسان"
+  ],
+  "correct_answer": "العين",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000980",
+  "category_id": "جسم_الإنسان",
+  "created_at": "2025-05-27T23:51:40.021730",
+  "updated_at": "2025-05-27T23:51:40.021730",
+  "active": true,
+  "use_count": 0
+}

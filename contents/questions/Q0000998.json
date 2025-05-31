@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Who directed the first Jurassic Park film?",
+  "correct_answer": "Steven Spielberg",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000998",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.402815",
+  "updated_at": "2025-05-29T20:28:45.402815",
+  "active": true,
+  "use_count": 0
+}

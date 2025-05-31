@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما هو العدد الذي إذا قسمته على 3 تحصل على 5؟",
+  "correct_answer": "15",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000849",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.313751",
+  "updated_at": "2025-05-27T19:30:14.313751",
+  "active": true,
+  "use_count": 0
+}

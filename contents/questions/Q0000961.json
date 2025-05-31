@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع قصر بوتالا الشهير؟",
+  "options": [
+    "الصين",
+    "الهند",
+    "النيبال",
+    "بوتان"
+  ],
+  "correct_answer": "الصين",
+  "points": 300,
+  "id": "Q0000961",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:32.020418",
+  "updated_at": "2025-05-27T21:37:32.020418",
+  "active": true,
+  "use_count": 0
+}

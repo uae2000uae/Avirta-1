@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي منتخب فاز بكأس العالم 2014؟",
+  "options": [
+    "الأرجنتين",
+    "البرازيل",
+    "ألمانيا",
+    "إسبانيا"
+  ],
+  "correct_answer": "ألمانيا",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000341",
+  "category_id": "كأس_العالم",
+  "created_at": "2025-05-17T20:18:17.581420",
+  "updated_at": "2025-05-19T01:00:12.800078",
+  "active": true,
+  "use_count": 1
+}

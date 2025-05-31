@@ -1,0 +1,16 @@
+{
+  "type": "text",
+  "question": "ما هي أكبر جزيرة في العالم (وليست قارة)؟",
+  "correct_answer": "جرينلاند",
+  "alternative_answers": [
+    "غرينلاند"
+  ],
+  "points": 300,
+  "id": "Q0000084",
+  "created_at": "2025-05-13T19:48:58.454504",
+  "updated_at": "2025-05-29T22:37:18.963112",
+  "active": true,
+  "category_id": "معلومات_عامة",
+  "use_count": 1,
+  "explanation": ""
+}

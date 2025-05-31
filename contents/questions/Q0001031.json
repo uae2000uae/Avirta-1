@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the name of the Indoraptor's creator?",
+  "correct_answer": "Dr. Henry Wu",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0001031",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.620879",
+  "updated_at": "2025-05-29T20:28:45.620879",
+  "active": true,
+  "use_count": 0
+}

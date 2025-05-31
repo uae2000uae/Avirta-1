@@ -1,0 +1,273 @@
+{
+  "metadata": {
+    "prompt": "World cup winners, finals, and general history.",
+    "question_type": "multiple_choice",
+    "difficulty": "mixed",
+    "num_questions": 20,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-05-17T20:13:50.195992"
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "من فاز بكأس العالم لكرة القدم 2018؟",
+      "options": [
+        "ألمانيا",
+        "فرنسا",
+        "البرازيل",
+        "الأرجنتين"
+      ],
+      "correct_answer": "فرنسا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي منتخب فاز بأول بطولة كأس عالم لكرة القدم عام 1930؟",
+      "options": [
+        "الأرجنتين",
+        "أوروغواي",
+        "البرازيل",
+        "إيطاليا"
+      ],
+      "correct_answer": "أوروغواي",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "multiple_choice",
+      "question": "كم مرة فازت البرازيل بكأس العالم حتى عام 2023؟",
+      "options": [
+        "4 مرات",
+        "5 مرات",
+        "6 مرات",
+        "7 مرات"
+      ],
+      "correct_answer": "5 مرات",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي دولة استضافت كأس العالم 2002؟",
+      "options": [
+        "كوريا الجنوبية واليابان",
+        "فرنسا",
+        "الولايات المتحدة",
+        "ألمانيا"
+      ],
+      "correct_answer": "كوريا الجنوبية واليابان",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "من هو اللاعب الذي سجل أكثر عدد من الأهداف في تاريخ كأس العالم؟",
+      "options": [
+        "بيليه",
+        "ميروسلاف كلوزه",
+        "دييغو مارادونا",
+        "زين الدين زيدان"
+      ],
+      "correct_answer": "ميروسلاف كلوزه",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي منتخب فاز بكأس العالم 2014؟",
+      "options": [
+        "الأرجنتين",
+        "البرازيل",
+        "ألمانيا",
+        "إسبانيا"
+      ],
+      "correct_answer": "ألمانيا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "في أي سنة فازت إيطاليا بكأس العالم لأول مرة؟",
+      "options": [
+        "1934",
+        "1938",
+        "1950",
+        "1966"
+      ],
+      "correct_answer": "1934",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "من هو المدرب الذي قاد منتخب إسبانيا للفوز بكأس العالم 2010؟",
+      "options": [
+        "لويس أراغونيس",
+        "فيسنتي ديل بوسكي",
+        "بيب غوارديولا",
+        "خوان رامون لوبيز كارو"
+      ],
+      "correct_answer": "فيسنتي ديل بوسكي",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "multiple_choice",
+      "question": "ما هي الدولة التي فازت بكأس العالم 1998؟",
+      "options": [
+        "إيطاليا",
+        "الأرجنتين",
+        "فرنسا",
+        "البرازيل"
+      ],
+      "correct_answer": "فرنسا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "كم مرة وصلت الأرجنتين إلى نهائي كأس العالم حتى 2023؟",
+      "options": [
+        "3 مرات",
+        "4 مرات",
+        "5 مرات",
+        "6 مرات"
+      ],
+      "correct_answer": "6 مرات",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "multiple_choice",
+      "question": "من فاز بكأس العالم 2006؟",
+      "options": [
+        "فرنسا",
+        "إيطاليا",
+        "ألمانيا",
+        "البرازيل"
+      ],
+      "correct_answer": "إيطاليا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي منتخب كان أول منتخب من أفريقيا يصل إلى ربع نهائي كأس العالم؟",
+      "options": [
+        "الكاميرون",
+        "السنغال",
+        "نيجيريا",
+        "غانا"
+      ],
+      "correct_answer": "الكاميرون",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "في أي عام فازت ألمانيا الشرقية بكأس العالم؟",
+      "options": [
+        "لم تفز أبداً",
+        "1954",
+        "1974",
+        "1990"
+      ],
+      "correct_answer": "لم تفز أبداً",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "multiple_choice",
+      "question": "من هو اللاعب الذي سجل هدف الفوز لإسبانيا في نهائي كأس العالم 2010؟",
+      "options": [
+        "تشافي",
+        "أندريس إنييستا",
+        "ديفيد فيا",
+        "فرناندو توريس"
+      ],
+      "correct_answer": "أندريس إنييستا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي منتخب فاز بكأس العالم في عام 1994؟",
+      "options": [
+        "البرازيل",
+        "إيطاليا",
+        "الأرجنتين",
+        "ألمانيا"
+      ],
+      "correct_answer": "البرازيل",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "من هو المنتخب الذي خسر نهائي كأس العالم أكثر عدد من المرات حتى 2023؟",
+      "options": [
+        "البرازيل",
+        "الأرجنتين",
+        "ألمانيا",
+        "إيطاليا"
+      ],
+      "correct_answer": "ألمانيا",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "multiple_choice",
+      "question": "كم عدد المنتخبات التي شاركت في كأس العالم 2018؟",
+      "options": [
+        "24 منتخباً",
+        "28 منتخباً",
+        "32 منتخباً",
+        "36 منتخباً"
+      ],
+      "correct_answer": "32 منتخباً",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "multiple_choice",
+      "question": "في أي عام فازت الأوروغواي بكأس العالم للمرة الثانية؟",
+      "options": [
+        "1930",
+        "1950",
+        "1966",
+        "1970"
+      ],
+      "correct_answer": "1950",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "ما هو الرقم القياسي لأكبر عدد من الأهداف المسجلة في مباراة واحدة في تاريخ كأس العالم؟",
+      "options": [
+        "10 أهداف",
+        "11 هدفاً",
+        "12 هدفاً",
+        "13 هدفاً"
+      ],
+      "correct_answer": "13 هدفاً",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي منتخب فاز بكأس العالم 1982؟",
+      "options": [
+        "الأرجنتين",
+        "إيطاليا",
+        "البرازيل",
+        "ألمانيا"
+      ],
+      "correct_answer": "إيطاليا",
+      "explanation": "",
+      "points": 100
+    }
+  ]
+}

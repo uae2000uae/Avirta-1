@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "انتهت الحرب العالمية الثانية في عام 1945.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000462",
+  "category_id": "الحرب_العالمية_الثانية",
+  "created_at": "2025-05-21T17:21:08.009141",
+  "updated_at": "2025-05-21T17:21:08.009141",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,19 @@
+{
+  "type": "text",
+  "question": "ما هي العملة الرسمية في اليابان؟",
+  "options": [
+    "دولار",
+    "ين",
+    "يوان",
+    "باوند"
+  ],
+  "correct_answer": "ين",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000492",
+  "category_id": "معلومات_عامة",
+  "created_at": "2025-05-23T21:26:30.241207",
+  "updated_at": "2025-05-29T23:08:07.400040",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,383 @@
+/**
+ * gametools.js - Script for handling game tools functionality in Avirta
+ * 
+ * This script handles:
+ * 1. Double Points tool - Doubles the points for the next question
+ * 2. Change Question tool - Changes the current question to a new one
+ * 
+ * These tools can be used by players during the game to enhance their gameplay experience.
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize game tools functionality
+    initializeGameTools();
+});
+
+/**
+ * Initialize game tools functionality
+ */
+function initializeGameTools() {
+    // Set up Double Points button in game_room.html and joined_room.html
+    setupDoublePointsButton();
+
+    // Set up Change Question button in question.html
+    setupChangeQuestionButton();
+
+    // Set up polling for tool usage events
+    setupToolEventPolling();
+}
+
+/**
+ * Update player tools based on game state
+ * This function is called from livestatus.js
+ */
+window.updatePlayerTools = function(data) {
+    // Update Double Points button
+    const doublePointsButton = document.querySelector('.dp');
+    if (doublePointsButton && data.player_tools && data.player_tools.double_points !== undefined) {
+        // Special handling for host: use current player's tools if available
+        if (data.is_host) {
+            // Determine which tools to use for the button state
+            // If current_player_tools is available and it's not the host's turn, use those
+            // Otherwise use the host's own tools
+            const toolsToUse = (data.current_player_tools && data.current_player !== data.player_name) 
+                ? data.current_player_tools.double_points 
+                : data.player_tools.double_points;
+
+            if (!toolsToUse) {
+                // Tool was already used, disable it
+                doublePointsButton.setAttribute('disabled', 'disabled');
+                doublePointsButton.style.opacity = '0.5';
+                doublePointsButton.style.cursor = 'not-allowed';
+                doublePointsButton.title = 'This tool has already been used';
+            } else {
+                // Enable button for host
+                doublePointsButton.removeAttribute('disabled');
+                doublePointsButton.style.opacity = '1';
+                doublePointsButton.style.cursor = 'pointer';
+                doublePointsButton.title = 'Double the points for the current player';
+            }
+        } else {
+            // Regular player logic (unchanged)
+            if (data.host_on_question_page || !data.is_current_player_turn || !data.player_tools.double_points) {
+                doublePointsButton.setAttribute('disabled', 'disabled');
+                doublePointsButton.style.opacity = '0.5';
+                doublePointsButton.style.cursor = 'not-allowed';
+                doublePointsButton.title = 'You can not use Double Points';
+            } else {
+                doublePointsButton.removeAttribute('disabled');
+                doublePointsButton.style.opacity = '1';
+                doublePointsButton.style.cursor = 'pointer';
+                doublePointsButton.title = 'Double the points for your next question';
+            }
+        }
+    }
+
+    // Update Change Question button (only on question page)
+    const changeQuestionButton = document.getElementById('change-question-btn');
+    if (changeQuestionButton && data.player_tools && data.player_tools.change_question !== undefined) {
+        // Special handling for host: use current player's tools if available
+        if (data.is_host) {
+            // Determine which tools to use for the button state
+            // If current_player_tools is available and it's not the host's turn, use those
+            // Otherwise use the host's own tools
+            const toolsToUse = (data.current_player_tools && data.current_player !== data.player_name) 
+                ? data.current_player_tools.change_question 
+                : data.player_tools.change_question;
+
+            if (!toolsToUse) {
+                // Tool was already used, disable it
+                changeQuestionButton.setAttribute('disabled', 'disabled');
+                changeQuestionButton.style.opacity = '0.5';
+                changeQuestionButton.style.cursor = 'not-allowed';
+                changeQuestionButton.title = 'This tool has already been used';
+            } else {
+                // Enable button for host
+                changeQuestionButton.removeAttribute('disabled');
+                changeQuestionButton.style.opacity = '1';
+                changeQuestionButton.style.cursor = 'pointer';
+                changeQuestionButton.title = 'Change the question for the current player';
+            }
+        } else {
+            // Regular player logic
+            if (!data.is_current_player_turn || !data.player_tools.change_question) {
+                changeQuestionButton.setAttribute('disabled', 'disabled');
+                changeQuestionButton.style.opacity = '0.5';
+                changeQuestionButton.style.cursor = 'not-allowed';
+                changeQuestionButton.title = 'You can not use Change Question';
+            } else {
+                changeQuestionButton.removeAttribute('disabled');
+                changeQuestionButton.style.opacity = '1';
+                changeQuestionButton.style.cursor = 'pointer';
+                changeQuestionButton.title = 'Change to a different question';
+            }
+        }
+    }
+}
+
+/**
+ * Set up Double Points button
+ */
+function setupDoublePointsButton() {
+    const doublePointsBtn = document.getElementById('double-points-btn');
+    if (doublePointsBtn) {
+        doublePointsBtn.addEventListener('click', function() {
+            // Get the current player from the page
+            const gameRoomSection = document.querySelector('.page-section');
+            const isHost = gameRoomSection && gameRoomSection.dataset.isHost === 'true';
+            const playerName = gameRoomSection && gameRoomSection.dataset.playerName;
+
+            // Get the current player from the red badge
+            const currentPlayerElement = document.querySelector('.red-badge');
+            const currentPlayer = currentPlayerElement ? currentPlayerElement.textContent : null;
+
+            // Determine if we need to include acting_player
+            let requestBody = 'tool_name=double_points';
+            if (isHost && currentPlayer && currentPlayer !== playerName) {
+                requestBody += `&acting_player=${encodeURIComponent(currentPlayer)}`;
+            }
+
+            fetch('/use_tool', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: requestBody
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Notify game_room to refresh
+                    fetch('/notify_game_room', { method: 'POST' });
+
+                    // Add status update if the function exists
+                    if (typeof addStatusUpdate === 'function') {
+                        addStatusUpdate(data.message || 'Double Points activated!', 'status-warning');
+                    }
+                } else {
+                    // Show error message
+                    alert(data.message || 'Could not use Double Points tool.');
+                }
+            })
+            .catch(error => console.error('Error using Double Points tool:', error));
+        });
+    }
+}
+
+/**
+ * Set up Change Question button
+ */
+function setupChangeQuestionButton() {
+    // Only run this on the question page
+    if (!window.location.pathname.includes('/question/')) {
+        return;
+    }
+
+    // Variables for tracking question changes
+    let questionChanged = false;
+    let clientInitiatedChange = false;
+
+    // Check if we just reloaded due to a question change
+    if (localStorage.getItem('questionJustChanged') === 'true') {
+        // Clear the flag
+        localStorage.removeItem('questionJustChanged');
+        // Set the flags to prevent further reloads
+        questionChanged = true;
+        clientInitiatedChange = true;
+    }
+
+    // Convert the Change Question button to use AJAX
+    const changeQuestionButtons = document.querySelectorAll('form[action*="use_tool"] button');
+    changeQuestionButtons.forEach(button => {
+        const form = button.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Set flags BEFORE sending the request to prevent race conditions
+                questionChanged = true;
+                clientInitiatedChange = true;
+
+                // Set a flag in localStorage to track across page reloads
+                localStorage.setItem('questionJustChanged', 'true');
+
+                // Disable the button to prevent multiple clicks
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+
+                // Send AJAX request to use the Change Question tool
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams(new FormData(form))
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // Clear flags if request failed
+                        localStorage.removeItem('questionJustChanged');
+                        questionChanged = false;
+                        clientInitiatedChange = false;
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // If there's a redirect URL, navigate to it
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            // Reload the page to show the new question
+                            window.location.reload();
+                        }
+                    } else {
+                        // Clear flags if request was not successful
+                        localStorage.removeItem('questionJustChanged');
+                        questionChanged = false;
+                        clientInitiatedChange = false;
+
+                        // Re-enable the button if there was an error
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                        button.style.cursor = 'pointer';
+                        alert('Could not change question: ' + (data.message || ''));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error using Change Question tool:', error);
+
+                    // Clear flags if there was an error
+                    localStorage.removeItem('questionJustChanged');
+                    questionChanged = false;
+                    clientInitiatedChange = false;
+
+                    // Re-enable the button if there was an error
+                    button.disabled = false;
+                    button.style.opacity = '1';
+                    button.style.cursor = 'pointer';
+                    alert('Error using Change Question tool.');
+                });
+            });
+        }
+    });
+}
+
+/**
+ * Set up polling for tool usage events
+ */
+function setupToolEventPolling() {
+    // Only run this on the question page
+    if (!window.location.pathname.includes('/question/')) {
+        return;
+    }
+
+    const roomId = document.querySelector('.page-section')?.dataset.roomId;
+    const currentPlayer = document.querySelector('.page-section')?.dataset.currentPlayer;
+
+    if (!roomId || !currentPlayer) {
+        return;
+    }
+
+    let lastEventTimestamp = null;
+    let questionChanged = false;
+    let clientInitiatedChange = false;
+
+    // Store processed event IDs to prevent duplicate processing
+    // Load previously processed events from localStorage
+    let processedEventIds;
+    try {
+        const savedEvents = localStorage.getItem('processedEventIds');
+        processedEventIds = new Set(savedEvents ? JSON.parse(savedEvents) : []);
+    } catch (e) {
+        console.error('Error loading processed events from localStorage:', e);
+        processedEventIds = new Set();
+    }
+
+    // Function to poll for game updates
+    function pollGameUpdates() {
+        if (questionChanged) {
+            return; // Stop polling if the question has been changed
+        }
+
+        fetch(`/api/game_updates/${roomId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Process events to check for change_question commands
+                if (data.events && data.events.length > 0) {
+                    // Get only new events since the last poll
+                    const newEvents = lastEventTimestamp 
+                        ? data.events.filter(event => event.timestamp > lastEventTimestamp)
+                        : data.events;
+
+                    // Update the last event timestamp
+                    if (data.events.length > 0) {
+                        const latestEvent = data.events[data.events.length - 1];
+                        lastEventTimestamp = latestEvent.timestamp;
+                    }
+
+                    // Check for change_question events
+                    for (const event of newEvents) {
+                        // Create a unique ID for this event to prevent duplicate processing
+                        const eventId = `${event.type}_${event.timestamp}_${event.data.player_name || ''}_${event.data.tool_name || ''}`;
+
+                        // Skip if we've already processed this event
+                        if (processedEventIds.has(eventId)) {
+                            continue;
+                        }
+
+                        // Mark this event as processed
+                        processedEventIds.add(eventId);
+
+                        // Save updated processed events to localStorage
+                        try {
+                            localStorage.setItem('processedEventIds', JSON.stringify([...processedEventIds]));
+                        } catch (e) {
+                            console.error('Error saving processed events to localStorage:', e);
+                        }
+
+                        if (event.type === 'tool_used') {
+                            // Handle change_question command from the current player
+                            if (event.data.tool_name === 'change_question' && 
+                                event.data.player_name === currentPlayer && 
+                                !clientInitiatedChange) {
+                                console.log('Current player changed the question');
+                                questionChanged = true;
+
+                                // Set a flag in localStorage to prevent refresh loops
+                                localStorage.setItem('questionJustChanged', 'true');
+
+                                // Reload the page to show the new question
+                                window.location.reload();
+                                return;
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching game updates:', error);
+            });
+    }
+
+    // Poll for updates every 1 second
+    pollGameUpdates(); // Initial poll
+    const pollInterval = setInterval(pollGameUpdates, 1000);
+
+    // Clean up interval when the page is unloaded
+    window.addEventListener('beforeunload', function(e) {
+        clearInterval(pollInterval);
+
+        // If we're navigating away (not reloading due to a question change),
+        // clear the processed events to prevent the set from growing too large
+        if (!questionChanged) {
+            localStorage.removeItem('processedEventIds');
+        }
+    });
+}

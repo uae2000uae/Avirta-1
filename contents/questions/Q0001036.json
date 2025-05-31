@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Who played John Hammond in the films?",
+  "correct_answer": "Richard Attenborough",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0001036",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.651419",
+  "updated_at": "2025-05-29T20:28:45.651419",
+  "active": true,
+  "use_count": 0
+}

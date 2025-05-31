@@ -1,0 +1,366 @@
+# Junie Rule Book for Avirta Project
+
+This document contains specifications and rules that must always be followed in the system coding behavior. The rules are organized by category and numbered for easy reference.
+
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [General Coding Rules](#general-coding-rules)
+3. [Project-Specific Rules](#project-specific-rules)
+4. [How to Update This Rule Book](#how-to-update-this-rule-book)
+
+## Introduction
+
+The Junie Rule Book serves as a central repository for all coding and design specifications that must be consistently applied throughout the Avirta project. These rules ensure consistency, maintainability, and adherence to best practices across the codebase.
+
+Each rule is assigned a unique identifier (e.g., GEN-001 for general rules, PRJ-001 for project-specific rules) to make them easy to reference in discussions, code reviews, and documentation.
+
+## General Coding Rules
+
+This section contains general coding rules that apply to all parts of the codebase.
+
+### GEN-001: Modular Design with Standalone Functions
+
+**Rule**: Avirta is divided into distinct modules for flexibility and scalability, making future updates easier. It uses standalone functions to keep each module independent, making debugging, updating, and expanding much easier.
+
+**Examples**:
+- Valid: Creating a new module `category_manager.py` with standalone functions like `get_categories()`, `add_category()`, etc.
+- Valid: Adding utility functions to `utils.py` that don't depend on other modules
+- Valid: Implementing a new feature as a separate module with well-defined interfaces
+- Invalid: Creating tightly coupled modules that directly access each other's internal variables
+- Invalid: Using global state that is shared across multiple modules
+- Invalid: Implementing a new feature by modifying multiple existing modules instead of creating a new one
+
+**Implementation Requirements**:
+1. Each module should focus on a specific functionality or domain
+2. Modules should communicate through well-defined interfaces (function parameters and return values)
+3. Functions should be designed to be standalone and reusable
+4. Minimize dependencies between modules
+5. Use function parameters instead of global variables for data exchange
+6. Document module interfaces clearly
+
+**Rationale**:
+- Modular design improves code maintainability by isolating changes to specific modules
+- Standalone functions make testing easier by reducing dependencies
+- Independent modules can be developed, tested, and deployed separately
+- Clear module boundaries make the codebase easier to understand for new developers
+- Flexibility in design allows for easier future enhancements and refactoring
+
+### GEN-002: Concise and Efficient Web App Design
+
+**Rule**: Web app design must be concise and efficient. All styles must be stored separately in style.css, and the system must prioritize reusing existing styles rather than creating new ones for different elements. Style class naming should be generic and intuitive, making it easy for developers to choose appropriate styles while coding.
+
+**Examples**:
+- Valid: Using existing utility classes like `.text-center` or `.mt-20` for common styling needs
+- Valid: Creating a new generic class `.card` that can be reused across different components
+- Valid: Using CSS variables (e.g., `var(--primary-color)`) for consistent theming
+- Invalid: Adding inline styles directly to HTML elements (e.g., `style="margin-top: 20px;"`)
+- Invalid: Creating component-specific styles when generic ones could be used (e.g., `.question-card-margin` instead of using `.mb-20`)
+- Invalid: Duplicating style definitions in multiple places or in `<style>` tags within HTML templates
+
+**Implementation Requirements**:
+1. All styles must be defined in the style.css file, not inline or in `<style>` tags within HTML templates
+2. Use CSS variables for colors, spacing, and other repeated values
+3. Create generic, reusable classes for common styling patterns (layout, spacing, typography, etc.)
+4. Use descriptive, purpose-based naming for classes (e.g., `.card`, `.badge`, `.alert`) rather than visual descriptions (e.g., `.blue-box`, `.large-text`)
+5. Document style classes with comments in the CSS file to make their purpose clear
+6. Regularly review the CSS for duplicate or similar styles that could be consolidated
+
+**Rationale**:
+- Centralized styles in style.css improve maintainability and make updates easier
+- Reusing existing styles reduces CSS bloat and ensures consistency across the application
+- Generic class names make the styling system more intuitive and easier to learn
+- Descriptive, purpose-based naming helps developers choose the right styles for their components
+- Avoiding inline styles and style duplication makes the codebase cleaner and more maintainable
+
+## Project-Specific Rules
+
+This section contains rules specific to the Avirta project.
+
+### PRJ-001: Question ID Format
+
+**Rule**: Question IDs must always be in the format Q####### (uppercase Q followed by 7 digits), and there must never be any duplications.
+
+**Examples**:
+- Valid: `Q0000001`, `Q0012345`, `Q9999999`
+- Invalid: `q0000001` (lowercase q), `Q000001` (only 6 digits), `Q_0000001` (contains underscore), `q_59f7a070aca7` (uses UUID format)
+
+**Implementation Requirements**:
+1. All question ID generation methods must use the format Q####### (uppercase Q followed by 7 digits)
+2. IDs should be sequential, incrementing from the highest existing ID
+3. Duplicate IDs must be prevented through validation checks
+4. Existing questions with non-compliant IDs should be migrated to the correct format when encountered
+
+**Rationale**:
+- Consistent ID format improves readability and maintainability
+- Sequential numbering makes it easier to track and reference questions
+- The format allows for up to 10 million unique questions (0000000-9999999)
+
+### PRJ-002: Question Points and Difficulty Levels
+
+**Rule**: The difficulty level and points of a question are the same thing and must not both exist in the same question. Use only the "points" field to represent difficulty level.
+
+**Examples**:
+- Valid: `"points": 100` (easiest difficulty)
+- Valid: `"points": 200` (easy difficulty)
+- Valid: `"points": 300` (medium difficulty)
+- Valid: `"points": 400` (hard difficulty)
+- Valid: `"points": 500` (hardest difficulty)
+- Invalid: Having both `"points": 300` and `"difficulty": "medium"` in the same question
+
+**Implementation Requirements**:
+1. Questions must only have a "points" field and not a separate "difficulty" field
+2. The system must recognize these 5 points values (100, 200, 300, 400, 500) as difficulty levels
+3. When displaying difficulty level, use the points value
+4. When filtering by difficulty, filter by points value
+5. Existing questions with both fields should have the "difficulty" field removed
+
+**Rationale**:
+- Eliminates redundancy and potential inconsistency between points and difficulty
+- Simplifies the question data model
+- Provides a clear mapping between numeric values and conceptual difficulty levels
+
+### PRJ-003: Dynamic Category Management
+
+**Rule**: Categories are defined using the questions database. No categories are stored in the system with no questions. Whenever a category is recorded within a question, the category appears. Categories are a dynamic list that is derived directly from the database as live data, not stored anywhere in the system but within the questions database.
+
+**Examples**:
+- Valid: A category "Science" exists because there are questions with category_id "science"
+- Invalid: A category "Sports" exists in the system but there are no questions with category_id "sports"
+
+**Implementation Requirements**:
+1. Categories must be dynamically derived from questions in the database
+2. No static list of categories should be maintained
+3. When displaying categories, only include categories that have at least one question
+4. When a new question is added with a new category, that category should automatically appear in the system
+5. When all questions in a category are deleted, that category should no longer appear in the system
+
+**Rationale**:
+- Ensures that categories accurately reflect the content in the question database
+- Eliminates the need to manually maintain a list of categories
+- Prevents empty categories from appearing in the system
+- Simplifies category management by deriving it directly from question data
+
+### PRJ-004: Game Room Question Card Points
+
+**Rule**: The points in game room question cards are derived from the points of each question the system selected from the database. Having all points randomly is recommended, but if no question with the required points exists, the system can select another question. However, the points displayed on each question card must always match the points of the question given from the database.
+
+**Examples**:
+- Valid: A question with 300 points in the database is displayed with 300 points on the game board
+- Valid: A question with 200 points in the database is selected for a 100-point position on the board, but still displays 200 points
+- Invalid: A question with 300 points in the database is displayed with 100 points on the game board
+
+**Implementation Requirements**:
+1. When creating the game board, prioritize questions with points matching the board position
+2. If no matching questions are available, use questions with different points values
+3. Always display the actual points value from the question, not the position on the board
+4. When awarding points to players, use the actual points value from the question
+5. Double points and other modifiers should apply to the actual points value
+
+**Rationale**:
+- Ensures that players receive the correct number of points for answering questions
+- Maintains consistency between the question database and the game board
+- Provides accurate difficulty indication to players
+- Allows for more varied and interesting game boards
+
+### PRJ-005: Game Room Question Allocation and Display
+
+**Rule**: In game room, the system will always try to allocate questions that were the least used to guarantee newness of the questions within each category. Also, the question cards will be listed from most difficult to the least within the category in the grid. And for the category heading title, use the actual category name not the category ID, which means use space between words not underscore.
+
+**Examples**:
+- Valid: A question that has never been used is selected before a question that has been used multiple times
+- Valid: Questions within a category are displayed in order from 500 points (hardest) to 100 points (easiest)
+- Valid: A category with ID "general_knowledge" is displayed as "General Knowledge"
+- Invalid: Questions are selected randomly without considering how many times they've been used
+- Invalid: Questions are displayed in ascending order of difficulty (easiest to hardest)
+- Invalid: A category with ID "general_knowledge" is displayed as "general_knowledge"
+
+**Implementation Requirements**:
+1. Track how many times each question has been used across game sessions
+2. When creating the game board, prioritize questions that have been used the least
+3. Sort questions within each category from most difficult (highest points) to least difficult (lowest points)
+4. Display category names with spaces instead of underscores and proper title case
+5. Ensure the tracking mechanism persists across game sessions
+
+**Rationale**:
+- Ensures players see a variety of questions rather than the same ones repeatedly
+- Provides a consistent and intuitive difficulty progression within each category
+- Improves readability of category names for players
+- Enhances the overall user experience by keeping content fresh and well-organized
+
+### PRJ-006: Centralized Game Status Management
+
+**Rule**: All game status updates and events must be managed through a centralized system. The GameStatusManager class serves as the single source of truth for all game events, ensuring consistent information across all pages and components. The game status must track and record all events including but not limited to: game start, who's turn, what question they selected, what was the result and score change, turn switching, activation of tools, who's joining or leaving the room, etc.
+
+**Examples**:
+- Valid: Adding a game event through the centralized `add_game_event()` function that uses GameStatusManager
+- Valid: Retrieving game events from the `/api/game_updates/<room_id>` endpoint
+- Invalid: Storing game events in page-specific variables or local storage
+- Invalid: Creating separate event tracking systems for different pages
+
+**Implementation Requirements**:
+1. All game events must be added through the centralized `add_game_event()` function
+2. The GameStatusManager class must be used to store and retrieve all game events
+3. Events must include a timestamp, event type, and relevant data
+4. The system must track and record all key game events including: game start, turn changes, question selection, answer results, score changes, tool activation, players joining/leaving, and game end
+5. The API must provide a single endpoint for retrieving all game updates
+6. Frontend pages must poll this endpoint to get the latest game status
+7. No page should maintain its own separate event tracking system
+
+**Rationale**:
+- Ensures all pages display consistent information about game events
+- Prevents duplication of event data and potential inconsistencies
+- Simplifies event management by centralizing it in one place
+- Makes it easier to add new event types or modify existing ones
+- Improves maintainability by having a single system to update
+
+### PRJ-007: Player Tools Functionality
+
+**Rule**: The game provides three tools for players: Double Points, Change Question, and Steal Question. Each player gets one of each tool per game. Tools must be implemented consistently across all pages and follow specific rules for when they can be used.
+
+**Examples**:
+- Valid: A player uses Double Points before selecting a question to double its point value, but only when the host is in the game room page
+- Valid: The current player uses Change Question during the question timer to get a different question, but only when the host is in the question page
+- Valid: A player uses Steal Question to take a question from another player, but only when the host is in the question page and it's not the player's turn
+- Invalid: A player using a tool they've already used in the current game
+- Invalid: A player using Double Points when the host is in the question page
+- Invalid: A player using Change Question when the host is not in the question page or when it's not the player's turn
+- Invalid: A player using Steal Question when the host is not in the question page or during the player's turn
+
+**Implementation Requirements**:
+1. Each player must start with one of each tool per game
+2. Double Points must be used before a question is selected and doubles the points for the next question
+   - Can only be used when the host is in the game room page, not in the question page
+3. Change Question must only be available when a question is active and must replace the current question with another from the same category
+   - Can only be used when the host is in the question page and it's the player's turn
+   - The new question must be from the same category with equal or close points value
+4. Steal Question must allow a player to take another player's question before it's answered
+   - Can only be used when the host is in the question page and it's NOT the player's turn
+   - This will trigger the system to switch the active player to the one who clicked on the tool
+   - This will not make the player lose their turn, they will only steal the score
+5. Tools must be tracked in the GameRoom class using the player_tools attribute
+6. Tool usage must be communicated to all players through the game status system
+7. Tool buttons must be enabled/disabled appropriately based on availability and context
+
+**Rationale**:
+- Provides strategic gameplay options for players
+- Ensures fair and consistent tool usage across all games
+- Prevents tool abuse by limiting each to one use per game
+- Creates interesting gameplay dynamics through strategic tool usage
+- Enhances player engagement through additional gameplay mechanics
+- Restricts tool usage to appropriate game states to maintain game balance
+
+### PRJ-008: Guest Player Navigation Restrictions
+
+**Rule**: Guest players in joined_room must not be able to navigate away from the page until the game ends or they click the "Leave Game" button. This prevents accidental navigation that would disrupt the game flow.
+
+**Examples**:
+- Valid: A guest player is prevented from using the browser's back button during an active game
+- Valid: A guest player can navigate away after clicking the "Leave Game" button
+- Valid: A guest player can navigate away after the game has ended
+- Invalid: A guest player navigating away from the game by clicking a link or using browser navigation
+- Invalid: Preventing the host from navigating between game pages
+
+**Implementation Requirements**:
+1. Use the `beforeunload` event to prevent navigation for guest players
+2. Set a `window.gameEnded` flag when the game ends to allow navigation
+3. Add a click handler to the "Leave Game" button to allow navigation
+4. Only apply these restrictions to guest players, not the host
+5. Ensure AJAX is used for all in-game actions to prevent page reloads
+6. Display appropriate messages to users when navigation is prevented
+
+**Rationale**:
+- Prevents accidental game abandonment by guest players
+- Ensures game continuity for all participants
+- Provides clear exit paths through the "Leave Game" button
+- Allows normal navigation after the game has ended
+- Improves user experience by preventing accidental data loss
+
+### PRJ-009: Dynamic Game Board Updates
+
+**Rule**: The game board must update dynamically without full page refreshes. When changes occur (such as questions being answered or tools being used), only the affected parts of the UI should update.
+
+**Examples**:
+- Valid: The game board updates to show a question as answered without refreshing the page
+- Valid: Double Points activation updates the point values displayed without a page refresh
+- Valid: The leaderboard updates when scores change without refreshing the page
+- Invalid: Refreshing the entire page when a question is answered
+- Invalid: Requiring manual refresh to see updated game state
+
+**Implementation Requirements**:
+1. Use AJAX to fetch updated game state from the server
+2. Implement a dedicated `updateGameBoard()` function to refresh the question grid
+3. Only update DOM elements that have changed since the last update
+4. Track the last state to avoid unnecessary updates and prevent flickering
+5. Handle tool usage (especially Double Points) by updating the UI dynamically
+6. Ensure all updates maintain visual consistency and don't disrupt user interaction
+
+**Rationale**:
+- Provides a smoother, more responsive user experience
+- Reduces server load by avoiding full page reloads
+- Prevents disruption to the user's current focus or interaction
+- Maintains game flow without interruptions
+- Improves performance, especially on slower connections
+
+### PRJ-010: Real-time Polling Mechanisms
+
+**Rule**: All game pages must implement polling mechanisms to receive real-time updates from the server. These mechanisms must be consistent across pages and handle all types of game events.
+
+**Examples**:
+- Valid: Polling the `/api/game_updates/<room_id>` endpoint every 1 second for updates
+- Valid: Processing events based on their type (player_joined, question_selected, etc.)
+- Valid: Updating the UI based on received events without page refreshes
+- Invalid: Using different polling endpoints for different types of updates
+- Invalid: Implementing inconsistent polling frequencies across pages
+
+**Implementation Requirements**:
+1. All pages must poll the `/api/game_updates/<room_id>` endpoint at a consistent frequency (1 second)
+2. Polling must start when the page loads and continue until the page is unloaded
+3. Each page must track the last event timestamp to avoid processing duplicate events
+4. Event processing must be type-specific, with appropriate UI updates for each event type
+5. Polling must handle network errors gracefully with appropriate error logging
+6. Clean up polling intervals when pages are unloaded to prevent memory leaks
+
+**Rationale**:
+- Ensures all players have up-to-date information about the game state
+- Provides a consistent experience across all game pages
+- Enables real-time interaction between players
+- Reduces server load compared to WebSocket connections for this use case
+- Simplifies implementation while still providing near-real-time updates
+
+### PRJ-011: Game Room Persistence Across Instances
+
+**Rule**: Game rooms must be persisted to disk to ensure they are accessible across different application instances. The GameStatusManager is responsible for persisting and loading game rooms, similar to how it handles game events.
+
+**Examples**:
+- Valid: Creating a game room and persisting it to disk using `game_status_manager.persist_game_room()`
+- Valid: Loading a game room from disk when it's not found in memory using `game_status_manager.load_game_room()`
+- Valid: Updating the persisted game room when players join or leave
+- Invalid: Storing game rooms only in memory without persistence
+- Invalid: Creating separate persistence mechanisms for game rooms outside of GameStatusManager
+
+**Implementation Requirements**:
+1. Game rooms must be persisted to disk whenever they are created or updated
+2. When a game room is not found in memory, the system must attempt to load it from disk
+3. The GameStatusManager class must provide methods for persisting and loading game rooms
+4. Game room persistence must include all relevant state: players, board, answered questions, etc.
+5. The persistence mechanism must handle serialization of complex data structures like sets and dictionaries
+6. All endpoints that access game rooms must check for persisted rooms if not found in memory
+
+**Rationale**:
+- Ensures game rooms are accessible across different application instances in cloud environments
+- Prevents "room not found" errors when requests are routed to different instances
+- Maintains game continuity even if the application is restarted or scaled
+- Leverages the existing persistence infrastructure in GameStatusManager
+- Provides a consistent approach to state management across the application
+
+## How to Update This Rule Book
+
+When a new rule needs to be added to the Rule Book:
+
+1. Identify the appropriate category for the rule (General or Project-Specific)
+2. Assign the next available rule number in that category
+3. Add the rule with a clear description and examples if applicable
+4. If the rule replaces or modifies an existing rule, mark the old rule as deprecated and reference the new rule
+
+Rules should be written in a clear, concise manner with examples where appropriate to ensure they are easily understood and followed by all team members.

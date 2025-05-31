@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما السورة التي ذكر فيها اسم \"رمضان\"؟",
+  "options": [
+    "البقرة",
+    "آل عمران",
+    "المائدة",
+    "النور"
+  ],
+  "correct_answer": "البقرة",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000806",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.221708",
+  "updated_at": "2025-05-27T19:11:23.221708",
+  "active": true,
+  "use_count": 0
+}

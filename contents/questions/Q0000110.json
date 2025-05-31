@@ -1,0 +1,15 @@
+{
+  "type": "text",
+  "question": "ما هو المضيق الذي يفصل بين المغرب وإسبانيا؟",
+  "correct_answer": "مضيق جبل طارق",
+  "alternative_answers": [
+    "جبل طارق"
+  ],
+  "points": 100,
+  "id": "Q0000110",
+  "created_at": "2025-05-13T19:48:58.469507",
+  "updated_at": "2025-05-27T01:48:29.981004",
+  "active": true,
+  "category_id": "جغرافيا",
+  "use_count": 1
+}

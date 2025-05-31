@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي من هذه الدول العربية ليست جزءًا من شبه الجزيرة العربية؟",
+  "options": [
+    "اليمن",
+    "الإمارات",
+    "العراق",
+    "عمان"
+  ],
+  "correct_answer": "العراق",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0000571",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.725063",
+  "updated_at": "2025-05-27T02:02:54.725063",
+  "active": true,
+  "use_count": 0
+}

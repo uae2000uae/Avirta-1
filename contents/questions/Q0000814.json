@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي السورة التي سميت باسم فاكهة؟",
+  "options": [
+    "التين",
+    "العاديات",
+    "الأنعام",
+    "الهمزة"
+  ],
+  "correct_answer": "التين",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000814",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.258716",
+  "updated_at": "2025-05-27T19:11:23.258716",
+  "active": true,
+  "use_count": 0
+}

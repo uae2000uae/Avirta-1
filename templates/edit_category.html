@@ -1,0 +1,41 @@
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Edit Category - Avirta{% endblock %}
+
+{% block content %}
+<h1>Edit Category</h1>
+
+<form class="form-group" method="POST" action="{{ url_for('edit_category', category_id=category_id) }}" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="name">Category Name:</label>
+        <input type="text" id="name" name="name" value="{{ category.name }}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="category_id">Category ID:</label>
+        <input type="text" id="category_id" name="category_id" value="{{ category_id }}" required>
+    </div>
+
+
+    <div class="form-group-grid">
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" rows="3">{{ category.description }}</textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="button">Save Changes</button>
+        <button class="button secondary"><a href="{{ url_for('question_bank_page') }}" class="text-clear">Cancel</a></button>
+		 <button class="button delete-button"><a href="#" onclick="confirmDeleteQuestions('{{ category_id }}'); return false;" class="text-clear">Delete All Questions</a>
+    </div>
+</form>
+
+<script>
+    function confirmDeleteQuestions(categoryId) {
+        if (confirm('Are you sure you want to delete ALL questions in this category? This action cannot be undone.')) {
+            window.location.href = "{{ url_for('delete_category_questions', category_id='PLACEHOLDER') }}".replace('PLACEHOLDER', categoryId);
+        }
+    }
+</script>
+
+{% endblock %}

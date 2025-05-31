@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة تقع بحيرة تيتيكاكا؟",
+  "options": [
+    "بوليفيا",
+    "بيرو",
+    "الأرجنتين",
+    "البرازيل"
+  ],
+  "correct_answer": "بوليفيا",
+  "points": 300,
+  "id": "Q0000942",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:31.942143",
+  "updated_at": "2025-05-27T21:37:31.942143",
+  "active": true,
+  "use_count": 0
+}

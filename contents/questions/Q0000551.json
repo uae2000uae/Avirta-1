@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "أي من هذه الدول العربية لديها أطول ساحل على البحر الأحمر؟",
+  "options": [
+    "مصر",
+    "السودان",
+    "السعودية",
+    "اليمن"
+  ],
+  "correct_answer": "السعودية",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000551",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.647063",
+  "updated_at": "2025-05-27T02:02:54.647063",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Avirta{% endblock %}</title>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="../static/css/style.css" rel="stylesheet" type="text/css">
+    <link href="../static/css/custom.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <header>
+        <h1>Avirta</h1>
+        <div class="admin-login-container">
+            {% if session.get('admin_authenticated') %}
+                <span class="admin-welcome">Welcome, Admin</span>
+                <form method="POST" action="{{ url_for('admin_controls') }}" class="admin-logout-form">
+                    <input type="hidden" name="action" value="logout">
+                    <button type="submit" class="admin-logout-btn">Logout</button>
+                </form>
+            {% else %}
+                <button id="adminLoginBtn" class="admin-login-btn">Admin Login</button>
+                <div id="adminLoginForm" class="admin-login-dropdown">
+                    <form method="POST" action="{{ url_for('admin_controls') }}">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="button">Login</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </header>
+
+{% set hide_navigation = false %}
+{% block hide_nav %}{% endblock %}
+
+{% if hide_nav is defined and hide_nav %}
+    {% set hide_navigation = true %}
+{% endif %}
+
+
+<nav class="{% if self.hide_nav()|trim == 'true' %}hidden{% endif %}">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('create_room') }}">Create Room</a></li>
+        <li><a href="{{ url_for('join_room') }}">Join Room</a></li>
+        <li><a href="{{ url_for('question_bank_page') }}">Question Bank</a></li>
+        {% if session.get('admin_authenticated') %}
+        <li><a href="{{ url_for('admin_controls') }}">Admin Settings</a></li>
+        {% endif %}
+    </ul>
+</nav>
+
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {% if category == 'error' %}error{% elif category == 'success' %}success{% elif category == 'result-correct' %}result-correct{% else %}success{% endif %}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer>
+      <p>© 2025 Avirta. All rights reserved.</p>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the admin login button and dropdown form
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminLoginForm = document.getElementById('adminLoginForm');
+
+        // Add click event listener to the login button
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', function() {
+                // Toggle the 'show' class on the login form
+                adminLoginForm.classList.toggle('show');
+            });
+
+            // Close the dropdown when clicking outside of it
+            document.addEventListener('click', function(event) {
+                if (!adminLoginBtn.contains(event.target) && !adminLoginForm.contains(event.target)) {
+                    adminLoginForm.classList.remove('show');
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

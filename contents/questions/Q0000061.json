@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما اسم الدولة الخليجية التي لها حدود برية مع دولة واحدة فقط",
+  "correct_answer": "قطر",
+  "id": "Q0000061",
+  "category_id": "معلومات_عامة",
+  "points": 200,
+  "created_at": "2025-05-12T23:57:03.530603",
+  "updated_at": "2025-05-29T22:32:14.216007",
+  "active": true,
+  "use_count": 1,
+  "explanation": ""
+}

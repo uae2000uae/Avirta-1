@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "سورة الفتح مدنية.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000833",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.327175",
+  "updated_at": "2025-05-27T19:11:23.327175",
+  "active": true,
+  "use_count": 0
+}

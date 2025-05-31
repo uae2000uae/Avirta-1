@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the name of the billionaire who created Jurassic Park?",
+  "correct_answer": "John Hammond",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0001002",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.431827",
+  "updated_at": "2025-05-29T20:28:45.431827",
+  "active": true,
+  "use_count": 0
+}

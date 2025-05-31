@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Which Jurassic Park movie features pteranodons attacking people in an aviary?",
+  "correct_answer": "Jurassic Park III",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0001032",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.627894",
+  "updated_at": "2025-05-29T20:28:45.627894",
+  "active": true,
+  "use_count": 0
+}

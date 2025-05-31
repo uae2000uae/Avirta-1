@@ -1,0 +1,13 @@
+{
+  "type": "true_false",
+  "question": "سورة النصر هي آخر سورة نزلت من القرآن.",
+  "correct_answer": "True",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000810",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.241712",
+  "updated_at": "2025-05-27T19:11:23.241712",
+  "active": true,
+  "use_count": 0
+}

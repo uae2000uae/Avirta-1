@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي أعلى قمة جبلية في الوطن العربي؟",
+  "options": [
+    "جبل توبقال",
+    "جبل الشيخ",
+    "جبل شمس",
+    "جبل مرة"
+  ],
+  "correct_answer": "جبل توبقال",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000552",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.650062",
+  "updated_at": "2025-05-27T02:02:54.650062",
+  "active": true,
+  "use_count": 0
+}

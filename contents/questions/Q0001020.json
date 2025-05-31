@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "Which character says, 'Life finds a way'?",
+  "correct_answer": "Dr. Ian Malcolm",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0001020",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.550871",
+  "updated_at": "2025-05-29T20:28:45.550871",
+  "active": true,
+  "use_count": 0
+}

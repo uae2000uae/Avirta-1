@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "من هو النبي الذي ابتلعه الحوت؟",
+  "options": [
+    "ذو الكفل",
+    "أيوب",
+    "يونس",
+    "نوح"
+  ],
+  "correct_answer": "يونس",
+  "explanation": "",
+  "points": 200,
+  "id": "Q0000496",
+  "category_id": "معلومات_عامة",
+  "created_at": "2025-05-23T21:26:30.255210",
+  "updated_at": "2025-05-29T23:11:02.388999",
+  "active": true,
+  "use_count": 0
+}

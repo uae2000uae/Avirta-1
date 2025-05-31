@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "What is the name of the scientist who helps Alan Grant in Jurassic Park III?",
+  "correct_answer": "Billy Brennan",
+  "explanation": "",
+  "points": 500,
+  "id": "Q0001042",
+  "category_id": "jurassic_park",
+  "created_at": "2025-05-29T20:28:45.691428",
+  "updated_at": "2025-05-29T20:28:45.691428",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع جسر البوسفور؟",
+  "options": [
+    "تركيا",
+    "اليونان",
+    "مصر",
+    "إيطاليا"
+  ],
+  "correct_answer": "تركيا",
+  "points": 200,
+  "id": "Q0000943",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:31.946144",
+  "updated_at": "2025-05-27T21:37:31.946144",
+  "active": true,
+  "use_count": 0
+}

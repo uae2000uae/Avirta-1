@@ -1,0 +1,282 @@
+/**
+ * livestatus.js - Central script for handling game status updates in Avirta
+ * 
+ * This script handles:
+ * 1. Polling for game updates
+ * 2. Updating status messages
+ * 3. Updating the leaderboard
+ * 4. Handling game events (player joining, leaving, answering questions, etc.)
+ */
+
+// Import gametoolsutil.js if it's not already loaded
+if (!window.addStatusUpdate) {
+    const script = document.createElement('script');
+    script.src = '/static/js/gametoolsutil.js';
+    document.head.appendChild(script);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get room and player information from data attributes
+    const gameRoomSection = document.querySelector('.page-section');
+    if (!gameRoomSection) return;
+
+    const roomId = gameRoomSection.dataset.roomId || '';
+    const playerName = gameRoomSection.dataset.playerName || '';
+    const isHost = (gameRoomSection.dataset.isHost === 'true');
+
+    // Get DOM elements
+    const statusUpdates = document.getElementById('status-updates');
+    const leaderboardBody = document.getElementById('leaderboard-body');
+    const currentPlayerElement = document.querySelector('.red-badge') || document.querySelector('.green-badge');
+    const turnIndicator = document.querySelector('.turn-indicator');
+
+    // State tracking variables
+    let lastStatusUpdate = "";
+    let lastQuestion = null;
+    let lastLeaderboard = [];
+    let lastEventTimestamp = null;
+    let lastPlayerList = [];
+    let gameEnded = false;
+
+    // Make gameEnded accessible to window for navigation control
+    window.gameEnded = false;
+
+    // Function to poll for game updates
+    function pollGameUpdates() {
+        if (!roomId) return;
+
+        fetch(`/api/game_updates/${roomId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Update current player
+                if (currentPlayerElement) {
+                    currentPlayerElement.textContent = data.current_player;
+                    if (data.is_current_player_turn) {
+                        currentPlayerElement.classList.add('your-turn');
+                        if (turnIndicator) {
+                            turnIndicator.textContent = "It's your turn!";
+                        }
+                    } else {
+                        currentPlayerElement.classList.remove('your-turn');
+                        if (turnIndicator) {
+                            turnIndicator.textContent = `It's ${data.current_player}'s turn...`;
+                        }
+                    }
+                }
+
+                // Update player list if changed
+                if (data.players && JSON.stringify(data.players) !== JSON.stringify(lastPlayerList)) {
+                    lastPlayerList = data.players;
+                    const playersElement = document.querySelector('.room-header p:nth-child(3)');
+                    if (playersElement) {
+                        playersElement.innerHTML = `<strong>Players:</strong> ${data.players.join(', ')}`;
+                    }
+                }
+
+                // Update leaderboard if available and changed
+                if (leaderboardBody && data.leaderboard && data.leaderboard.length > 0) {
+                    if (JSON.stringify(data.leaderboard) !== JSON.stringify(lastLeaderboard)) {
+                        lastLeaderboard = data.leaderboard;
+                        leaderboardBody.innerHTML = '';
+                        data.leaderboard.forEach((item, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${index + 1}</td>
+                                <td>${item[0]}</td>
+                                <td>${item[1]}</td>
+                            `;
+                            leaderboardBody.appendChild(row);
+                        });
+                    }
+                }
+
+                // Update status messages
+                if (statusUpdates && data.events && data.events.length > 0) {
+                    // Clear the "Waiting for game updates..." message if it's the first update
+                    if (statusUpdates.querySelector('.status-message')?.textContent === 'Waiting for game updates...') {
+                        statusUpdates.innerHTML = '';
+                    }
+
+                    // Add the most recent events (up to 20)
+                    const recentEvents = data.events.slice(-20);
+                    recentEvents.forEach(event => {
+                        // Skip events we've already displayed
+                        const existingMessages = Array.from(statusUpdates.querySelectorAll('.status-message')).map(el => el.dataset.timestamp);
+                        if (existingMessages.includes(event.timestamp)) {
+                            return;
+                        }
+
+                        // Track the latest event timestamp
+                        if (!lastEventTimestamp || event.timestamp > lastEventTimestamp) {
+                            lastEventTimestamp = event.timestamp;
+                        }
+
+                        const messageElement = document.createElement('p');
+                        messageElement.className = 'status-message';
+                        messageElement.textContent = event.data.message;
+                        messageElement.dataset.timestamp = event.timestamp;
+
+                        // Add appropriate class based on event type
+                        if (event.type === 'answer_submitted') {
+                            messageElement.classList.add(event.data.is_correct ? 'status-success' : 'status-error');
+                        } else if (event.type === 'player_joined') {
+                            messageElement.classList.add('status-info');
+                        } else if (event.type === 'player_left') {
+                            messageElement.classList.add('status-info');
+                        } else if (event.type === 'question_selected') {
+                            messageElement.classList.add('status-info');
+                        } else if (event.type === 'answer_evaluated') {
+                            messageElement.classList.add(event.data.is_correct ? 'status-success' : 'status-error');
+                        } else if (event.type === 'turn_switch') {
+                            messageElement.classList.add('status-info');
+                        } else if (event.type === 'tool_used') {
+                            messageElement.classList.add('status-warning');
+
+                            // If the tool used is double_points, update the game board
+                            if (event.data.tool_name === 'double_points' && typeof updateGameBoard === 'function') {
+                                // Update the game board after a short delay to allow the status message to be seen
+                                setTimeout(() => {
+                                    updateGameBoard();
+                                }, 1000);
+                            }
+                        } else if (event.type === 'game_ended') {
+                            messageElement.classList.add('status-error');
+                            // Set the gameEnded flag to allow navigation
+                            window.gameEnded = true;
+                            // Show an alert and redirect to home page after a short delay
+                            setTimeout(function() {
+                                alert('The game has been ended by the host.');
+                                window.location.href = "/"; // Redirect to home page
+                            }, 1000);
+                        }
+
+                        // Add to the top of the list
+                        statusUpdates.insertBefore(messageElement, statusUpdates.firstChild);
+
+                        // Limit the number of status updates to 20
+                        while (statusUpdates.children.length > 20) {
+                            statusUpdates.removeChild(statusUpdates.lastChild);
+                        }
+                    });
+                }
+
+                // Update player tools based on game state
+                window.updatePlayerToolsUtil(data);
+
+                // Check if the board needs to be refreshed (e.g., after a question is answered)
+                if (data.current_question && data.current_question.id) {
+                    if (!lastQuestion || lastQuestion.id !== data.current_question.id) {
+                        lastQuestion = data.current_question;
+                        // Update the board dynamically if we're on the game room page and updateGameBoard is defined
+                        if (window.location.pathname.includes('/game_room/') && typeof updateGameBoard === 'function') {
+                            setTimeout(() => {
+                                updateGameBoard();
+                            }, 5000); // Update after 5 seconds to allow time to see the question
+                        }
+                    }
+                }
+
+                // Always update the game board if we're on the game room page
+                if (window.location.pathname.includes('/game_room/') && typeof updateGameBoard === 'function') {
+                    updateGameBoard();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching game updates:', error);
+            });
+    }
+
+    // Use updatePlayerTools from gametoolsutil.js
+
+    // Poll for updates every 1 second
+    pollGameUpdates(); // Initial poll
+    setInterval(pollGameUpdates, 1000);
+
+    // If this is the joined_room page, set up navigation prevention
+    if (!isHost && window.location.pathname.includes('/joined_room/')) {
+        // Store the original beforeunload function
+        const originalBeforeUnload = window.onbeforeunload;
+
+        // Set up the beforeunload event to prevent navigation
+        window.onbeforeunload = function(e) {
+            // Allow navigation when the game ends
+            if (window.gameEnded) {
+                return undefined;
+            }
+
+            // Get the target URL if available
+            const targetUrl = e.target?.location?.href || '';
+
+            // Allow navigation to the leave_game URL
+            if (targetUrl.includes('leave_game')) {
+                return undefined;
+            }
+
+            // Prevent navigation for all other cases
+            e.preventDefault();
+            e.returnValue = 'You cannot leave this page until the game ends or you click "Leave Game".';
+            return e.returnValue;
+        };
+
+        // Add click handler to the Leave Game button to allow navigation
+        const leaveGameButton = document.querySelector('a[href*="leave_game"]');
+        if (leaveGameButton) {
+            leaveGameButton.addEventListener('click', function() {
+                // Disable the beforeunload handler temporarily
+                window.onbeforeunload = null;
+            });
+        }
+    }
+});
+
+// Game board update function (only used in game_room.html)
+function updateGameBoard() {
+    const gameRoomSection = document.querySelector('.page-section');
+    if (!gameRoomSection) return;
+
+    const roomId = gameRoomSection.dataset.roomId || '';
+    if (!roomId) return;
+
+    fetch(`/api/game_updates/${roomId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.available_questions) {
+                const gameBoardSection = document.querySelector('.game-board');
+                if (!gameBoardSection) return;
+
+                // **Loop through existing categories and update them**
+                document.querySelectorAll('.category').forEach(categoryDiv => {
+                    const categoryId = categoryDiv.dataset.category;
+                    const questionList = categoryDiv.querySelector('.question-list');
+
+                    if (data.available_questions[categoryId] && questionList) {
+                        // **Loop through existing questions and update only them**
+                        questionList.querySelectorAll('.question-item').forEach(questionItem => {
+                            const points = questionItem.dataset.points;
+                            const questionInfo = data.available_questions[categoryId][points];
+
+                            if (questionInfo) {
+                                const button = questionItem.querySelector('.question-button');
+
+                                if (button) {
+                                    // Update the button content with the points value
+                                    button.innerHTML = `<strong>${questionInfo.points}${questionInfo.doubled ? '!' : ''}</strong>`;
+                                    button.disabled = questionInfo.answered;
+                                    button.style.opacity = questionInfo.answered ? '0.5' : '1';
+                                    button.style.cursor = questionInfo.answered ? 'not-allowed' : 'pointer';
+                                    button.classList.toggle('doubled', questionInfo.doubled);
+                                    button.title = questionInfo.doubled ? 'Double Points Active!' : '';
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error updating game board:', error));
+}

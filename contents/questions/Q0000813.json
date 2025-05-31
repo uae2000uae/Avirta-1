@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "ما اسم السورة التي يطلق عليها اسم عروس القرآن؟",
+  "correct_answer": "الرحمن",
+  "explanation": "",
+  "points": 300,
+  "id": "Q0000813",
+  "category_id": "القرآن_الكريم",
+  "created_at": "2025-05-27T19:11:23.254711",
+  "updated_at": "2025-05-27T19:11:23.254711",
+  "active": true,
+  "use_count": 0
+}

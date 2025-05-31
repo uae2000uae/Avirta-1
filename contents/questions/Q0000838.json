@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "إذا كان لديك ثلاثة أعداد متتالية مجموعها 18، فما هي؟",
+  "correct_answer": "5، 6، 7",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000838",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.270685",
+  "updated_at": "2025-05-27T19:30:14.270685",
+  "active": true,
+  "use_count": 0
+}

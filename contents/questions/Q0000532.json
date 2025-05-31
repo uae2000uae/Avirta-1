@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي قارة تقع المملكة المغربية؟",
+  "options": [
+    "آسيا",
+    "أوروبا",
+    "أفريقيا",
+    "أمريكا الجنوبية"
+  ],
+  "correct_answer": "أفريقيا",
+  "explanation": "",
+  "points": 100,
+  "id": "Q0000532",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.562040",
+  "updated_at": "2025-05-27T02:02:54.562040",
+  "active": true,
+  "use_count": 0
+}

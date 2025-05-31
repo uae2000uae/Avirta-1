@@ -1,0 +1,19 @@
+{
+  "type": "multiple_choice",
+  "question": "ما هي الدولة العربية التي يقع فيها جبل مرة؟",
+  "options": [
+    "السودان",
+    "المغرب",
+    "تونس",
+    "عمان"
+  ],
+  "correct_answer": "السودان",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000560",
+  "category_id": "جغرافيا",
+  "created_at": "2025-05-27T02:02:54.680063",
+  "updated_at": "2025-05-27T02:02:54.680063",
+  "active": true,
+  "use_count": 0
+}

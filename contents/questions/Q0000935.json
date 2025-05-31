@@ -1,0 +1,18 @@
+{
+  "type": "multiple_choice",
+  "question": "في أي دولة يقع نهر الأمازون؟",
+  "options": [
+    "البرازيل",
+    "بيرو",
+    "كولومبيا",
+    "فنزويلا"
+  ],
+  "correct_answer": "البرازيل",
+  "points": 100,
+  "id": "Q0000935",
+  "category_id": "أين_يقع",
+  "created_at": "2025-05-27T21:37:31.908135",
+  "updated_at": "2025-05-27T21:37:31.908135",
+  "active": true,
+  "use_count": 0
+}

@@ -1,0 +1,13 @@
+{
+  "type": "text",
+  "question": "إذا كان مجموع عددين 17 وحاصل طرحهما 3، فما هما؟",
+  "correct_answer": "10 و7",
+  "explanation": "",
+  "points": 400,
+  "id": "Q0000861",
+  "category_id": "رياضيات",
+  "created_at": "2025-05-27T19:30:14.360752",
+  "updated_at": "2025-05-27T19:30:14.360752",
+  "active": true,
+  "use_count": 0
+}
