@@ -960,7 +960,8 @@ def leaderboard(room_id):
     return render_template(
         'leaderboard.html',
         room_id=room_id,
-        leaderboard=leaderboard
+        leaderboard=leaderboard,
+        room=game_room
     )
 
 @app.route('/reported_questions')

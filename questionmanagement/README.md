@@ -9,6 +9,34 @@ This module provides a standalone function for managing Avirta questions, includ
 - **Prevent Repeats**: Dynamically prevent repeated questions from appearing unless no more questions exist in the category
 - **Persistent Storage**: Save questions to disk for later retrieval
 
+## Storage Structure
+
+As of the latest update, the question storage structure has been changed to improve organization and performance:
+
+### Previous Structure
+- Each question was stored in an individual JSON file (e.g., `Q0000061.json`, `Q0000062.json`, etc.)
+- All question files were stored in the same directory
+
+### New Structure
+- Questions are now grouped by category
+- Each category has a single JSON file (e.g., `general.json`, `science.json`, etc.)
+- Each category file contains an array of all questions in that category
+
+### Migration
+
+A migration script is provided to convert from the old structure to the new structure. To run the migration:
+
+```bash
+python -m questionmanagement.migrate_questions
+```
+
+The migration script will:
+1. Load all existing question files
+2. Group them by category
+3. Save each category group to a new category file
+4. Create a backup of the original files (in a timestamped directory)
+5. Optionally remove the old individual files
+
 ## Usage
 
 ### Adding Questions

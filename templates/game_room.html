@@ -8,26 +8,33 @@
 
 {% block content %}
 <div class="page-section" data-room-id="{{ room.room_id }}" data-player-name="{{ player_name }}" data-is-host="{{ is_host|default('false')|lower }}" data-board-completed="{{ room.is_board_completed()|lower }}">
-  <div class="room-header">
-    <h2 class="text-center">{{ room.name }}</h2>
-    <p class="text-center"><strong>Host: </strong>{{ room.host }} | <strong>Players:</strong> {{ room.players|join(', ') }} | <strong>Room ID: </strong><span>{{ room.room_id }}</span></p>
-  </div>
+    <h1 class="text-center text-nomargin">{{ room.name }}</h1>
+	<p class="text-center"><strong>Host: </strong>{{ room.host }} | <strong>Room ID: </strong><span>{{ room.room_id }}</span></p>
   <div class="section">
-    <div><p class="blue-box">Current Turn: <span><strong>{{ current_player }}</strong></span></p>
+    <div><p class="blue-box"><strong>Current Turn: </strong><span></span>
+		  {% for player in room.players %}
+			{% if player == current_player %}
+			  <span class="button">{{ player }}</span>
+			{% else %}
+			  {{ player }}
+			{% endif %}
+			{% if not loop.last %} | {% endif %}
+		  {% endfor %}
+		</p>
     </div>
-    <form action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
-      <input type="hidden" name="tool_name" value="double_points" class="form-actions">
-      <div>
-        <button type="submit" id="double-points-btn" class="dp tool-btn">
-          Double Points | مضاعفة النقاط
-        </button>
-      </div>
-    </form>
+	
+		<form action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
+		  <input type="hidden" name="tool_name" value="double_points" class="form-actions">
+		  <div>
+			<button type="submit" id="double-points-btn" "dp tool-btn" {% if not player_tools.double_points %}disabled="disabled" style="opacity: 0.3; cursor: not-allowed;"{% endif %}>
+			  Double Points | ضعف النقاط
+			</button>
+		  </div>
+		</form>
+	
   </div>
 
   <div class="game-board-section">
-    <h3>Game Board</h3>
-
     {% if available_questions %}
       <div class="game-board">
         {% for category_id, points_dict in available_questions.items() %}
@@ -65,28 +72,24 @@
         {% endfor %}
       </div>
     {% else %}
-      <p>No questions available.</p>
       <div>
         <form action="{{ url_for('reset_game') }}" method="post" class="form-actions clear">
-          <input type="hidden" name="room_id" value="{{ room.room_id }}"><br>
-          <button type="submit" class="button primary">Start New Game | إبدأ لعبة جديدة</button>
+          <input type="hidden" name="room_id" value="{{ room.room_id }}"><p>No questions available | لا توجد أسئلة في النظام</p>
         </form>
       </div>
     {% endif %}
   </div>
 
-  <!-- Live Game Status Section -->
   <div class="form-actions"> 
     <a href="{{ url_for('leaderboard', room_id=room.room_id) }}" class="button">Leaderboard | عــرض النتائــج</a>
     <a href="{{ url_for('end_game', room_id=room.room_id) }}" class="button red-button">End Game | إنهاء اللعبة</a>
   </div>
 
   {% if room.is_board_completed() %}
-    <div><br>
+    <div>
       <form action="{{ url_for('reset_game') }}" method="post" class="form-actions clear">
-        <input type="hidden" name="room_id" value="{{ room.room_id }}">
-        <button type="submit" class="button primary">Start New Game | إبدأ لعبة جديدة</button>
-      </form>
+        <input type="hidden" name="room_id" value="{{ room.room_id }}"><p>Game Ended | انتهت اللعبة</p>
+		</form>
     </div>
   {% endif %}
 <br>

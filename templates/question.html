@@ -45,14 +45,14 @@
         <div class="question-text" dir="{% if question.question|is_arabic %}rtl{% else %}ltr{% endif %}">{{ question.question }}</div>
 
         {% if question.type == 'text' %}
-            <div class="form-actions">
+            <div class=form-container>
                 <button type="button" id="show-answer-btn" onclick="showAnswer()">Show Answer إظهار الجواب</button>
                 <div id="answer-section" style="display: none; width: 100%;">
                     <div class="form-group">
                         <div class="answer-text" dir="{% if question.correct_answer|is_arabic %}rtl{% else %}ltr{% endif %}"><h2 class="text-center">{{ question.correct_answer }}</h2></div>
                     </div>
-                    <div class="form-actions">
-						<form action="{{ url_for('evaluate_answer') }}" method="post" class="form-actions">
+                    <div>
+						<form action="{{ url_for('evaluate_answer') }}" method="post" class="form-actions clear">
 							<input type="hidden" name="acting_player" value="{{ acting_player }}">
 							<button type="submit" name="evaluation" value="correct" class="button">Right answer إجابة صحيحة</button>
 							<button type="submit" name="evaluation" value="incorrect" class="delete-button">Wrong answer إجابـة خطـأ</button>
@@ -82,12 +82,14 @@
                 <button type="submit">Submit Answer تسجيل الإجابة</button>
             </div>
 	{% endif %}
-
-            <form action="{{ url_for('use_tool') }}" method="post" class="form-actions">
+            {% if player_tools and player_tools.change_question %}
+            <form id= "change-question-form" action="{{ url_for('use_tool') }}" method="post" class="form clear">
                 <input type="hidden" name="tool_name" value="change_question">
                 <input type="hidden" name="acting_player" value="{{ current_player }}">
                 <button type="submit" id="change-question-btn" class="secondary">Change Question | تغييـــر الســـؤال</button>
             </form>
+	        {% endif %}
+
     </div>
 </div>
 {% endblock %}
@@ -97,6 +99,7 @@
     function showAnswer() {
         document.getElementById('show-answer-btn').style.display = 'none';
         document.getElementById('answer-section').style.display = 'block';
+        document.getElementById('change-question-form').style.display = 'none';
     }
 </script>
 
