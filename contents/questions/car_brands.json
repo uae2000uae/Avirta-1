@@ -21,9 +21,9 @@
     "id": "Q0001332",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.401019",
-    "updated_at": "2025-06-03T23:59:22.401019",
+    "updated_at": "2025-06-04T02:29:59.032495",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -398,9 +398,9 @@
     "id": "Q0001361",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.857456",
-    "updated_at": "2025-06-04T01:17:33.096516",
+    "updated_at": "2025-06-04T02:30:35.749078",
     "active": true,
-    "use_count": 0,
+    "use_count": 1,
     "reported": true
   },
   {
@@ -711,9 +711,9 @@
     "id": "Q0001385",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:23.585911",
-    "updated_at": "2025-06-03T23:59:23.585911",
+    "updated_at": "2025-06-04T02:30:21.499618",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",

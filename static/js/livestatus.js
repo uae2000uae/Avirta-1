@@ -15,6 +15,28 @@ if (!window.addStatusUpdate) {
     document.head.appendChild(script);
 }
 
+// Helper function to show a flash message and redirect to home page
+function showGameEndedFlashAndRedirect() {
+    // Create a flash message
+    const flashContainer = document.createElement('div');
+    flashContainer.className = 'flash-messages';
+    const flashMessage = document.createElement('div');
+    flashMessage.className = 'flash-message error';
+    flashMessage.textContent = 'The game has been ended by the host.';
+    flashContainer.appendChild(flashMessage);
+
+    // Insert the flash message at the top of the container
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(flashContainer, container.firstChild);
+    }
+
+    // Redirect to home page after a short delay
+    setTimeout(function() {
+        window.location.href = "/"; // Redirect to home page
+    }, 2000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get room and player information from data attributes
     const gameRoomSection = document.querySelector('.page-section');
@@ -148,10 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             messageElement.classList.add('status-error');
                             // Set the gameEnded flag to allow navigation
                             window.gameEnded = true;
-                            // Show an alert and redirect to home page after a short delay
+                            // Show a flash message and redirect to home page after a short delay
                             setTimeout(function() {
-                                alert('The game has been ended by the host.');
-                                window.location.href = "/"; // Redirect to home page
+                                showGameEndedFlashAndRedirect();
                             }, 1000);
                         }
 
@@ -185,9 +206,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (window.location.pathname.includes('/game_room/') && typeof updateGameBoard === 'function') {
                     updateGameBoard();
                 }
+
+                // Check if the game has ended via latest_events
+                if (data.latest_events && data.latest_events.game_ended && !window.gameEnded) {
+                    // Set the gameEnded flag to allow navigation
+                    window.gameEnded = true;
+                    // Show a flash message and redirect to home page after a short delay
+                    setTimeout(function() {
+                        showGameEndedFlashAndRedirect();
+                    }, 1000);
+                }
             })
             .catch(error => {
                 console.error('Error fetching game updates:', error);
+
+                // If we get a 404 error, it likely means the room has been deleted
+                // This can happen when the host ends the game
+                if (error.message.includes('not ok') && !window.gameEnded) {
+                    // Set the gameEnded flag to allow navigation
+                    window.gameEnded = true;
+                    // Show a flash message and redirect to home page after a short delay
+                    setTimeout(function() {
+                        showGameEndedFlashAndRedirect();
+                    }, 1000);
+                }
             });
     }
 

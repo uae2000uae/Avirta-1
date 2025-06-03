@@ -77,18 +77,16 @@
                     </div>
                 {% endif %}
             </form>
-<br>
             <div class="form-actions" style="display: none;">
                 <button type="submit">Submit Answer تسجيل الإجابة</button>
             </div>
 	{% endif %}
-            {% if player_tools and player_tools.change_question %}
+			<br>
             <form id= "change-question-form" action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
                 <input type="hidden" name="tool_name" value="change_question">
                 <input type="hidden" name="acting_player" value="{{ current_player }}">
-				<button type="submit" id="change-question-btn" class="button">Change Question | غيــّـــر الســـــؤال</button>
+				<button type="submit" id="change-question-btn" class="button" {% if not player_tools or not player_tools.change_question %}disabled="disabled" style="opacity: 0.5; cursor: not-allowed;" title="This tool has already been used"{% endif %}>Change Question | غيــّـــر الســـــؤال</button>
             </form>
-	        {% endif %}
 
     </div>
 </div>

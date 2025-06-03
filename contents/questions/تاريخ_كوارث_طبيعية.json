@@ -21,9 +21,9 @@
     "id": "Q0001102",
     "category_id": "تاريخ_كوارث_طبيعية",
     "created_at": "2025-05-30T01:55:31.547967",
-    "updated_at": "2025-05-31T23:25:09.607386",
+    "updated_at": "2025-06-04T03:06:08.854399",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -125,9 +125,9 @@
     "id": "Q0001110",
     "category_id": "تاريخ_كوارث_طبيعية",
     "created_at": "2025-05-30T01:55:31.613508",
-    "updated_at": "2025-05-30T01:55:31.613508",
+    "updated_at": "2025-06-04T03:04:05.795229",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -151,9 +151,9 @@
     "id": "Q0001112",
     "category_id": "تاريخ_كوارث_طبيعية",
     "created_at": "2025-05-30T01:55:31.630512",
-    "updated_at": "2025-05-31T23:24:52.848259",
+    "updated_at": "2025-06-04T03:05:48.658164",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -229,9 +229,10 @@
     "id": "Q0001118",
     "category_id": "تاريخ_كوارث_طبيعية",
     "created_at": "2025-05-30T01:55:31.678504",
-    "updated_at": "2025-05-30T01:55:31.678504",
+    "updated_at": "2025-06-04T03:03:10.686431",
     "active": true,
-    "use_count": 0
+    "use_count": 0,
+    "reported": true
   },
   {
     "type": "text",
@@ -1054,8 +1055,8 @@
     "id": "Q0001173",
     "category_id": "تاريخ_كوارث_طبيعية",
     "created_at": "2025-05-30T02:07:05.054981",
-    "updated_at": "2025-05-30T02:07:05.054981",
+    "updated_at": "2025-06-04T03:05:05.372129",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   }
 ]

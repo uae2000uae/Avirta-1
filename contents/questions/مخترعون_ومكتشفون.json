@@ -205,9 +205,9 @@
     "id": "Q0000881",
     "category_id": "مخترعون_ومكتشفون",
     "created_at": "2025-05-27T21:16:59.513386",
-    "updated_at": "2025-05-31T19:02:55.772162",
+    "updated_at": "2025-06-04T03:10:01.027324",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -262,9 +262,9 @@
     "id": "Q0000884",
     "category_id": "مخترعون_ومكتشفون",
     "created_at": "2025-05-27T21:16:59.526393",
-    "updated_at": "2025-05-27T21:16:59.526393",
+    "updated_at": "2025-06-04T03:10:25.784048",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "multiple_choice",

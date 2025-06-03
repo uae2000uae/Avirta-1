@@ -34,13 +34,12 @@ class GameTools:
         """
         Activate the "Double the Points" tool for a player.
         This tool doubles the points for the next question the player selects.
-        Must be used before the question is revealed.
-        Can only be used when the host is in the game room page, not in the question page.
+        Can be used at any time, but only once per player.
 
         Args:
             player_tools (dict): Dictionary of player tools
             effective_player (str): Name of the player using the tool
-            question_active (bool): Whether a question is currently active
+            question_active (bool): Whether a question is currently active (not used anymore)
 
         Returns:
             bool: True if the tool was used successfully, False otherwise
@@ -48,8 +47,8 @@ class GameTools:
         # Retrieve player's tool info efficiently
         tool_data = player_tools.setdefault(effective_player, {}).get("double_points", {})
 
-        # Ensure tool availability and the host is not on the question page
-        if not tool_data.get("available", False) or question_active:
+        # Ensure tool availability (only check if it's been used before)
+        if not tool_data.get("available", False):
             return False
 
         # Activate the tool and mark it as used
@@ -65,14 +64,13 @@ class GameTools:
         Activate the "Change the Question" tool for a player.
         This tool allows the player to swap the current question for another one
         from the same category with the same point value.
-        Must be used during the answering timer.
-        Can only be used when the host is in the question page and it's the player's turn.
+        Can be used at any time, but only once per player.
 
         Args:
             player_tools (dict): Dictionary of player tools
             effective_player (str): Name of the player using the tool
-            current_player (str): Name of the player whose turn it is
-            question_active (bool): Whether a question is currently active
+            current_player (str): Name of the player whose turn it is (not used anymore)
+            question_active (bool): Whether a question is currently active (not used anymore)
             board (dict): Game board with questions organized by category and point value
             answered_questions (set): Set of question IDs that have been answered
             category_id (str): ID of the category
@@ -82,17 +80,9 @@ class GameTools:
         Returns:
             dict: The new question or None if the tool couldn't be used
         """
-        # Check if effective player has the tool available
+        # Check if effective player has the tool available (only check if it's been used before)
         if not player_tools.get(effective_player, {}).get("change_question", {}).get("available", False):
             return None
-
-        # Check if the host is in the question page (question_active is True)
-        if not question_active:
-            return None  # Cannot use Change Question when host is not in the question page
-
-        # Check if it's the effective player's turn
-        if effective_player != current_player:
-            return None  # Cannot use Change Question when it's not the effective player's turn
 
         # Check if category exists in board
         if category_id not in board:

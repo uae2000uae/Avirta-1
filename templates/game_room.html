@@ -22,16 +22,16 @@
 		  {% endfor %}
 		</p>
     </div>
-	
+
 		<form action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
 		  <input type="hidden" name="tool_name" value="double_points" class="form-actions">
 		  <div>
-			<button type="submit" id="double-points-btn" "dp tool-btn" {% if not player_tools.double_points %}disabled="disabled" style="opacity: 0.3; cursor: not-allowed;"{% endif %}>
+			<button type="submit" id="double-points-btn" class="dp tool-btn" {% if not player_tools.double_points %}disabled="disabled" style="opacity: 0.3; cursor: not-allowed;" title="This tool has already been used"{% endif %}>
 			  Double Points | ضعف النقاط
 			</button>
 		  </div>
 		</form>
-	
+
   </div>
 
   <div class="game-board-section">
