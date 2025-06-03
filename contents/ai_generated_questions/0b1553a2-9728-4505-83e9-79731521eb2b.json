@@ -1,0 +1,188 @@
+{
+  "metadata": {
+    "prompt": "World countries flag colors, shapes, and details.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 25,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-06-03T22:27:25.697695"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "ما هما اللونان الرئيسيان في علم كندا؟",
+      "correct_answer": "الأحمر والأبيض",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون المميز لعلم اليابان الذي يحتوي على دائرة في الوسط؟",
+      "correct_answer": "الأحمر",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على صليب أزرق على خلفية بيضاء؟",
+      "correct_answer": "فنلندا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يحمل علمها نجمة خماسية خضراء في وسط خلفية حمراء؟",
+      "correct_answer": "المغرب",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون الذي يرمز إلى الإسلام في علم تركيا؟",
+      "correct_answer": "الأخضر",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يتكون من ثلاثة ألوان: الأزرق والأبيض والأحمر بشكل أفقي؟",
+      "correct_answer": "روسيا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو الشكل المميز في وسط علم سويسرا؟",
+      "correct_answer": "صليب أبيض",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "أي دولة عربية علمها يتكون من أربعة ألوان: الأحمر، الأخضر، الأبيض، والأسود؟",
+      "correct_answer": "الإمارات العربية المتحدة",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو الحيوان الذي يظهر في علم سريلانكا؟",
+      "correct_answer": "أسد",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "كم عدد النجوم الموجودة في علم الولايات المتحدة الأمريكية؟",
+      "correct_answer": "50",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها تنين؟",
+      "correct_answer": "بوتان",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون المشترك بين علم البرازيل وعلم أستراليا؟",
+      "correct_answer": "الأخضر",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يتكون من دائرة زرقاء بها 27 نجمة بيضاء وشريط أصفر على خلفية خضراء؟",
+      "correct_answer": "البرازيل",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الموجود في وسط علم الهند؟",
+      "correct_answer": "عجلة زرقاء (عجلة أشوكا)",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هما اللونان الأساسيان في علم اليونان؟",
+      "correct_answer": "الأزرق والأبيض",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون الذي يوجد في علم فرنسا ولا يوجد في علم إيطاليا؟",
+      "correct_answer": "الأزرق الداكن",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "أي دولة في أفريقيا علمها يتكون من ثلاثة ألوان أفقية: الأحمر، الأصفر، والأخضر؟",
+      "correct_answer": "غينيا",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو الحيوان الذي يظهر في علم إسبانيا؟",
+      "correct_answer": "أسد",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة الآسيوية التي تحتوي أعلامها على شمس ذات أشعة متعددة؟",
+      "correct_answer": "قيرغيزستان",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يتكون من مثلثين أزرقين مع نجمة بيضاء في المنتصف؟",
+      "correct_answer": "الصومال",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الموجود في علم المملكة العربية السعودية؟",
+      "correct_answer": "سيف ونص الشهادة",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على درع أحمر بداخله شجرة أروكاريا خضراء؟",
+      "correct_answer": "باراغواي",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون الذي كان يرمز للملكية في علم ألمانيا الإمبراطورية؟",
+      "correct_answer": "الأسود",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو الشيء الذي يميز علم نيبال عن بقية أعلام العالم؟",
+      "correct_answer": "ليس مستطيلاً، بل ذو شكلين مثلثيين",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على خمسة أقواس ملونة فوق بعضها في زاوية واحدة؟",
+      "correct_answer": "جنوب أفريقيا",
+      "explanation": "",
+      "points": 500
+    }
+  ]
+}
