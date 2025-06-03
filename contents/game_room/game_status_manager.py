@@ -245,8 +245,8 @@ class GameStatusManager:
 
         try:
             # Append the event to the file
-            with open(file_path, 'a') as f:
-                f.write(json.dumps(event) + '\n')
+            with open(file_path, 'a', encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False) + '\n')
         except Exception as e:
             print(f"Error persisting event: {e}")
 
@@ -565,8 +565,8 @@ class GameStatusManager:
             }
 
             # Write to file
-            with open(file_path, 'w') as f:
-                json.dump(room_data, f)
+            with open(file_path, 'w', encoding="utf-8") as f:
+                json.dump(room_data, f, ensure_ascii=False)
 
             return True
         except Exception as e:

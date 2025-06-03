@@ -3,12 +3,21 @@
 runtime: python39  # Using Python 3.9 runtime
 
 # Entrypoint defines the command to run when the app starts
-entrypoint: gunicorn -b :$PORT main:app
+entrypoint: gunicorn -c gunicorn_config.py main:app
 
 # Environment variables
 env_variables:
   FLASK_APP: main.py
   FLASK_ENV: production
+  NGINX_CONFIG_PROXY_CONNECT_TIMEOUT: 300s
+  NGINX_CONFIG_PROXY_SEND_TIMEOUT: 300s
+  NGINX_CONFIG_PROXY_READ_TIMEOUT: 300s
+  NGINX_CONFIG_CLIENT_MAX_BODY_SIZE: 10M
+  NGINX_CONFIG_CLIENT_BODY_BUFFER_SIZE: 256k
+  NGINX_CONFIG_CLIENT_HEADER_BUFFER_SIZE: 32k
+  NGINX_CONFIG_LARGE_CLIENT_HEADER_BUFFERS: "8 32k"
+  NGINX_CONFIG_PROXY_BUFFERS: "16 32k"
+  NGINX_CONFIG_PROXY_BUFFER_SIZE: 32k
 
 # Handlers for static files
 handlers:
@@ -17,15 +26,36 @@ handlers:
 
 # Scaling settings for App Engine
 instance_class: F2
+
+# Automatic scaling configuration
 automatic_scaling:
-  target_cpu_utilization: 0.65
   min_instances: 1
   max_instances: 5
   min_idle_instances: 1
-  max_idle_instances: 1
+  max_concurrent_requests: 50
+  target_cpu_utilization: 0.65
+  target_throughput_utilization: 0.65
+  max_pending_latency: 5000ms
   min_pending_latency: 30ms
-  max_pending_latency: 100ms
 
 # Network settings
 network:
   session_affinity: true
+
+# Health checks
+liveness_check:
+  path: "/_ah/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+readiness_check:
+  path: "/_ah/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 300
+
+# Custom Nginx configuration is defined in the env_variables section above

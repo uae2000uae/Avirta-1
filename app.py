@@ -1456,7 +1456,34 @@ def view_questions(category_id):
 
     category = category_manager.get_category(category_id)
     questions = question_bank.get_questions_by_category(category_id)
-    return render_template('view_questions.html', category=category, questions=questions)
+
+    # Calculate category statistics
+    stats = {
+        'total_questions': len(questions),
+        'total_usage': sum(q.get('use_count', 0) for q in questions),
+        'by_type': {},
+        'by_points': {}
+    }
+
+    # Count questions by type and points
+    for question in questions:
+        q_type = question.get('type', 'unknown')
+        points = question.get('points', 0)
+
+        # Count by type
+        if q_type not in stats['by_type']:
+            stats['by_type'][q_type] = 0
+        stats['by_type'][q_type] += 1
+
+        # Count by points
+        if points not in stats['by_points']:
+            stats['by_points'][points] = 0
+        stats['by_points'][points] += 1
+
+    # Sort the points for display
+    stats['points_sorted'] = sorted(stats['by_points'].keys())
+
+    return render_template('view_questions.html', category=category, questions=questions, stats=stats)
 
 @app.route('/question_bank/edit/<question_id>')
 def edit_question(question_id):
@@ -2201,7 +2228,17 @@ def get_game_state(room_id):
     """
     return redirect(url_for('game_updates', room_id=room_id))
 
+@app.route('/_ah/health')
+def health_check():
+    """
+    Health check endpoint for App Engine.
+    This endpoint is used by App Engine to determine if the application is healthy.
+    """
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+
 # These functions have been moved to gametoolsutil.py
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)

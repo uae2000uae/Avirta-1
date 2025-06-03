@@ -225,6 +225,6 @@ class ReportedQuestionManager:
         file_path = os.path.join(self.storage_path, f"{report_id}.json")
         try:
             with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(report_data, f, indent=2)
+                json.dump(report_data, f, indent=2, ensure_ascii=False)
         except IOError as e:
             print(f"Error saving report {report_id}: {e}")

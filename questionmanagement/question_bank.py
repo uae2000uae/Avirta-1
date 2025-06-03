@@ -343,7 +343,7 @@ class QuestionBank:
 
             # Save the updated category file
             with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(category_questions, f, indent=2)
+                json.dump(category_questions, f, indent=2, ensure_ascii=False)
         except IOError as e:
             print(f"Error saving question {question_id}: {e}")
 

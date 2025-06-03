@@ -7,4 +7,6 @@ from app import app
 if __name__ == '__main__':
     # App Engine uses gunicorn to serve the app, so this block
     # is primarily for local testing
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -300,7 +300,7 @@
   },
   {
     "type": "text",
-    "question": "What is the name of Owen Grady\u2019s main trained raptor?",
+    "question": "What is the name of Owen Grady’s main trained raptor?",
     "correct_answer": "Blue",
     "explanation": "",
     "points": 300,
@@ -391,7 +391,7 @@
   },
   {
     "type": "text",
-    "question": "What is the name of Claire Dearing\u2019s nephew who gets lost in Jurassic World?",
+    "question": "What is the name of Claire Dearing’s nephew who gets lost in Jurassic World?",
     "correct_answer": "Zach",
     "explanation": "",
     "points": 400,
@@ -973,7 +973,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "What type of dinosaur kills Roland Tembo\u2019s friend Ajay in 'The Lost World: Jurassic Park'?",
+    "question": "What type of dinosaur kills Roland Tembo’s friend Ajay in 'The Lost World: Jurassic Park'?",
     "options": [
       "Velociraptor",
       "T. rex",
@@ -1189,7 +1189,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "Which character restarts the park\u2019s power in 'Jurassic Park' but is killed by velociraptors?",
+    "question": "Which character restarts the park’s power in 'Jurassic Park' but is killed by velociraptors?",
     "options": [
       "Ray Arnold",
       "Robert Muldoon",
@@ -1246,7 +1246,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "In 'Jurassic World: Fallen Kingdom,' what is Blue\u2019s special ability?",
+    "question": "In 'Jurassic World: Fallen Kingdom,' what is Blue’s special ability?",
     "options": [
       "Responds to commands",
       "Invisibility",
@@ -1455,7 +1455,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "In 'Jurassic World: Camp Cretaceous,' which dinosaur\u2019s DNA is mixed with Velociraptor to create Scorpios rex?",
+    "question": "In 'Jurassic World: Camp Cretaceous,' which dinosaur’s DNA is mixed with Velociraptor to create Scorpios rex?",
     "options": [
       "T. rex",
       "Carnotaurus",
@@ -1474,7 +1474,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "In 'Jurassic Park,' what software program does Lex use to restore the park\u2019s power?",
+    "question": "In 'Jurassic Park,' what software program does Lex use to restore the park’s power?",
     "options": [
       "UNIX system",
       "DOS system",
@@ -1614,7 +1614,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "In 'The Lost World: Jurassic Park,' what is the name of John Hammond\u2019s nephew who takes over InGen?",
+    "question": "In 'The Lost World: Jurassic Park,' what is the name of John Hammond’s nephew who takes over InGen?",
     "options": [
       "Peter Ludlow",
       "Roland Tembo",
@@ -1785,7 +1785,7 @@
   },
   {
     "type": "multiple_choice",
-    "question": "In 'Jurassic Park,' what is the name of the software that controls the park\u2019s security systems?",
+    "question": "In 'Jurassic Park,' what is the name of the software that controls the park’s security systems?",
     "options": [
       "Jurassic Park Control System",
       "Jurassic OS",

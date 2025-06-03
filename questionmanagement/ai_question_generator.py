@@ -263,7 +263,7 @@ class AIQuestionGenerator:
 
         batch_path = os.path.join(self.temp_storage_path, f"{batch_id}.json")
         with open(batch_path, 'w', encoding="utf-8") as f:
-            json.dump(batch_data, f, indent=2)
+            json.dump(batch_data, f, indent=2, ensure_ascii=False)
 
     def verify_api_connection(self):
         """

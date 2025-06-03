@@ -25,6 +25,58 @@
     .question-details li {
         margin-bottom: 3px;
     }
+
+    /* Styles for category statistics */
+    .category-stats {
+        margin-bottom: 30px;
+        padding: 15px;
+        background-color: var(--bg-color-lighter);
+        border-radius: 8px;
+        box-shadow: var(--box-shadow);
+    }
+
+    .category-stats h2 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+
+    .stats-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .stat-box {
+        flex: 1;
+        min-width: 200px;
+        padding: 15px;
+        background-color: var(--bg-color);
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-box h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+        color: var(--primary-color);
+    }
+
+    .stat-box ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .stat-box li {
+        margin-bottom: 5px;
+    }
+
+    .stat-box p {
+        margin: 5px 0;
+    }
 </style>
 {% extends "base.html" %}
 
@@ -39,6 +91,36 @@
 
 <div class="questions-list">
     {% if questions %}
+        <!-- Category Statistics -->
+        <div class="category-stats">
+            <h2>Category Statistics</h2>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <h3>Overview</h3>
+                    <p>Total Questions: <strong>{{ stats.total_questions }}</strong></p>
+                    <p>Total Usage: <strong>{{ stats.total_usage }}</strong></p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>By Question Type</h3>
+                    <ul>
+                        {% for type, count in stats.by_type.items() %}
+                            <li>{{ type }}: <strong>{{ count }}</strong></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="stat-box">
+                    <h3>By Points</h3>
+                    <ul>
+                        {% for points in stats.points_sorted %}
+                            <li>{{ points }} points: <strong>{{ stats.by_points[points] }}</strong></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <table class="data-table">
             <thead>
                 <tr>

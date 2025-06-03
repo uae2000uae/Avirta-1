@@ -223,8 +223,8 @@ class AdminSetup:
                                              'admin_controls', 'game_settings.json')
 
             # Save the settings to the file
-            with open(settings_file_path, 'w') as f:
-                json.dump(self.game_settings, f, indent=4)
+            with open(settings_file_path, 'w', encoding="utf-8") as f:
+                json.dump(self.game_settings, f, indent=4, ensure_ascii=False)
 
             self.log_event("Game settings saved to file")
             return True, "Game settings saved successfully"
@@ -542,8 +542,8 @@ class AdminSetup:
                                              'admin_controls', 'saved_api_settings.json')
 
             # Save the settings to the file
-            with open(settings_file_path, 'w') as f:
-                json.dump(self.saved_api_settings, f, indent=4)
+            with open(settings_file_path, 'w', encoding="utf-8") as f:
+                json.dump(self.saved_api_settings, f, indent=4, ensure_ascii=False)
 
             self.log_event("Saved API settings saved to file")
             return True, "Saved API settings saved successfully"
