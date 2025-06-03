@@ -165,23 +165,31 @@ class AIQuestionGenerator:
         # If not in memory, try to load from storage
         batch_path = os.path.join(self.temp_storage_path, f"{batch_id}.json")
         if os.path.exists(batch_path):
-            with open(batch_path, 'r', encoding="utf-8") as f:
-                batch_data = json.load(f)
+            try:
+                with open(batch_path, 'r', encoding="utf-8") as f:
+                    batch_data = json.load(f)
 
-            # Handle both old and new format
-            if isinstance(batch_data, list):
-                # Old format: just a list of questions
-                questions = batch_data
-            elif isinstance(batch_data, dict) and 'questions' in batch_data:
-                # New format: dict with 'metadata' and 'questions'
-                questions = batch_data['questions']
-            else:
-                # Unknown format
+                # Handle both old and new format
+                if isinstance(batch_data, list):
+                    # Old format: just a list of questions
+                    questions = batch_data
+                elif isinstance(batch_data, dict) and 'questions' in batch_data:
+                    # New format: dict with 'metadata' and 'questions'
+                    questions = batch_data['questions']
+                else:
+                    # Unknown format
+                    print(f"Unknown batch data format for batch {batch_id}")
+                    return None
+
+                # Cache in memory
+                self.question_batches[batch_id] = questions
+                return questions
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON for batch {batch_id}: {str(e)}")
                 return None
-
-            # Cache in memory
-            self.question_batches[batch_id] = questions
-            return questions
+            except Exception as e:
+                print(f"Unexpected error loading batch {batch_id}: {str(e)}")
+                return None
 
         return None
 

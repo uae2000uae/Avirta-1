@@ -1850,10 +1850,13 @@ def ai_question_history_detail(batch_id):
 
     # Get the batch metadata and questions
     metadata = get_batch_metadata(batch_id)
-    questions = get_batch(batch_id)
+    if not metadata:
+        flash('Batch metadata not found. The batch may have been deleted or corrupted.', 'error')
+        return redirect(url_for('ai_question_history'))
 
-    if not metadata or not questions:
-        flash('Batch not found.', 'error')
+    questions = get_batch(batch_id)
+    if not questions:
+        flash('Questions not found for this batch. The data may have been corrupted or deleted.', 'error')
         return redirect(url_for('ai_question_history'))
 
     # Get all batches for navigation
@@ -1897,7 +1900,7 @@ def save_ai_questions():
     # Get the batch of questions
     questions = get_batch(batch_id)
     if not questions:
-        flash('Questions not found.', 'error')
+        flash('Questions not found for this batch. The data may have been corrupted or deleted.', 'error')
         return redirect(url_for('ai_question_generator'))
 
     # Get the custom category name
