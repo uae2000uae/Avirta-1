@@ -38,7 +38,7 @@
   {% if room.is_board_completed() %}
     <div>
       	<form class="form-actions clear center">
-		<input type="hidden" name="room_id" value="{{ room.room_id }}"><a href="{{ url_for('end_game', room_id=room.room_id) }}" class="button large">End | إنهاء</a>
+		<input type="hidden" name="room_id" value="{{ room.room_id }}"><a href="{{ url_for('end_game', room_id=room.room_id) }}" class="button large">End Game | إنهاء اللعبة</a>
 
 		</form>
     </div>

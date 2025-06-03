@@ -1,0 +1,2 @@
+{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "التاريخ_المعاصر", "points": 100, "is_correct": false, "message": "Shihab answered incorrect and earned 0 points"}, "timestamp": "2025-06-04T01:25:11.816644"}
+{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T01:25:46.574766"}

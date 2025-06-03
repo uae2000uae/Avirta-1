@@ -54,7 +54,7 @@
                     <div>
 						<form action="{{ url_for('evaluate_answer') }}" method="post" class="form-actions clear">
 							<input type="hidden" name="acting_player" value="{{ acting_player }}">
-							<button type="submit" name="evaluation" value="correct" class="button">Right answer إجابة صحيحة</button>
+							<button type="submit" name="evaluation" value="correct" class="success-button">Right answer إجابة صحيحة</button>
 							<button type="submit" name="evaluation" value="incorrect" class="delete-button">Wrong answer إجابـة خطـأ</button>
 						</form>
                     </div>
@@ -77,16 +77,16 @@
                     </div>
                 {% endif %}
             </form>
-
+<br>
             <div class="form-actions" style="display: none;">
                 <button type="submit">Submit Answer تسجيل الإجابة</button>
             </div>
 	{% endif %}
             {% if player_tools and player_tools.change_question %}
-            <form id= "change-question-form" action="{{ url_for('use_tool') }}" method="post" class="form clear">
+            <form id= "change-question-form" action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
                 <input type="hidden" name="tool_name" value="change_question">
                 <input type="hidden" name="acting_player" value="{{ current_player }}">
-                <button type="submit" id="change-question-btn" class="secondary">Change Question | تغييـــر الســـؤال</button>
+				<button type="submit" id="change-question-btn" class="button">Change Question | غيــّـــر الســـــؤال</button>
             </form>
 	        {% endif %}
 
