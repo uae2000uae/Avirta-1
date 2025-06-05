@@ -11,6 +11,7 @@ import sys
 import tempfile
 import uuid
 import random
+import subprocess
 from datetime import datetime
 
 # Add the current directory to the Python path
@@ -117,6 +118,38 @@ game_status_manager = GameStatusManager(max_events_per_room=100, persistence_dir
 
 # Set the global GameStatusManager instance
 set_game_status_manager(game_status_manager)
+
+# Function to get the current Git branch
+def get_current_branch():
+    """
+    Get the current Git branch name.
+
+    Returns:
+        str: The name of the current Git branch or "unknown" if not in a Git repository
+    """
+    try:
+        # Run git command to get current branch
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except (subprocess.SubprocessError, FileNotFoundError):
+        # Return unknown if there's an error or git is not installed
+        return "unknown"
+
+# Add context processor to make branch available to all templates
+@app.context_processor
+def inject_branch():
+    """
+    Make the current Git branch available to all templates.
+
+    Returns:
+        dict: A dictionary containing the current branch
+    """
+    return {'current_branch': get_current_branch()}
 
 @app.route('/')
 def index():
