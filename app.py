@@ -2241,6 +2241,16 @@ def health_check():
 
 # These functions have been moved to gametoolsutil.py
 
+@app.route('/json-export')
+def export_json():
+    """
+    Export data from data.json file as a JSON response.
+    This endpoint reads the data.json file and returns its contents.
+    """
+    with open('data.json', 'r') as file:
+        data = json.load(file)
+    return jsonify(data)
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 8080))
