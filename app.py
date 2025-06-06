@@ -2272,17 +2272,38 @@ def health_check():
     """
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
-# These functions have been moved to gametoolsutil.py
+import json
+from flask import jsonify, current_app
 
-@app.route('/json-export')
-def export_json():
+@app.route('/get-json')
+def get_json():
     """
-    Export data from data.json file as a JSON response.
+    Get data from data.json file as a JSON response.
     This endpoint reads the data.json file and returns its contents.
     """
-    with open('data.json', 'r') as file:
-        data = json.load(file)
-    return jsonify(data)
+    try:
+        # Use a configurable path or relative to application root
+        file_path = current_app.config.get('DATA_JSON_PATH', 'data.json')
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+        return jsonify(data)
+    except FileNotFoundError as e:
+        current_app.logger.error(f"File not found: {e}")
+        return jsonify({"error": "File not found"}), 404
+    except json.JSONDecodeError as e:
+        current_app.logger.error(f"JSON decode error: {e}")
+        return jsonify({"error": "Invalid JSON format"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/update_json', methods=['POST'])
+def update_json():
+    """
+    Update JSON files to GitHub.
+    This endpoint calls the push_to_github function to update JSON files to GitHub.
+    """
+    return push_to_github()
 
 if __name__ == '__main__':
     import os
@@ -2290,54 +2311,102 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=False)
 
 import requests
-import json
-import base64
 import os
+import base64
+from flask import jsonify, request, current_app
+import time
 
-# Define repository and file details
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # Ensure this is securely stored
-REPO_OWNER = "uae2000uae"
-REPO_NAME = "Avirta-WebApp"
-FILE_PATH = "contents/questions"
-BRANCH = "Avira-1.1.4"  # Ensure this branch exists
-
-# Define the GitHub API URL
-URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}"
-
+# Function to push JSON updates to GitHub
 def push_to_github():
+    # Get configuration from environment variables or app config
+    github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', ''))
+    local_folder = os.environ.get('LOCAL_FOLDER', current_app.config.get('LOCAL_FOLDER', 'contents/questions'))
+    repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', ''))
+    repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', ''))
+    branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'main'))
+
+    # Validate required parameters
+    if not github_token:
+        return jsonify({"error": "GitHub token not configured"}), 500
+    if not repo_owner or not repo_name:
+        return jsonify({"error": "Repository information not configured"}), 500
+
+    results = []
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json"  # Explicit API version
+    }
+
     try:
-        # Read the JSON file
-        with open(FILE_PATH, "r") as file:
-            json_data = file.read()
+        # Validate folder exists
+        if not os.path.isdir(local_folder):
+            return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
 
-        # Get the current file SHA (needed for updating an existing file)
-        response = requests.get(URL, headers={"Authorization": f"token {GITHUB_TOKEN}"})
-        file_info = response.json()
+        for filename in os.listdir(local_folder):
+            try:
+                file_path = os.path.join(local_folder, filename)
 
-        sha = file_info.get("sha", None)  # Retrieve the SHA if the file exists
+                # Skip directories or non-files
+                if not os.path.isfile(file_path):
+                    continue
 
-        # Prepare the payload for GitHub API request
-        payload = {
-            "message": "Updated JSON file",
-            "content": base64.b64encode(json_data.encode()).decode(),  # Encode the file in base64
-            "branch": BRANCH,
-        }
+                # Determine GitHub path based on local folder
+                # Option 1: Remove the local folder prefix from the GitHub path
+                # Use just the filename for the GitHub path
+                github_path = filename
 
-        # If file exists, include SHA for updating
-        if sha:
-            payload["sha"] = sha
+                # Read file in binary mode to avoid encoding issues
+                with open(file_path, "rb") as file:
+                    file_content = file.read()
 
-        # Send the request to GitHub
-        response = requests.put(URL, json=payload, headers={"Authorization": f"token {GITHUB_TOKEN}"})
+                # Get existing file info (if it exists)
+                url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{github_path}"
 
-        # Print response details for debugging
-        if response.status_code == 201 or response.status_code == 200:
-            print("✅ JSON file successfully updated on GitHub!")
-        else:
-            print("❌ Error updating file:", response.json())
+                response = requests.get(url, headers=headers)
+
+                # Prepare payload
+                payload = {
+                    "message": f"Automated update: {filename}",
+                    "content": base64.b64encode(file_content).decode(),
+                    "branch": branch,
+                }
+
+                # Check if file exists on GitHub
+                if response.status_code == 200:
+                    file_info = response.json()
+                    payload["sha"] = file_info.get("sha")
+                elif response.status_code != 404:
+                    # Unexpected response
+                    results.append({
+                        filename: {
+                            "status": "error", 
+                            "message": f"Failed to check if file exists: {response.status_code}"
+                        }
+                    })
+                    continue
+
+                # Create or update the file
+                response = requests.put(url, json=payload, headers=headers)
+
+                # Check if request was successful
+                if 200 <= response.status_code < 300:
+                    results.append({filename: {"status": "success", "data": response.json()}})
+                else:
+                    results.append({
+                        filename: {
+                            "status": "error",
+                            "code": response.status_code,
+                            "message": response.text
+                        }
+                    })
+
+                # Respect GitHub API rate limits
+                time.sleep(1)
+
+            except Exception as e:
+                results.append({filename: {"status": "error", "message": str(e)}})
+
+        return jsonify({"results": results})
 
     except Exception as e:
-        print("⚠️ An error occurred:", str(e))
-
-# Call the function to push updates
-push_to_github()
+        return jsonify({"error": str(e), "type": type(e).__name__})
