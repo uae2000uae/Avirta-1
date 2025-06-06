@@ -2347,17 +2347,42 @@ def push_to_github():
     }
 
     try:
+        # Update the last push timestamp
+        global last_github_push
+        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Validate folder exists
         if not os.path.isdir(local_folder):
-            return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
+            last_github_push["status"] = f"Error: Local folder not found: {local_folder}"
 
-        for filename in os.listdir(local_folder):
+            # Save push info to file for persistence
+            push_info_file = os.path.join(current_dir, 'last_push_info.json')
+            try:
+                with open(push_info_file, 'w') as f:
+                    json.dump(last_github_push, f)
+            except IOError as e:
+                current_app.logger.error(f"Error saving last push info: {e}")
+
+            return jsonify({"error": f"Local folder not found: {local_folder}", "last_push": last_github_push}), 404
+
+        # Check if there are any files in the folder
+        files_in_folder = [f for f in os.listdir(local_folder) if os.path.isfile(os.path.join(local_folder, f))]
+        if not files_in_folder:
+            last_github_push["status"] = "No files to process in folder"
+
+            # Save push info to file for persistence
+            push_info_file = os.path.join(current_dir, 'last_push_info.json')
+            try:
+                with open(push_info_file, 'w') as f:
+                    json.dump(last_github_push, f)
+            except IOError as e:
+                current_app.logger.error(f"Error saving last push info: {e}")
+
+            return jsonify({"message": "No files to process", "last_push": last_github_push})
+
+        for filename in files_in_folder:
             try:
                 file_path = os.path.join(local_folder, filename)
-
-                # Skip directories or non-files
-                if not os.path.isfile(file_path):
-                    continue
 
                 # Determine GitHub path based on local folder
                 # Option 1: Remove the local folder prefix from the GitHub path
@@ -2434,8 +2459,7 @@ def push_to_github():
             except Exception as e:
                 results.append({filename: {"status": "error", "message": str(e)}})
 
-        # Update the last push timestamp and status
-        global last_github_push
+        # Update the last push status
         last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Determine overall status
