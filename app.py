@@ -2373,14 +2373,24 @@ def push_to_github():
 
                 # Check if file exists on GitHub
                 if response.status_code == 200:
-                    file_info = response.json()
-                    payload["sha"] = file_info.get("sha")
+                    try:
+                        file_info = response.json()
+                        payload["sha"] = file_info.get("sha")
+                    except json.JSONDecodeError:
+                        # Handle case where response is not valid JSON
+                        results.append({
+                            filename: {
+                                "status": "error", 
+                                "message": f"Invalid JSON response when checking if file exists: {response.text[:100]}..."
+                            }
+                        })
+                        continue
                 elif response.status_code != 404:
                     # Unexpected response
                     results.append({
                         filename: {
                             "status": "error", 
-                            "message": f"Failed to check if file exists: {response.status_code}"
+                            "message": f"Failed to check if file exists: {response.status_code}, Response: {response.text[:100]}..."
                         }
                     })
                     continue
@@ -2390,7 +2400,16 @@ def push_to_github():
 
                 # Check if request was successful
                 if 200 <= response.status_code < 300:
-                    results.append({filename: {"status": "success", "data": response.json()}})
+                    try:
+                        results.append({filename: {"status": "success", "data": response.json()}})
+                    except json.JSONDecodeError:
+                        # Handle case where response is not valid JSON
+                        results.append({
+                            filename: {
+                                "status": "error", 
+                                "message": f"Invalid JSON response after successful request: {response.text[:100]}..."
+                            }
+                        })
                 else:
                     results.append({
                         filename: {

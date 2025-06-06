@@ -275,7 +275,7 @@ class GameStatusManager:
 
                             # Read events from the file
                             file_path = os.path.join(self.events_dir, filename)
-                            with open(file_path, 'r') as f:
+                            with open(file_path, 'r', encoding="utf-8") as f:
                                 for line in f:
                                     try:
                                         event = json.loads(line.strip())
@@ -621,7 +621,7 @@ class GameStatusManager:
             GameRoom: The loaded game room object, or None if error
         """
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding="utf-8") as f:
                 room_data = json.load(f)
 
             # Import here to avoid circular imports
