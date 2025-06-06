@@ -20,13 +20,17 @@
             padding: 2px 5px;
             border-radius: 3px;
             z-index: 1000;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
 <body>
     <header>
         <h1>Avirta</h1>
-        <div class="branch-version">{{ current_branch }}</div>
+        <div class="branch-version">{{ last_push_info }}</div>
         <div class="admin-login-container">
             {% if session.get('admin_authenticated') %}
                 <span class="admin-welcome">Welcome, Admin</span>

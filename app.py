@@ -14,6 +14,9 @@ import random
 import subprocess
 from datetime import datetime
 
+# Global variable to store the last GitHub push timestamp
+last_github_push = {"timestamp": None, "status": None}
+
 # Add the current directory to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
@@ -140,16 +143,27 @@ def get_current_branch():
         # Return unknown if there's an error or git is not installed
         return "unknown"
 
-# Add context processor to make branch available to all templates
+# Add context processor to make branch and last push info available to all templates
 @app.context_processor
 def inject_branch():
     """
-    Make the current Git branch available to all templates.
+    Make the current Git branch and last push information available to all templates.
 
     Returns:
-        dict: A dictionary containing the current branch
+        dict: A dictionary containing the current branch and last push info
     """
-    return {'current_branch': get_current_branch()}
+    global last_github_push
+    branch = get_current_branch()
+
+    # Format the last push information
+    last_push_info = "No pushes recorded"
+    if last_github_push["timestamp"]:
+        last_push_info = f"Last push: {last_github_push['timestamp']} - {last_github_push['status']}"
+
+    return {
+        'current_branch': branch,
+        'last_push_info': last_push_info
+    }
 
 @app.route('/')
 def index():
@@ -2426,7 +2440,32 @@ def push_to_github():
             except Exception as e:
                 results.append({filename: {"status": "error", "message": str(e)}})
 
-        return jsonify({"results": results})
+        # Update the last push timestamp and status
+        global last_github_push
+        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Determine overall status
+        success_count = sum(1 for item in results 
+                          for file_data in item.values() 
+                          if file_data.get("status") == "success")
+        error_count = sum(1 for item in results 
+                        for file_data in item.values() 
+                        if file_data.get("status") == "error")
+
+        if len(results) == 0:
+            last_github_push["status"] = "No files processed"
+        elif error_count == 0:
+            last_github_push["status"] = f"Success: {success_count} files pushed"
+        elif success_count == 0:
+            last_github_push["status"] = f"Failed: {error_count} errors"
+        else:
+            last_github_push["status"] = f"Partial: {success_count} succeeded, {error_count} failed"
+
+        return jsonify({"results": results, "last_push": last_github_push})
 
     except Exception as e:
-        return jsonify({"error": str(e), "type": type(e).__name__})
+        # Update the last push timestamp and status for errors
+        global last_github_push
+        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        last_github_push["status"] = f"Error: {str(e)}"
+        return jsonify({"error": str(e), "type": type(e).__name__, "last_push": last_github_push})
