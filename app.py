@@ -157,10 +157,21 @@ def inject_branch():
 
     # Get the last modified timestamp of app.py
     app_path = os.path.abspath(__file__)
-    last_modified = datetime.fromtimestamp(os.path.getmtime(app_path))
+    try:
+        last_modified = datetime.fromtimestamp(os.path.getmtime(app_path))
 
-    # Format the last modified information
-    last_push_info = f"Last modified: {last_modified.strftime('%Y-%m-%d %H:%M:%S')}"
+        # Check if the timestamp is unrealistically old (before 2020)
+        if last_modified.year < 2020:
+            # Use current time as fallback for containerized environments
+            last_modified = datetime.now()
+
+        # Format the last modified information
+        last_push_info = f"App Update: {last_modified.strftime('%y.%m.%d %H:%M')}"
+    except Exception as e:
+        # If there's any error getting the timestamp, use current time
+        current_app.logger.error(f"Error getting file timestamp: {e}")
+        last_modified = datetime.now()
+        last_push_info = f"App Update: {last_modified.strftime('%y.%m.%d %H:%M')}"
 
     return {
         'current_branch': branch,
