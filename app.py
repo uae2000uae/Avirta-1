@@ -18,9 +18,6 @@ import json
 import time
 from datetime import datetime
 
-# Global variable to store the last GitHub push timestamp
-last_github_push = {"timestamp": None, "status": None}
-
 # Add the current directory to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
@@ -147,32 +144,23 @@ def get_current_branch():
         # Return unknown if there's an error or git is not installed
         return "unknown"
 
-# Add context processor to make branch and last push info available to all templates
+# Add context processor to make branch and last modified info available to all templates
 @app.context_processor
 def inject_branch():
     """
-    Make the current Git branch and last push information available to all templates.
+    Make the current Git branch and last modified information available to all templates.
 
     Returns:
-        dict: A dictionary containing the current branch and last push info
+        dict: A dictionary containing the current branch and last modified info
     """
-    global last_github_push
     branch = get_current_branch()
 
-    # Try to load last push info from file
-    push_info_file = os.path.join(current_dir, 'last_push_info.json')
-    if os.path.exists(push_info_file):
-        try:
-            with open(push_info_file, 'r') as f:
-                stored_push_info = json.load(f)
-                last_github_push.update(stored_push_info)
-        except (json.JSONDecodeError, IOError) as e:
-            current_app.logger.error(f"Error loading last push info: {e}")
+    # Get the last modified timestamp of app.py
+    app_path = os.path.abspath(__file__)
+    last_modified = datetime.fromtimestamp(os.path.getmtime(app_path))
 
-    # Format the last push information
-    last_push_info = "No pushes recorded"
-    if last_github_push["timestamp"]:
-        last_push_info = f"Last push: {last_github_push['timestamp']} - {last_github_push['status']}"
+    # Format the last modified information
+    last_push_info = f"Last modified: {last_modified.strftime('%Y-%m-%d %H:%M:%S')}"
 
     return {
         'current_branch': branch,
@@ -2347,38 +2335,14 @@ def push_to_github():
     }
 
     try:
-        # Update the last push timestamp
-        global last_github_push
-        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         # Validate folder exists
         if not os.path.isdir(local_folder):
-            last_github_push["status"] = f"Error: Local folder not found: {local_folder}"
-
-            # Save push info to file for persistence
-            push_info_file = os.path.join(current_dir, 'last_push_info.json')
-            try:
-                with open(push_info_file, 'w') as f:
-                    json.dump(last_github_push, f)
-            except IOError as e:
-                current_app.logger.error(f"Error saving last push info: {e}")
-
-            return jsonify({"error": f"Local folder not found: {local_folder}", "last_push": last_github_push}), 404
+            return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
 
         # Check if there are any files in the folder
         files_in_folder = [f for f in os.listdir(local_folder) if os.path.isfile(os.path.join(local_folder, f))]
         if not files_in_folder:
-            last_github_push["status"] = "No files to process in folder"
-
-            # Save push info to file for persistence
-            push_info_file = os.path.join(current_dir, 'last_push_info.json')
-            try:
-                with open(push_info_file, 'w') as f:
-                    json.dump(last_github_push, f)
-            except IOError as e:
-                current_app.logger.error(f"Error saving last push info: {e}")
-
-            return jsonify({"message": "No files to process", "last_push": last_github_push})
+            return jsonify({"message": "No files to process"})
 
         for filename in files_in_folder:
             try:
@@ -2459,9 +2423,6 @@ def push_to_github():
             except Exception as e:
                 results.append({filename: {"status": "error", "message": str(e)}})
 
-        # Update the last push status
-        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         # Determine overall status
         success_count = sum(1 for item in results 
                           for file_data in item.values() 
@@ -2470,39 +2431,21 @@ def push_to_github():
                         for file_data in item.values() 
                         if file_data.get("status") == "error")
 
+        # Create a status message
+        status_message = ""
         if len(results) == 0:
-            last_github_push["status"] = "No files processed"
+            status_message = "No files processed"
         elif error_count == 0:
-            last_github_push["status"] = f"Success: {success_count} files pushed"
+            status_message = f"Success: {success_count} files pushed"
         elif success_count == 0:
-            last_github_push["status"] = f"Failed: {error_count} errors"
+            status_message = f"Failed: {error_count} errors"
         else:
-            last_github_push["status"] = f"Partial: {success_count} succeeded, {error_count} failed"
+            status_message = f"Partial: {success_count} succeeded, {error_count} failed"
 
-        # Save push info to file for persistence
-        push_info_file = os.path.join(current_dir, 'last_push_info.json')
-        try:
-            with open(push_info_file, 'w') as f:
-                json.dump(last_github_push, f)
-        except IOError as e:
-            current_app.logger.error(f"Error saving last push info: {e}")
-
-        return jsonify({"results": results, "last_push": last_github_push})
+        return jsonify({"results": results, "status": status_message})
 
     except Exception as e:
-        # Update the last push timestamp and status for errors
-        last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        last_github_push["status"] = f"Error: {str(e)}"
-
-        # Save error info to file for persistence
-        push_info_file = os.path.join(current_dir, 'last_push_info.json')
-        try:
-            with open(push_info_file, 'w') as f:
-                json.dump(last_github_push, f)
-        except IOError as e_file:
-            current_app.logger.error(f"Error saving last push info: {e_file}")
-
-        return jsonify({"error": str(e), "type": type(e).__name__, "last_push": last_github_push})
+        return jsonify({"error": str(e), "type": type(e).__name__})
 
 @app.route('/update_json', methods=['POST'])
 def update_json():
