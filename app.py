@@ -5,13 +5,17 @@ This module provides a web interface for the Avirta game, allowing users to
 access and play the game through a web browser.
 """
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, jsonify, current_app
 import os
 import sys
 import tempfile
 import uuid
 import random
 import subprocess
+import requests
+import base64
+import json
+import time
 from datetime import datetime
 
 # Global variable to store the last GitHub push timestamp
@@ -2311,26 +2315,6 @@ def get_json():
         current_app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route('/update_json', methods=['POST'])
-def update_json():
-    """
-    Update JSON files to GitHub.
-    This endpoint calls the push_to_github function to update JSON files to GitHub.
-    """
-    return push_to_github()
-
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
-
-import requests
-import os
-import base64
-import json
-from flask import jsonify, request, current_app
-import time
-
 # Function to push JSON updates to GitHub
 def push_to_github():
     # Get configuration from environment variables or app config
@@ -2465,7 +2449,19 @@ def push_to_github():
 
     except Exception as e:
         # Update the last push timestamp and status for errors
-        global last_github_push
         last_github_push["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         last_github_push["status"] = f"Error: {str(e)}"
         return jsonify({"error": str(e), "type": type(e).__name__, "last_push": last_github_push})
+
+@app.route('/update_json', methods=['POST'])
+def update_json():
+    """
+    Update JSON files to GitHub.
+    This endpoint calls the push_to_github function to update JSON files to GitHub.
+    """
+    return push_to_github()
+
+if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
