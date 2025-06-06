@@ -2319,11 +2319,11 @@ import time
 # Function to push JSON updates to GitHub
 def push_to_github():
     # Get configuration from environment variables or app config
-    github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', ''))
+    github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', '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'))
     local_folder = os.environ.get('LOCAL_FOLDER', current_app.config.get('LOCAL_FOLDER', 'contents/questions'))
-    repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', ''))
-    repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', ''))
-    branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'main'))
+    repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', 'uae2000uae'))
+    repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', 'Avirta-WebApp'))
+    branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'Avirta-1'))
 
     # Validate required parameters
     if not github_token:
