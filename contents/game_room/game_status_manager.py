@@ -238,13 +238,15 @@ class GameStatusManager:
         if not self.persistence_dir or not self.events_dir:
             return
 
-        # Create a file for each room in the events subfolder
-        file_path = os.path.join(self.events_dir, f"{room_id}_events.jsonl")
+        # Create a file for each room in the events subfolder with yymmdd_hhmm timestamp
+        current_time = datetime.now()
+        timestamp = current_time.strftime("%y%m%d_%H%M")
+        file_path = os.path.join(self.events_dir, f"{timestamp}_{room_id}.jsonl")
 
         try:
             # Append the event to the file
-            with open(file_path, 'a') as f:
-                f.write(json.dumps(event) + '\n')
+            with open(file_path, 'a', encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False) + '\n')
         except Exception as e:
             print(f"Error persisting event: {e}")
 
@@ -256,63 +258,36 @@ class GameStatusManager:
             return
 
         try:
-            # Get all event files in the events subfolder
+            # Get all event files in the events subfolder with the new naming convention
             for filename in os.listdir(self.events_dir):
-                if filename.endswith('_events.jsonl'):
-                    room_id = filename.split('_events.jsonl')[0]
-                    self.events[room_id] = []
+                if filename.endswith('.jsonl'):
+                    # New format: yymmdd_hhmm_roomid.jsonl
+                    # Extract room_id from the filename (everything after the timestamp)
+                    parts = filename.split('_', 2)  # Split into [yymm, dd, hhmm_roomid.jsonl]
+                    if len(parts) >= 3:
+                        # Further split the third part to get roomid
+                        room_parts = parts[2].split('.')
+                        if len(room_parts) >= 1:
+                            room_id = room_parts[0]
 
-                    # Read events from the file
-                    file_path = os.path.join(self.events_dir, filename)
-                    with open(file_path, 'r') as f:
-                        for line in f:
-                            try:
-                                event = json.loads(line.strip())
-                                self.events[room_id].append(event)
-                            except json.JSONDecodeError:
-                                continue
+                            if room_id not in self.events:
+                                self.events[room_id] = []
 
-                    # Keep only the last max_events_per_room events
-                    if len(self.events[room_id]) > self.max_events_per_room:
-                        self.events[room_id] = self.events[room_id][-self.max_events_per_room:]
+                            # Read events from the file
+                            file_path = os.path.join(self.events_dir, filename)
+                            with open(file_path, 'r') as f:
+                                for line in f:
+                                    try:
+                                        event = json.loads(line.strip())
+                                        self.events[room_id].append(event)
+                                    except json.JSONDecodeError:
+                                        continue
+
+                            # Keep only the last max_events_per_room events
+                            if len(self.events[room_id]) > self.max_events_per_room:
+                                self.events[room_id] = self.events[room_id][-self.max_events_per_room:]
         except Exception as e:
             print(f"Error loading events from persistence: {e}")
-
-        # Also check the root persistence directory for backward compatibility
-        if os.path.exists(self.persistence_dir):
-            try:
-                for filename in os.listdir(self.persistence_dir):
-                    if filename.endswith('_events.jsonl'):
-                        room_id = filename.split('_events.jsonl')[0]
-
-                        # If we already loaded events for this room from the events subfolder, skip
-                        if room_id in self.events:
-                            continue
-
-                        self.events[room_id] = []
-
-                        # Read events from the file
-                        file_path = os.path.join(self.persistence_dir, filename)
-                        with open(file_path, 'r') as f:
-                            for line in f:
-                                try:
-                                    event = json.loads(line.strip())
-                                    self.events[room_id].append(event)
-                                except json.JSONDecodeError:
-                                    continue
-
-                        # Keep only the last max_events_per_room events
-                        if len(self.events[room_id]) > self.max_events_per_room:
-                            self.events[room_id] = self.events[room_id][-self.max_events_per_room:]
-
-                        # Move the file to the events subfolder
-                        new_file_path = os.path.join(self.events_dir, filename)
-                        try:
-                            os.rename(file_path, new_file_path)
-                        except Exception as e:
-                            print(f"Error moving event file to events subfolder: {e}")
-            except Exception as e:
-                print(f"Error loading events from root persistence directory: {e}")
 
     def get_events(self, room_id: str) -> List[Dict[str, Any]]:
         """
@@ -479,23 +454,18 @@ class GameStatusManager:
         if room_id in self.events:
             self.events[room_id] = []
 
-        # Remove the events file from the events subfolder if it exists
+        # Remove all event files for this room_id from the events subfolder
         if self.events_dir:
-            file_path = os.path.join(self.events_dir, f"{room_id}_events.jsonl")
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    print(f"Error removing events file: {e}")
-
-        # Also check the root persistence directory for backward compatibility
-        if self.persistence_dir:
-            file_path = os.path.join(self.persistence_dir, f"{room_id}_events.jsonl")
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    print(f"Error removing events file from root directory: {e}")
+            try:
+                for filename in os.listdir(self.events_dir):
+                    if filename.endswith(f"{room_id}.jsonl"):
+                        file_path = os.path.join(self.events_dir, filename)
+                        try:
+                            os.remove(file_path)
+                        except Exception as e:
+                            print(f"Error removing events file {filename}: {e}")
+            except Exception as e:
+                print(f"Error listing event files: {e}")
 
     def room_exists(self, room_id: str) -> bool:
         """
@@ -526,45 +496,35 @@ class GameStatusManager:
         if room_id in self.events:
             self.events[room_id] = []
 
-        # Remove the events file from the events subfolder if it exists
+        # Remove all event files for this room_id from the events subfolder
         if self.events_dir:
-            events_file_path = os.path.join(self.events_dir, f"{room_id}_events.jsonl")
-            if os.path.exists(events_file_path):
-                try:
-                    os.remove(events_file_path)
-                except Exception as e:
-                    print(f"Error removing events file: {e}")
-                    success = False
+            try:
+                for filename in os.listdir(self.events_dir):
+                    if filename.endswith(f"{room_id}.jsonl"):
+                        events_file_path = os.path.join(self.events_dir, filename)
+                        try:
+                            os.remove(events_file_path)
+                        except Exception as e:
+                            print(f"Error removing events file {filename}: {e}")
+                            success = False
+            except Exception as e:
+                print(f"Error listing event files: {e}")
+                success = False
 
-        # Remove the room file from the rooms subfolder if it exists
+        # Remove all room files for this room_id from the rooms subfolder
         if self.rooms_dir:
-            room_file_path = os.path.join(self.rooms_dir, f"{room_id}_room.json")
-            if os.path.exists(room_file_path):
-                try:
-                    os.remove(room_file_path)
-                except Exception as e:
-                    print(f"Error removing room file: {e}")
-                    success = False
-
-        # Also check the root persistence directory for backward compatibility
-        if self.persistence_dir:
-            # Check for events file
-            events_file_path = os.path.join(self.persistence_dir, f"{room_id}_events.jsonl")
-            if os.path.exists(events_file_path):
-                try:
-                    os.remove(events_file_path)
-                except Exception as e:
-                    print(f"Error removing events file from root directory: {e}")
-                    success = False
-
-            # Check for room file
-            room_file_path = os.path.join(self.persistence_dir, f"{room_id}_room.json")
-            if os.path.exists(room_file_path):
-                try:
-                    os.remove(room_file_path)
-                except Exception as e:
-                    print(f"Error removing room file from root directory: {e}")
-                    success = False
+            try:
+                for filename in os.listdir(self.rooms_dir):
+                    if filename.endswith(f"{room_id}.json"):
+                        room_file_path = os.path.join(self.rooms_dir, filename)
+                        try:
+                            os.remove(room_file_path)
+                        except Exception as e:
+                            print(f"Error removing room file {filename}: {e}")
+                            success = False
+            except Exception as e:
+                print(f"Error listing room files: {e}")
+                success = False
 
         return success
 
@@ -582,8 +542,10 @@ class GameStatusManager:
         if not self.persistence_dir or not self.rooms_dir:
             return False
 
-        # Create a file for the room in the rooms subfolder
-        file_path = os.path.join(self.rooms_dir, f"{room_id}_room.json")
+        # Create a file for the room in the rooms subfolder with yymmdd_hhmm timestamp
+        current_time = datetime.now()
+        timestamp = current_time.strftime("%y%m%d_%H%M")
+        file_path = os.path.join(self.rooms_dir, f"{timestamp}_{room_id}.json")
 
         try:
             # Serialize the game room to JSON
@@ -603,8 +565,8 @@ class GameStatusManager:
             }
 
             # Write to file
-            with open(file_path, 'w') as f:
-                json.dump(room_data, f)
+            with open(file_path, 'w', encoding="utf-8") as f:
+                json.dump(room_data, f, ensure_ascii=False)
 
             return True
         except Exception as e:
@@ -621,29 +583,30 @@ class GameStatusManager:
         Returns:
             GameRoom: The loaded game room object, or None if not found or error
         """
-        if not self.persistence_dir:
+        if not self.persistence_dir or not self.rooms_dir:
             return None
 
-        # First try to load from the rooms subfolder
-        if self.rooms_dir:
-            file_path = os.path.join(self.rooms_dir, f"{room_id}_room.json")
-            if os.path.exists(file_path):
-                return self._load_game_room_from_file(file_path)
+        # Find the most recent room file for this room_id with the new naming convention
+        latest_file = None
+        latest_timestamp = None
 
-        # If not found in rooms subfolder, try the root persistence directory for backward compatibility
-        file_path = os.path.join(self.persistence_dir, f"{room_id}_room.json")
-        if os.path.exists(file_path):
-            game_room = self._load_game_room_from_file(file_path)
+        try:
+            for filename in os.listdir(self.rooms_dir):
+                if filename.endswith(f"{room_id}.json"):
+                    # New format: yymmdd_hhmm_roomid.json
+                    # Extract timestamp from the filename
+                    parts = filename.split('_', 2)  # Split into [yymm, dd, hhmm_roomid.json]
+                    if len(parts) >= 2:
+                        timestamp = f"{parts[0]}_{parts[1]}"
+                        if latest_timestamp is None or timestamp > latest_timestamp:
+                            latest_timestamp = timestamp
+                            latest_file = filename
+        except Exception as e:
+            print(f"Error finding room file: {e}")
 
-            # If loaded successfully and rooms subfolder exists, move the file there
-            if game_room and self.rooms_dir:
-                new_file_path = os.path.join(self.rooms_dir, f"{room_id}_room.json")
-                try:
-                    os.rename(file_path, new_file_path)
-                except Exception as e:
-                    print(f"Error moving room file to rooms subfolder: {e}")
-
-            return game_room
+        if latest_file:
+            file_path = os.path.join(self.rooms_dir, latest_file)
+            return self._load_game_room_from_file(file_path)
 
         return None
 

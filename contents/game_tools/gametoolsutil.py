@@ -93,11 +93,6 @@ def process_change_question(tool_name, session, game_room, is_ajax, room_id, pla
     # Handle failure cases
     error_message = 'Could not change question.لا يمكن استبدال السؤال'
 
-    if not game_room.question_active:
-        error_message = 'Cannot use Change Question when the host is not on the question page.'
-    elif not game_room.is_host(player_name) and not game_room.player_tools.get(effective_player, {}).get("change_question", {}).get("available", False):
-        error_message = 'You have already used this tool.'
-
     return handle_error(is_ajax, error_message)
 
 def process_double_points(game_room, player_name, is_ajax, room_id, acting_player=None):
@@ -128,9 +123,6 @@ def process_double_points(game_room, player_name, is_ajax, room_id, acting_playe
     if success:
         message = ''
         if game_room.is_host(player_name) and effective_player != player_name:
-            message = f'Double Points activated for {effective_player}! Their next question will be worth double points.'
-            if not is_ajax:
-                flash(message)
             # Add a game event for using the double points tool
             add_game_event(room_id, 'tool_used', {
                 'player_name': player_name,
@@ -139,9 +131,6 @@ def process_double_points(game_room, player_name, is_ajax, room_id, acting_playe
                 'message': f'{player_name} activated Double Points for {effective_player}'
             })
         else:
-            message = 'Double Points activated! Your next question will be worth double points.'
-            if not is_ajax:
-                flash(message)
             # Add a game event for using the double points tool
             add_game_event(room_id, 'tool_used', {
                 'player_name': player_name,
@@ -154,18 +143,6 @@ def process_double_points(game_room, player_name, is_ajax, room_id, acting_playe
             return jsonify({'success': True, 'message': message})
         return True
     else:
-        error_message = 'Could not use Double Points tool.لا يمكن استخدام مضاعفة النقاط'
-
-        # Check if the host is in the question page
-        if game_room.question_active:
-            error_message = 'Cannot use Double Points when the host is on the question page.'
-        # Check if the player has the tool available
-        elif not game_room.player_tools.get(effective_player, {}).get("double_points", {}).get("available", False):
-            error_message = 'You have already used this tool.'
-
-        if is_ajax:
-            return jsonify({'success': False, 'message': error_message})
-        flash(error_message)
         return False
 
 def process_tool_request(tool_name, session, game_room, is_ajax, room_id, player_name, question_uploader, acting_player=None):

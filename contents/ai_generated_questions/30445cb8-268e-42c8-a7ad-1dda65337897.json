@@ -1,0 +1,419 @@
+{
+  "metadata": {
+    "prompt": "Questions about car manufacturers, car models, and car brands.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 50,
+    "include_explanations": true,
+    "language": "english",
+    "timestamp": "2025-06-03T23:52:43.079930"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "Which company manufactures the Civic model?",
+      "correct_answer": "Honda",
+      "explanation": "Honda is the Japanese car manufacturer known for producing the Civic.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What country is Mercedes-Benz originally from?",
+      "correct_answer": "Germany",
+      "explanation": "Mercedes-Benz is a luxury automobile manufacturer based in Germany.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which Italian brand is famous for its prancing horse logo?",
+      "correct_answer": "Ferrari",
+      "explanation": "Ferrari is known for its iconic prancing horse logo.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the full name of the car company commonly known as VW?",
+      "correct_answer": "Volkswagen",
+      "explanation": "VW is an abbreviation for Volkswagen, a German car manufacturer.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which American company makes the Mustang?",
+      "correct_answer": "Ford",
+      "explanation": "The Ford Mustang is a famous American muscle car.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What country is Toyota from?",
+      "correct_answer": "Japan",
+      "explanation": "Toyota is a Japanese car manufacturer and one of the largest in the world.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Name the British luxury car brand with a winged 'B' logo.",
+      "correct_answer": "Bentley",
+      "explanation": "Bentley is a British luxury car manufacturer with a winged 'B' emblem.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the Camry?",
+      "correct_answer": "Toyota",
+      "explanation": "The Camry is a popular sedan manufactured by Toyota.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which South Korean manufacturer makes the Elantra?",
+      "correct_answer": "Hyundai",
+      "explanation": "Hyundai is a South Korean car manufacturer that produces the Elantra.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which German manufacturer makes the 3 Series?",
+      "correct_answer": "BMW",
+      "explanation": "The BMW 3 Series is a popular model from the German automaker BMW.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which car manufacturer produces the Accord?",
+      "correct_answer": "Honda",
+      "explanation": "Honda is the manufacturer of the Accord model.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the luxury division of Toyota?",
+      "correct_answer": "Lexus",
+      "explanation": "Lexus is the luxury vehicle division of the Japanese automaker Toyota.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which car brand is associated with the Impreza model?",
+      "correct_answer": "Subaru",
+      "explanation": "Subaru manufactures the popular Impreza model.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the parent company of the Audi brand?",
+      "correct_answer": "Volkswagen",
+      "explanation": "Volkswagen Group is the parent company of Audi.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which car manufacturer is known for the F-150 truck?",
+      "correct_answer": "Ford",
+      "explanation": "The Ford F-150 is one of the best-selling trucks in the United States.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What Japanese company produces the Altima?",
+      "correct_answer": "Nissan",
+      "explanation": "Nissan is the Japanese automaker that makes the Altima.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which German car manufacturer is known for the Beetle?",
+      "correct_answer": "Volkswagen",
+      "explanation": "Volkswagen is famous for the classic Beetle model.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which luxury car brand is a division of Honda?",
+      "correct_answer": "Acura",
+      "explanation": "Acura is the luxury vehicle division of Honda, primarily sold in North America.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which company manufactures the Outback?",
+      "correct_answer": "Subaru",
+      "explanation": "Subaru is known for producing the Outback, a popular crossover.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which Italian carmaker is known for producing the Countach?",
+      "correct_answer": "Lamborghini",
+      "explanation": "Lamborghini is an Italian manufacturer famous for the Countach and other supercars.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which company manufactures the Model S?",
+      "correct_answer": "Tesla",
+      "explanation": "Tesla is an American electric car manufacturer that produces the Model S.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of General Motors' luxury vehicle division?",
+      "correct_answer": "Cadillac",
+      "explanation": "Cadillac is the luxury vehicle division of General Motors.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which French company produces the Clio?",
+      "correct_answer": "Renault",
+      "explanation": "Renault is a French automaker known for the Clio, among other models.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which Japanese manufacturer produces the RX series of SUVs?",
+      "correct_answer": "Lexus",
+      "explanation": "The Lexus RX series is a line of SUVs produced by Lexus, Toyota's luxury division.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which company is known for its 'Spirit of Ecstasy' hood ornament?",
+      "correct_answer": "Rolls-Royce",
+      "explanation": "Rolls-Royce cars feature the 'Spirit of Ecstasy' as their hood ornament.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which German car manufacturer produces the A-Class?",
+      "correct_answer": "Mercedes-Benz",
+      "explanation": "The A-Class is a compact car produced by Mercedes-Benz.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which American manufacturer produces the Corvette?",
+      "correct_answer": "Chevrolet",
+      "explanation": "Chevrolet, a division of General Motors, manufactures the Corvette.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which British manufacturer is known for the Defender model?",
+      "correct_answer": "Land Rover",
+      "explanation": "Land Rover, a British car manufacturer, produces the Defender.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the oldest car manufacturer still in existence?",
+      "correct_answer": "Peugeot",
+      "explanation": "Peugeot, founded in 1810, is considered the oldest car manufacturer still in operation.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the sports car Supra?",
+      "correct_answer": "Toyota",
+      "explanation": "The Toyota Supra is a famous sports car produced by Toyota.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which car manufacturer owns Bugatti?",
+      "correct_answer": "Volkswagen",
+      "explanation": "Volkswagen Group acquired Bugatti in 1998.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the main luxury brand of Nissan?",
+      "correct_answer": "Infiniti",
+      "explanation": "Infiniti is Nissan's luxury vehicle division.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which American car manufacturer used the slogan 'Like a Rock'?",
+      "correct_answer": "Chevrolet",
+      "explanation": "Chevrolet used the slogan 'Like a Rock' to promote its trucks.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which Japanese company manufactures the Miata?",
+      "correct_answer": "Mazda",
+      "explanation": "Mazda produces the MX-5 Miata, a popular two-seater sports car.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which Swedish company is known for its focus on safety and produced the 240 model?",
+      "correct_answer": "Volvo",
+      "explanation": "Volvo is a Swedish manufacturer known for its emphasis on safety and the 240 model.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which car manufacturer makes the Aventador?",
+      "correct_answer": "Lamborghini",
+      "explanation": "The Aventador is a flagship model by Lamborghini.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which German manufacturer produces the Panamera?",
+      "correct_answer": "Porsche",
+      "explanation": "Porsche is a German automaker that manufactures the Panamera luxury sedan.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which automaker produces the luxury SUV Bentayga?",
+      "correct_answer": "Bentley",
+      "explanation": "The Bentayga is a luxury SUV produced by Bentley.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the i3 electric car?",
+      "correct_answer": "BMW",
+      "explanation": "BMW manufactures the i3, an electric city car.",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which car manufacturer is famous for the Quattro all-wheel-drive system?",
+      "correct_answer": "Audi",
+      "explanation": "Audi is known for its Quattro all-wheel-drive technology.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which Italian company is owned by Stellantis and makes the 500 model?",
+      "correct_answer": "Fiat",
+      "explanation": "Fiat, owned by Stellantis, is known for its 500 model.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which Japanese manufacturer produces the luxury car model LS?",
+      "correct_answer": "Lexus",
+      "explanation": "The Lexus LS is a flagship luxury sedan from Lexus.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which French car company merged with Peugeot to form PSA Group?",
+      "correct_answer": "Citroën",
+      "explanation": "Citroën merged with Peugeot, forming the PSA Group.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which British brand is known for producing the Phantom?",
+      "correct_answer": "Rolls-Royce",
+      "explanation": "The Rolls-Royce Phantom is a famous luxury automobile.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which Japanese company is known for the Z series sports cars?",
+      "correct_answer": "Nissan",
+      "explanation": "Nissan manufactures the Z series, including the 350Z and 370Z.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which British automaker is known for the Vantage model?",
+      "correct_answer": "Aston Martin",
+      "explanation": "Aston Martin is famous for its Vantage sports cars.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which luxury car manufacturer has its headquarters in Crewe, England?",
+      "correct_answer": "Bentley",
+      "explanation": "Bentley Motors is based in Crewe, England.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which American electric vehicle company was founded by Elon Musk?",
+      "correct_answer": "Tesla",
+      "explanation": "Elon Musk is the CEO and co-founder of Tesla, Inc.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the luxury SUV Escalade?",
+      "correct_answer": "Cadillac",
+      "explanation": "The Escalade is a luxury SUV by Cadillac.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which South Korean automaker owns the luxury brand Genesis?",
+      "correct_answer": "Hyundai",
+      "explanation": "Hyundai is the parent company of Genesis, its luxury vehicle division.",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which British car company produced the classic Mini before being acquired by BMW?",
+      "correct_answer": "Rover",
+      "explanation": "Rover produced the Mini before BMW acquired the brand.",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the electric car Leaf?",
+      "correct_answer": "Nissan",
+      "explanation": "The Nissan Leaf is one of the most popular electric vehicles worldwide.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which company produces the luxury sedan S-Class?",
+      "correct_answer": "Mercedes-Benz",
+      "explanation": "The S-Class is a flagship luxury sedan by Mercedes-Benz.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which company owns the luxury car brand Bugatti as of 2024?",
+      "correct_answer": "Rimac",
+      "explanation": "As of 2021, Bugatti became part of Bugatti Rimac, with Rimac Automobili holding the majority stake.",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which Japanese automaker is known for its rotary engine technology?",
+      "correct_answer": "Mazda",
+      "explanation": "Mazda is recognized for developing and using rotary engines, especially in the RX-7 and RX-8.",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which American manufacturer produced the EV1, one of the first modern electric cars?",
+      "correct_answer": "General Motors",
+      "explanation": "General Motors produced the EV1 in the late 1990s.",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which Italian luxury brand is famous for its signature trident logo?",
+      "correct_answer": "Maserati",
+      "explanation": "Maserati's logo features a trident, inspired by the Fountain of Neptune in Bologna, Italy.",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which Chinese automotive company owns Volvo Cars?",
+      "correct_answer": "Geely",
+      "explanation": "Chinese company Geely acquired Volvo Cars from Ford in 2010.",
+      "points": 500
+    }
+  ]
+}

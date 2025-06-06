@@ -1,5 +1,20 @@
 /* Avirta Game - Main Stylesheet */
 
+/* Cairo Font Family */
+@font-face {
+    font-family: 'Cairo';
+    src: url('../fonts/Cairo/static/Cairo-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Cairo';
+    src: url('../fonts/Cairo/static/Cairo-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: Bold;
+}
+
 /* Color Theme Variables */
 :root {
     /* Primary Colors */
@@ -14,9 +29,9 @@
     --secondary-color-light: #363639;
 
     /* Background Colors */
-    --bg-color: #0f202d;
     --bg-color-lighter: #346176;
     --bg-color-light: #1e3745;
+    --bg-color: #0f202d;
     --bg-color-dark: #f6efdd;
     --bg-color-darker: #e2c695;
     --bg-color-darkest: #c58e3f;
@@ -193,6 +208,7 @@ button, .button {
     text-wrap: wrap;
     text-decoration: none;
     display: inline-block;
+	text-align: center;
 }
 .text-clear {
     text-decoration: none;
@@ -207,6 +223,12 @@ button:hover, .button:hover {
     opacity: 0.2;
     cursor: not-allowed;
 }
+
+.button.large {
+	padding: var(--spacing-md);
+	padding-left: var(--spacing-xl);	
+	padding-right: var(--spacing-xl);
+}	
 
 /* Game board styling */
 .game-board {
@@ -238,7 +260,6 @@ button:hover, .button:hover {
     justify-content: center;
     align-items: center;
     word-wrap: normal;
-    font-size: min(1.6vw, 18px); /* Adjusts size dynamically */
 }
 .category-header-grid { /*for categoy head in game board */
     background-color: var(--primary-color-light);
@@ -727,6 +748,7 @@ button:hover, .button:hover {
 
 .game-board-section {
     margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
 }
 
 .game-actions {
@@ -889,6 +911,7 @@ button:hover, .button:hover {
 	padding: 0;
 	box-shadow: 0 0 0 rgba(0, 0, 0, 0);
 }
+
 textarea {
     width: 100%;
     padding: 8px;
@@ -1001,11 +1024,11 @@ small {
 }
 
 .result {
-    padding: var(--spacing-md);
+    padding: var(--spacing-xx);
     border-radius: var(--border-radius-xlarge);
 	border: solid 2px;
-    margin-left: 150px;
-    margin-right: 150px;
+    margin-left: 15%;
+    margin-right: 15%;
 }
 
 .result.correct{
@@ -1018,9 +1041,9 @@ small {
 
 }
 @keyframes zoomin {
-    0% {transform: scale(0.7);opacity: 0;}
-    80% {transform: scale(1.05);opacity: 100%;}
-    90% {transform: scale(0.90);}
+    0% {transform: scale(0);opacity: 0;}
+    80% {transform: scale(1.3);opacity: 70%;}
+    90% {transform: scale(0.80);}
     100% {transform: scale(1);opacity: 100%;}
 }
 
@@ -1306,6 +1329,10 @@ small {
 	width: 100%;
 }
 
+.text-nomargin {
+	margin: 0;
+}
+
 .mt-20 {
     margin-top: var(--spacing-lg);
 }
@@ -1369,6 +1396,14 @@ small {
 .delete-button:hover {
     background-color: var(--error-color-dark) !important;
 }
+.success-button {
+    background-color: var(--success-color) !important;
+    color: white !important;
+}
+
+.success-button:hover {
+    background-color: var(--success-color-dark) !important;
+}
 
 /* Statistics styles */
 .stats-container {
@@ -1384,7 +1419,7 @@ small {
 
 .stat-card {
     flex: 1;
-    background-color: var(--bg-color-light);
+    background-color: var(--bg-color-lighter);
     padding: var(--spacing-md);
     border-radius: var(--border-radius-large);
     text-align: center;
@@ -1683,8 +1718,11 @@ footer {
     overflow-y: auto;
 
 }
+.logs-table {
+	width: 100%;
+}
 .logs-table th {
-    background-color: var(--bg-color-darker); /* Override data-table header background */
+    background-color: var(--bg-color-lighter); /* Override data-table header background */
     color: var(--text-color-white); /* Override data-table header text color */
 }
 
@@ -1718,8 +1756,20 @@ footer {
     text-align: center;
 }
 
+.form-container {
+	background-color: var(--bg-color-lighter);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow);
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+	justify-content: center;
+    gap: var(--spacing-md);
+}
 /* Progress indicator styles */
 .progress-container {
+    width: fill;
     margin: 20px 0;
     padding: 15px;
     background-color: var(--bg-color);
@@ -1730,7 +1780,7 @@ footer {
 
 .progress-bar-container {
     width: 100%;
-    height: 20px;
+    height: 15px;
     background-color: #e0e0e0;
     border-radius: 10px;
     margin: 15px 0;

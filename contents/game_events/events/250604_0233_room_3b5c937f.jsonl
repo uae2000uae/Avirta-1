@@ -1,0 +1,4 @@
+{"type": "question_selected", "data": {"player_name": "Shihab", "category": "تاريخ_الإمارات", "points": 100, "message": "Shihab selected a 100-point question from تاريخ_الإمارات"}, "timestamp": "2025-06-04T02:33:04.114937"}
+{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "تاريخ_الإمارات", "points": 100, "is_correct": true, "message": "Shihab answered correct and earned 100 points"}, "timestamp": "2025-06-04T02:33:09.818608"}
+{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T02:33:11.794953"}
+{"type": "tool_used", "data": {"player_name": "Omar", "tool_name": "double_points", "target_player": "Omar", "message": "Omar activated Double Points"}, "timestamp": "2025-06-04T02:33:21.172203"}

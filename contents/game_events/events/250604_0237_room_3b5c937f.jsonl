@@ -1,0 +1,4 @@
+{"type": "turn_switch", "data": {"previous_player": "Omar", "new_player": "Shihab", "message": "Turn switched from Omar to Shihab"}, "timestamp": "2025-06-04T02:37:01.567768"}
+{"type": "question_selected", "data": {"player_name": "Shihab", "category": "تاريخ_الإمارات", "points": 300, "message": "Shihab selected a 300-point question from تاريخ_الإمارات"}, "timestamp": "2025-06-04T02:37:11.823895"}
+{"type": "tool_used", "data": {"player_name": "Shihab", "tool_name": "change_question", "category": "تاريخ_الإمارات", "points": 300, "target_player": null, "message": "Shihab used Change Question to get a new question"}, "timestamp": "2025-06-04T02:37:13.198957"}
+{"type": "answer_evaluated", "data": {"player_name": "Shihab", "evaluator": "Shihab", "category": "تاريخ_الإمارات", "points": 300, "is_correct": true, "message": "The Host evaluated Shihab's answer as correct and earned 300 points"}, "timestamp": "2025-06-04T02:37:19.571695"}

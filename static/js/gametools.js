@@ -58,12 +58,12 @@ window.updatePlayerTools = function(data) {
                 doublePointsButton.title = 'Double the points for the current player';
             }
         } else {
-            // Regular player logic (unchanged)
-            if (data.host_on_question_page || !data.is_current_player_turn || !data.player_tools.double_points) {
+            // Regular player logic - only check if tool has been used
+            if (!data.player_tools.double_points) {
                 doublePointsButton.setAttribute('disabled', 'disabled');
                 doublePointsButton.style.opacity = '0.5';
                 doublePointsButton.style.cursor = 'not-allowed';
-                doublePointsButton.title = 'You can not use Double Points';
+                doublePointsButton.title = 'This tool has already been used';
             } else {
                 doublePointsButton.removeAttribute('disabled');
                 doublePointsButton.style.opacity = '1';
@@ -99,12 +99,12 @@ window.updatePlayerTools = function(data) {
                 changeQuestionButton.title = 'Change the question for the current player';
             }
         } else {
-            // Regular player logic
-            if (!data.is_current_player_turn || !data.player_tools.change_question) {
+            // Regular player logic - only check if tool has been used
+            if (!data.player_tools.change_question) {
                 changeQuestionButton.setAttribute('disabled', 'disabled');
                 changeQuestionButton.style.opacity = '0.5';
                 changeQuestionButton.style.cursor = 'not-allowed';
-                changeQuestionButton.title = 'You can not use Change Question';
+                changeQuestionButton.title = 'This tool has already been used';
             } else {
                 changeQuestionButton.removeAttribute('disabled');
                 changeQuestionButton.style.opacity = '1';
@@ -121,7 +121,17 @@ window.updatePlayerTools = function(data) {
 function setupDoublePointsButton() {
     const doublePointsBtn = document.getElementById('double-points-btn');
     if (doublePointsBtn) {
-        doublePointsBtn.addEventListener('click', function() {
+        doublePointsBtn.addEventListener('click', function(e) {
+            // Prevent default if this is a submit button in a form
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
+
+            // Disable the button to prevent multiple clicks
+            doublePointsBtn.disabled = true;
+            doublePointsBtn.style.opacity = '0.5';
+            doublePointsBtn.style.cursor = 'not-allowed';
+
             // Get the current player from the page
             const gameRoomSection = document.querySelector('.page-section');
             const isHost = gameRoomSection && gameRoomSection.dataset.isHost === 'true';
@@ -131,16 +141,22 @@ function setupDoublePointsButton() {
             const currentPlayerElement = document.querySelector('.red-badge');
             const currentPlayer = currentPlayerElement ? currentPlayerElement.textContent : null;
 
+            // Prepare the request body
+            const formData = new FormData();
+            formData.append('tool_name', 'double_points');
+
             // Determine if we need to include acting_player
-            let requestBody = 'tool_name=double_points';
             if (isHost && currentPlayer && currentPlayer !== playerName) {
-                requestBody += `&acting_player=${encodeURIComponent(currentPlayer)}`;
+                formData.append('acting_player', currentPlayer);
             }
 
             fetch('/use_tool', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: requestBody
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams(formData)
             })
             .then(response => response.json())
             .then(data => {
@@ -152,12 +168,32 @@ function setupDoublePointsButton() {
                     if (typeof addStatusUpdate === 'function') {
                         addStatusUpdate(data.message || 'Double Points activated!', 'status-warning');
                     }
+
+                    // Disable the button permanently as the tool has been used
+                    doublePointsBtn.disabled = true;
+                    doublePointsBtn.style.opacity = '0.3';
+                    doublePointsBtn.style.cursor = 'not-allowed';
+                    doublePointsBtn.title = 'This tool has already been used';
                 } else {
+                    // Re-enable the button if there was an error
+                    doublePointsBtn.disabled = false;
+                    doublePointsBtn.style.opacity = '1';
+                    doublePointsBtn.style.cursor = 'pointer';
+
                     // Show error message
                     alert(data.message || 'Could not use Double Points tool.');
                 }
             })
-            .catch(error => console.error('Error using Double Points tool:', error));
+            .catch(error => {
+                console.error('Error using Double Points tool:', error);
+
+                // Re-enable the button if there was an error
+                doublePointsBtn.disabled = false;
+                doublePointsBtn.style.opacity = '1';
+                doublePointsBtn.style.cursor = 'pointer';
+
+                alert('Error using Double Points tool.');
+            });
         });
     }
 }
@@ -166,8 +202,8 @@ function setupDoublePointsButton() {
  * Set up Change Question button
  */
 function setupChangeQuestionButton() {
-    // Only run this on the question page
-    if (!window.location.pathname.includes('/question/')) {
+    // Run this on both the question page and joined_room page
+    if (!window.location.pathname.includes('/question/') && !window.location.pathname.includes('/joined_room')) {
         return;
     }
 
@@ -184,71 +220,72 @@ function setupChangeQuestionButton() {
         clientInitiatedChange = true;
     }
 
-    // Convert the Change Question button to use AJAX
-    const changeQuestionButtons = document.querySelectorAll('form[action*="use_tool"] button');
+    // Find all Change Question buttons
+    const changeQuestionButtons = document.querySelectorAll('#change-question-btn');
+
     changeQuestionButtons.forEach(button => {
-        const form = button.closest('form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
+        // Add click event listener to the button
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
 
-                // Set flags BEFORE sending the request to prevent race conditions
-                questionChanged = true;
-                clientInitiatedChange = true;
+            // Set flags BEFORE sending the request to prevent race conditions
+            questionChanged = true;
+            clientInitiatedChange = true;
 
-                // Set a flag in localStorage to track across page reloads
-                localStorage.setItem('questionJustChanged', 'true');
+            // Set a flag in localStorage to track across page reloads
+            localStorage.setItem('questionJustChanged', 'true');
 
-                // Disable the button to prevent multiple clicks
-                button.disabled = true;
-                button.style.opacity = '0.5';
-                button.style.cursor = 'not-allowed';
+            // Disable the button to prevent multiple clicks
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.style.cursor = 'not-allowed';
 
-                // Send AJAX request to use the Change Question tool
-                fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: new URLSearchParams(new FormData(form))
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        // Clear flags if request failed
-                        localStorage.removeItem('questionJustChanged');
-                        questionChanged = false;
-                        clientInitiatedChange = false;
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // If there's a redirect URL, navigate to it
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
-                        } else {
-                            // Reload the page to show the new question
-                            window.location.reload();
-                        }
+            // Get the tool_name from the nearest input or use default
+            const container = button.closest('.form-actions');
+            const toolNameInput = container ? container.querySelector('input[name="tool_name"]') : null;
+            const toolName = toolNameInput ? toolNameInput.value : 'change_question';
+
+            // Get the acting_player from the nearest input or use default
+            const actingPlayerInput = container ? container.querySelector('input[name="acting_player"]') : null;
+            const actingPlayer = actingPlayerInput ? actingPlayerInput.value : null;
+
+            // Prepare the request body
+            const formData = new FormData();
+            formData.append('tool_name', toolName);
+            if (actingPlayer) {
+                formData.append('acting_player', actingPlayer);
+            }
+
+            // Send AJAX request to use the Change Question tool
+            fetch('/use_tool', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Clear flags if request failed
+                    localStorage.removeItem('questionJustChanged');
+                    questionChanged = false;
+                    clientInitiatedChange = false;
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // If there's a redirect URL, navigate to it
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
                     } else {
-                        // Clear flags if request was not successful
-                        localStorage.removeItem('questionJustChanged');
-                        questionChanged = false;
-                        clientInitiatedChange = false;
-
-                        // Re-enable the button if there was an error
-                        button.disabled = false;
-                        button.style.opacity = '1';
-                        button.style.cursor = 'pointer';
-                        alert('Could not change question: ' + (data.message || ''));
+                        // Reload the page to show the new question
+                        window.location.reload();
                     }
-                })
-                .catch(error => {
-                    console.error('Error using Change Question tool:', error);
-
-                    // Clear flags if there was an error
+                } else {
+                    // Clear flags if request was not successful
                     localStorage.removeItem('questionJustChanged');
                     questionChanged = false;
                     clientInitiatedChange = false;
@@ -257,10 +294,24 @@ function setupChangeQuestionButton() {
                     button.disabled = false;
                     button.style.opacity = '1';
                     button.style.cursor = 'pointer';
-                    alert('Error using Change Question tool.');
-                });
+                    alert('Could not change question: ' + (data.message || ''));
+                }
+            })
+            .catch(error => {
+                console.error('Error using Change Question tool:', error);
+
+                // Clear flags if there was an error
+                localStorage.removeItem('questionJustChanged');
+                questionChanged = false;
+                clientInitiatedChange = false;
+
+                // Re-enable the button if there was an error
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+                alert('Error using Change Question tool.');
             });
-        }
+        });
     });
 }
 
@@ -268,8 +319,8 @@ function setupChangeQuestionButton() {
  * Set up polling for tool usage events
  */
 function setupToolEventPolling() {
-    // Only run this on the question page
-    if (!window.location.pathname.includes('/question/')) {
+    // Run this on both the question page and joined_room page
+    if (!window.location.pathname.includes('/question/') && !window.location.pathname.includes('/joined_room')) {
         return;
     }
 

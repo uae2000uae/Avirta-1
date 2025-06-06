@@ -1,0 +1,8 @@
+{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T02:40:27.469385"}
+{"type": "turn_switch", "data": {"previous_player": "Omar", "new_player": "Shihab", "message": "Turn switched from Omar to Shihab"}, "timestamp": "2025-06-04T02:40:33.419437"}
+{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T02:40:35.611722"}
+{"type": "question_selected", "data": {"player_name": "Omar", "category": "تاريخ_الإمارات", "points": 400, "message": "Omar selected a 400-point question from تاريخ_الإمارات"}, "timestamp": "2025-06-04T02:40:38.629017"}
+{"type": "tool_used", "data": {"player_name": "Shihab", "tool_name": "change_question", "category": "تاريخ_الإمارات", "points": 400, "target_player": "Omar", "message": "Shihab used Change Question for Omar"}, "timestamp": "2025-06-04T02:40:42.149624"}
+{"type": "answer_evaluated", "data": {"player_name": "Omar", "evaluator": "Shihab", "category": "تاريخ_الإمارات", "points": 400, "is_correct": true, "message": "The Host evaluated Omar's answer as correct and earned 400 points"}, "timestamp": "2025-06-04T02:40:44.950702"}
+{"type": "turn_switch", "data": {"previous_player": "Omar", "new_player": "Shihab", "message": "Turn switched from Omar to Shihab"}, "timestamp": "2025-06-04T02:40:48.352714"}
+{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T02:40:53.322322"}

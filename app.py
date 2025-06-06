@@ -11,6 +11,7 @@ import sys
 import tempfile
 import uuid
 import random
+import subprocess
 from datetime import datetime
 
 # Add the current directory to the Python path
@@ -117,6 +118,38 @@ game_status_manager = GameStatusManager(max_events_per_room=100, persistence_dir
 
 # Set the global GameStatusManager instance
 set_game_status_manager(game_status_manager)
+
+# Function to get the current Git branch
+def get_current_branch():
+    """
+    Get the current Git branch name.
+
+    Returns:
+        str: The name of the current Git branch or "unknown" if not in a Git repository
+    """
+    try:
+        # Run git command to get current branch
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except (subprocess.SubprocessError, FileNotFoundError):
+        # Return unknown if there's an error or git is not installed
+        return "unknown"
+
+# Add context processor to make branch available to all templates
+@app.context_processor
+def inject_branch():
+    """
+    Make the current Git branch available to all templates.
+
+    Returns:
+        dict: A dictionary containing the current branch
+    """
+    return {'current_branch': get_current_branch()}
 
 @app.route('/')
 def index():
@@ -960,7 +993,8 @@ def leaderboard(room_id):
     return render_template(
         'leaderboard.html',
         room_id=room_id,
-        leaderboard=leaderboard
+        leaderboard=leaderboard,
+        room=game_room
     )
 
 @app.route('/reported_questions')
@@ -1455,7 +1489,34 @@ def view_questions(category_id):
 
     category = category_manager.get_category(category_id)
     questions = question_bank.get_questions_by_category(category_id)
-    return render_template('view_questions.html', category=category, questions=questions)
+
+    # Calculate category statistics
+    stats = {
+        'total_questions': len(questions),
+        'total_usage': sum(q.get('use_count', 0) for q in questions),
+        'by_type': {},
+        'by_points': {}
+    }
+
+    # Count questions by type and points
+    for question in questions:
+        q_type = question.get('type', 'unknown')
+        points = question.get('points', 0)
+
+        # Count by type
+        if q_type not in stats['by_type']:
+            stats['by_type'][q_type] = 0
+        stats['by_type'][q_type] += 1
+
+        # Count by points
+        if points not in stats['by_points']:
+            stats['by_points'][points] = 0
+        stats['by_points'][points] += 1
+
+    # Sort the points for display
+    stats['points_sorted'] = sorted(stats['by_points'].keys())
+
+    return render_template('view_questions.html', category=category, questions=questions, stats=stats)
 
 @app.route('/question_bank/edit/<question_id>')
 def edit_question(question_id):
@@ -1822,10 +1883,13 @@ def ai_question_history_detail(batch_id):
 
     # Get the batch metadata and questions
     metadata = get_batch_metadata(batch_id)
-    questions = get_batch(batch_id)
+    if not metadata:
+        flash('Batch metadata not found. The batch may have been deleted or corrupted.', 'error')
+        return redirect(url_for('ai_question_history'))
 
-    if not metadata or not questions:
-        flash('Batch not found.', 'error')
+    questions = get_batch(batch_id)
+    if not questions:
+        flash('Questions not found for this batch. The data may have been corrupted or deleted.', 'error')
         return redirect(url_for('ai_question_history'))
 
     # Get all batches for navigation
@@ -1869,7 +1933,7 @@ def save_ai_questions():
     # Get the batch of questions
     questions = get_batch(batch_id)
     if not questions:
-        flash('Questions not found.', 'error')
+        flash('Questions not found for this batch. The data may have been corrupted or deleted.', 'error')
         return redirect(url_for('ai_question_generator'))
 
     # Get the custom category name
@@ -2200,7 +2264,149 @@ def get_game_state(room_id):
     """
     return redirect(url_for('game_updates', room_id=room_id))
 
-# These functions have been moved to gametoolsutil.py
+@app.route('/_ah/health')
+def health_check():
+    """
+    Health check endpoint for App Engine.
+    This endpoint is used by App Engine to determine if the application is healthy.
+    """
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+
+import json
+from flask import jsonify, current_app
+
+@app.route('/get-json')
+def get_json():
+    """
+    Get data from data.json file as a JSON response.
+    This endpoint reads the data.json file and returns its contents.
+    """
+    try:
+        # Use a configurable path or relative to application root
+        file_path = current_app.config.get('DATA_JSON_PATH', 'data.json')
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+        return jsonify(data)
+    except FileNotFoundError as e:
+        current_app.logger.error(f"File not found: {e}")
+        return jsonify({"error": "File not found"}), 404
+    except json.JSONDecodeError as e:
+        current_app.logger.error(f"JSON decode error: {e}")
+        return jsonify({"error": "Invalid JSON format"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/update_json', methods=['POST'])
+def update_json():
+    """
+    Update JSON files to GitHub.
+    This endpoint calls the push_to_github function to update JSON files to GitHub.
+    """
+    return push_to_github()
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
+import requests
+import os
+import base64
+from flask import jsonify, request, current_app
+import time
+
+# Function to push JSON updates to GitHub
+def push_to_github():
+    # Get configuration from environment variables or app config
+    github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', ''))
+    local_folder = os.environ.get('LOCAL_FOLDER', current_app.config.get('LOCAL_FOLDER', 'contents/questions'))
+    repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', ''))
+    repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', ''))
+    branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'main'))
+
+    # Validate required parameters
+    if not github_token:
+        return jsonify({"error": "GitHub token not configured"}), 500
+    if not repo_owner or not repo_name:
+        return jsonify({"error": "Repository information not configured"}), 500
+
+    results = []
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json"  # Explicit API version
+    }
+
+    try:
+        # Validate folder exists
+        if not os.path.isdir(local_folder):
+            return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
+
+        for filename in os.listdir(local_folder):
+            try:
+                file_path = os.path.join(local_folder, filename)
+
+                # Skip directories or non-files
+                if not os.path.isfile(file_path):
+                    continue
+
+                # Determine GitHub path based on local folder
+                # Option 1: Remove the local folder prefix from the GitHub path
+                # Use just the filename for the GitHub path
+                github_path = filename
+
+                # Read file in binary mode to avoid encoding issues
+                with open(file_path, "rb") as file:
+                    file_content = file.read()
+
+                # Get existing file info (if it exists)
+                url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{github_path}"
+
+                response = requests.get(url, headers=headers)
+
+                # Prepare payload
+                payload = {
+                    "message": f"Automated update: {filename}",
+                    "content": base64.b64encode(file_content).decode(),
+                    "branch": branch,
+                }
+
+                # Check if file exists on GitHub
+                if response.status_code == 200:
+                    file_info = response.json()
+                    payload["sha"] = file_info.get("sha")
+                elif response.status_code != 404:
+                    # Unexpected response
+                    results.append({
+                        filename: {
+                            "status": "error", 
+                            "message": f"Failed to check if file exists: {response.status_code}"
+                        }
+                    })
+                    continue
+
+                # Create or update the file
+                response = requests.put(url, json=payload, headers=headers)
+
+                # Check if request was successful
+                if 200 <= response.status_code < 300:
+                    results.append({filename: {"status": "success", "data": response.json()}})
+                else:
+                    results.append({
+                        filename: {
+                            "status": "error",
+                            "code": response.status_code,
+                            "message": response.text
+                        }
+                    })
+
+                # Respect GitHub API rate limits
+                time.sleep(1)
+
+            except Exception as e:
+                results.append({filename: {"status": "error", "message": str(e)}})
+
+        return jsonify({"results": results})
+
+    except Exception as e:
+        return jsonify({"error": str(e), "type": type(e).__name__})

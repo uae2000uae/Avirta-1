@@ -311,7 +311,7 @@ class BulkImport:
         try:
             if file_extension == "json":
                 with open(file_path, "w", encoding="utf-8") as f:
-                    json.dump(questions, f, indent=2)
+                    json.dump(questions, f, indent=2, ensure_ascii=False)
             elif file_extension == "csv":
                 self._export_to_csv(file_path, questions)
 

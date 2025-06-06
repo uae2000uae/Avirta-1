@@ -1,27 +1,7 @@
 {
   "report_id": "R0000004",
-  "question_id": "Q0000357",
-  "question_data": {
-    "type": "multiple_choice",
-    "question": "أي من الإمارات التالية ليست ضمن الإمارات السبع؟",
-    "options": [
-      "أبوظبي",
-      "الشارقة",
-      "البحرين",
-      "الفجيرة"
-    ],
-    "correct_answer": "البحرين",
-    "explanation": "البحرين ليست جزءًا من الإمارات السبع التي تشكل دولة الإمارات العربية المتحدة.",
-    "points": 200,
-    "id": "Q0000357",
-    "category_id": "تاريخ_الإمارات",
-    "created_at": "2025-05-17T22:44:10.420028",
-    "updated_at": "2025-05-19T01:00:12.808618",
-    "active": true,
-    "use_count": 1
-  },
-  "reported_at": "2025-05-20T20:48:12.888473",
+  "question_id": "Q0001118",
+  "reported_at": "2025-06-04T03:03:10.705375",
   "reporter": "Shihab",
-  "status": "reviewed",
-  "updated_at": "2025-05-21T19:03:05.551031"
+  "status": "pending"
 }

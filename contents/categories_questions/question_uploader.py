@@ -137,13 +137,31 @@ class QuestionUploader:
         if question_id not in self.questions:
             return False
 
+        # Get the category of the question
+        category_id = self.questions[question_id].get("category_id", "general")
+
         # Remove from memory
         del self.questions[question_id]
 
-        # Remove from storage
-        file_path = os.path.join(self.storage_path, f"{question_id}.json")
+        # Remove from storage (category file)
+        file_path = os.path.join(self.storage_path, f"{category_id}.json")
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try:
+                # Load the category file
+                with open(file_path, "r", encoding="utf-8") as f:
+                    category_questions = json.load(f)
+
+                # Remove the question from the list
+                category_questions = [q for q in category_questions if q.get("id") != question_id]
+
+                # Save the updated list back to the file
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(category_questions, f, indent=2)
+
+                return True
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Error updating category file {file_path}: {e}")
+                return False
 
         return True
 
@@ -163,12 +181,23 @@ class QuestionUploader:
         if not questions_to_delete:
             return False, 0
 
-        # Delete each question
-        count = 0
+        # Count the questions to delete
+        count = len(questions_to_delete)
+
+        # Remove questions from memory
         for question in questions_to_delete:
             question_id = question.get("id")
-            if self.delete_question(question_id):
-                count += 1
+            if question_id in self.questions:
+                del self.questions[question_id]
+
+        # Remove the category file
+        file_path = os.path.join(self.storage_path, f"{category_id}.json")
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except IOError as e:
+                print(f"Error deleting category file {file_path}: {e}")
+                return False, 0
 
         return True, count
 
@@ -213,13 +242,25 @@ class QuestionUploader:
                     file_path = os.path.join(self.storage_path, filename)
                     try:
                         with open(file_path, "r", encoding="utf-8") as f:
-                            question_data = json.load(f)
-                            question_id = question_data.get("id")
-                            if question_id:
-                                self.questions[question_id] = question_data
-                                count += 1
+                            # Each file now contains an array of questions for a category
+                            category_questions = json.load(f)
+
+                            # The category ID is the filename without the .json extension
+                            category_id = os.path.splitext(filename)[0]
+
+                            # Process each question in the category file
+                            for question_data in category_questions:
+                                question_id = question_data.get("id")
+
+                                if question_id:
+                                    # Ensure category_id is set correctly in the question data
+                                    question_data["category_id"] = category_id
+
+                                    # Store the question
+                                    self.questions[question_id] = question_data
+                                    count += 1
                     except (json.JSONDecodeError, IOError) as e:
-                        print(f"Error loading question from {filename}: {e}")
+                        print(f"Error loading questions from {filename}: {e}")
 
         return count
 
@@ -344,9 +385,34 @@ class QuestionUploader:
             question_id (str): ID of the question
             question_data (dict): Question data
         """
-        file_path = os.path.join(self.storage_path, f"{question_id}.json")
+        category_id = question_data.get("category_id", "general")
+        file_path = os.path.join(self.storage_path, f"{category_id}.json")
+
         try:
+            # Load existing category file if it exists
+            category_questions = []
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        category_questions = json.load(f)
+                except (json.JSONDecodeError, IOError) as e:
+                    print(f"Error loading category file {file_path}: {e}")
+                    # If there's an error, start with an empty list
+                    category_questions = []
+
+            # Find and update the question if it exists, or add it if it doesn't
+            question_found = False
+            for i, question in enumerate(category_questions):
+                if question.get("id") == question_id:
+                    category_questions[i] = question_data
+                    question_found = True
+                    break
+
+            if not question_found:
+                category_questions.append(question_data)
+
+            # Save the updated category file
             with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(question_data, f, indent=2)
+                json.dump(category_questions, f, indent=2, ensure_ascii=False)
         except IOError as e:
             print(f"Error saving question {question_id}: {e}")

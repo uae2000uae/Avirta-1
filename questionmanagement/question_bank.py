@@ -223,53 +223,64 @@ class QuestionBank:
                     file_path = os.path.join(self.storage_path, filename)
                     try:
                         with open(file_path, "r", encoding="utf-8") as f:
-                            question_data = json.load(f)
-                            question_id = question_data.get("id")
-                            category_id = question_data.get("category_id", "general")
+                            # Each file now contains an array of questions for a category
+                            category_questions = json.load(f)
 
-                            # Handle questions with difficulty field (as per PRJ-002 rule)
-                            if "difficulty" in question_data:
-                                # If points are not set, convert difficulty to points
-                                if "points" not in question_data:
-                                    difficulty = question_data.get("difficulty", "medium")
-                                    # Convert string difficulty to numeric points
-                                    if isinstance(difficulty, str):
-                                        difficulty_map = {
-                                            "easiest": 100, 
-                                            "easy": 200, 
-                                            "medium": 300, 
-                                            "hard": 400, 
-                                            "hardest": 500
-                                        }
-                                        # For backward compatibility
-                                        legacy_map = {"easy": 100, "medium": 300, "hard": 500}
+                            # The category ID is the filename without the .json extension
+                            category_id = os.path.splitext(filename)[0]
 
-                                        # Try the new map first, then fall back to legacy map
-                                        points = difficulty_map.get(
-                                            difficulty.lower(), 
-                                            legacy_map.get(difficulty.lower(), 300)
-                                        )
-                                        question_data["points"] = points
+                            # Initialize category if not exists
+                            if category_id not in self.categories:
+                                self.categories[category_id] = []
 
-                                # Always remove difficulty field as per PRJ-002 rule
-                                del question_data["difficulty"]
+                            # Initialize used_questions tracking for this category if not exists
+                            if category_id not in self.used_questions:
+                                self.used_questions[category_id] = set()
 
-                            if question_id:
-                                # Store the question
-                                self.questions[question_id] = question_data
+                            # Process each question in the category file
+                            for question_data in category_questions:
+                                question_id = question_data.get("id")
 
-                                # Add to category
-                                if category_id not in self.categories:
-                                    self.categories[category_id] = []
-                                self.categories[category_id].append(question_id)
+                                # Handle questions with difficulty field (as per PRJ-002 rule)
+                                if "difficulty" in question_data:
+                                    # If points are not set, convert difficulty to points
+                                    if "points" not in question_data:
+                                        difficulty = question_data.get("difficulty", "medium")
+                                        # Convert string difficulty to numeric points
+                                        if isinstance(difficulty, str):
+                                            difficulty_map = {
+                                                "easiest": 100, 
+                                                "easy": 200, 
+                                                "medium": 300, 
+                                                "hard": 400, 
+                                                "hardest": 500
+                                            }
+                                            # For backward compatibility
+                                            legacy_map = {"easy": 100, "medium": 300, "hard": 500}
 
-                                # Initialize used_questions tracking for this category if not exists
-                                if category_id not in self.used_questions:
-                                    self.used_questions[category_id] = set()
+                                            # Try the new map first, then fall back to legacy map
+                                            points = difficulty_map.get(
+                                                difficulty.lower(), 
+                                                legacy_map.get(difficulty.lower(), 300)
+                                            )
+                                            question_data["points"] = points
 
-                                count += 1
+                                    # Always remove difficulty field as per PRJ-002 rule
+                                    del question_data["difficulty"]
+
+                                if question_id:
+                                    # Ensure category_id is set correctly in the question data
+                                    question_data["category_id"] = category_id
+
+                                    # Store the question
+                                    self.questions[question_id] = question_data
+
+                                    # Add to category
+                                    self.categories[category_id].append(question_id)
+
+                                    count += 1
                     except (json.JSONDecodeError, IOError) as e:
-                        print(f"Error loading question from {filename}: {e}")
+                        print(f"Error loading questions from {filename}: {e}")
 
         return count
 
@@ -304,10 +315,35 @@ class QuestionBank:
             question_id (str): ID of the question
             question_data (dict): Question data
         """
-        file_path = os.path.join(self.storage_path, f"{question_id}.json")
+        category_id = question_data.get("category_id", "general")
+        file_path = os.path.join(self.storage_path, f"{category_id}.json")
+
         try:
+            # Load existing category file if it exists
+            category_questions = []
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        category_questions = json.load(f)
+                except (json.JSONDecodeError, IOError) as e:
+                    print(f"Error loading category file {file_path}: {e}")
+                    # If there's an error, start with an empty list
+                    category_questions = []
+
+            # Find and update the question if it exists, or add it if it doesn't
+            question_found = False
+            for i, question in enumerate(category_questions):
+                if question.get("id") == question_id:
+                    category_questions[i] = question_data
+                    question_found = True
+                    break
+
+            if not question_found:
+                category_questions.append(question_data)
+
+            # Save the updated category file
             with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(question_data, f, indent=2)
+                json.dump(category_questions, f, indent=2, ensure_ascii=False)
         except IOError as e:
             print(f"Error saving question {question_id}: {e}")
 
