@@ -2288,3 +2288,56 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
+
+import requests
+import json
+import base64
+import os
+
+# Define repository and file details
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # Ensure this is securely stored
+REPO_OWNER = "uae2000uae"
+REPO_NAME = "Avirta-WebApp"
+FILE_PATH = "contents/questions"
+BRANCH = "Avira-1.1.4"  # Ensure this branch exists
+
+# Define the GitHub API URL
+URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}"
+
+def push_to_github():
+    try:
+        # Read the JSON file
+        with open(FILE_PATH, "r") as file:
+            json_data = file.read()
+
+        # Get the current file SHA (needed for updating an existing file)
+        response = requests.get(URL, headers={"Authorization": f"token {GITHUB_TOKEN}"})
+        file_info = response.json()
+
+        sha = file_info.get("sha", None)  # Retrieve the SHA if the file exists
+
+        # Prepare the payload for GitHub API request
+        payload = {
+            "message": "Updated JSON file",
+            "content": base64.b64encode(json_data.encode()).decode(),  # Encode the file in base64
+            "branch": BRANCH,
+        }
+
+        # If file exists, include SHA for updating
+        if sha:
+            payload["sha"] = sha
+
+        # Send the request to GitHub
+        response = requests.put(URL, json=payload, headers={"Authorization": f"token {GITHUB_TOKEN}"})
+
+        # Print response details for debugging
+        if response.status_code == 201 or response.status_code == 200:
+            print("✅ JSON file successfully updated on GitHub!")
+        else:
+            print("❌ Error updating file:", response.json())
+
+    except Exception as e:
+        print("⚠️ An error occurred:", str(e))
+
+# Call the function to push updates
+push_to_github()
