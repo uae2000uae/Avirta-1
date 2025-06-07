@@ -155,23 +155,14 @@ def inject_branch():
     """
     branch = get_current_branch()
 
-    # Get the last modified timestamp of app.py
-    app_path = os.path.abspath(__file__)
-    try:
-        last_modified = datetime.fromtimestamp(os.path.getmtime(app_path))
-
-        # Check if the timestamp is unrealistically old (before 2020)
-        if last_modified.year < 2020:
-            # Use current time as fallback for containerized environments
-            last_modified = datetime.now()
-
-        # Format the last modified information
-        last_push_info = f"App Update: {last_modified.strftime('%y.%m.%d %H:%M')}"
-    except Exception as e:
-        # If there's any error getting the timestamp, use current time
-        current_app.logger.error(f"Error getting file timestamp: {e}")
-        last_modified = datetime.now()
-        last_push_info = f"App Update: {last_modified.strftime('%y.%m.%d %H:%M')}"
+    # Get the modification time of the base.html file itself
+    base_html_path = os.path.join(current_dir, 'templates', 'base.html')
+    if os.path.exists(base_html_path):
+        mod_time = os.path.getmtime(base_html_path)
+        mod_time_dt = datetime.fromtimestamp(mod_time)
+        last_push_info = f"Last Modified: {mod_time_dt.strftime('%y.%m.%d %H:%M')}"
+    else:
+        last_push_info = "Version control system not found"
 
     return {
         'current_branch': branch,
@@ -2326,145 +2317,252 @@ def get_json():
 
 # Function to push JSON updates to GitHub
 def push_to_github():
-    # Get configuration from environment variables or app config
-    github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', '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'))
+    """
+    Push all JSON files from contents/questions folder to GitHub.
+    This simplified function focuses only on JSON files and uses a more
+    straightforward approach with better error handling.
+    """
+    # Try to get GitHub credentials from API settings first
+    github_token = None
+    repo_owner = None
+    repo_name = None
+    branch = None
+
+    # Get all saved API settings
+    try:
+        saved_settings = admin_setup.get_saved_api_settings()
+        # Look for a setting with GitHub credentials
+        for settings_name, settings in saved_settings.items():
+            if settings.get('github_token'):
+                github_token = settings.get('github_token', '').strip()
+                repo_owner = settings.get('github_repo_owner', '').strip()
+                repo_name = settings.get('github_repo_name', '').strip()
+                branch = settings.get('github_branch', '').strip()
+                current_app.logger.info(f"Using GitHub credentials from saved API settings: {settings_name}")
+                break
+    except Exception as e:
+        current_app.logger.warning(f"Failed to get GitHub credentials from API settings: {str(e)}")
+
+    # Fall back to environment variables or app config if API settings are not available
+    if not github_token:
+        github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', ''))
+        if github_token:
+            github_token = github_token.strip()
+            current_app.logger.info("Using GitHub token from environment variables or app config")
+        else:
+            current_app.logger.warning("No GitHub token found in saved settings or environment variables")
+
+    if not repo_owner:
+        repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', 'uae2000uae')).strip()
+
+    if not repo_name:
+        repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', 'Avirta-WebApp')).strip()
+
+    if not branch:
+        branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'Avirta-1')).strip()
+
+    # Set local folder
     local_folder = os.environ.get('LOCAL_FOLDER', current_app.config.get('LOCAL_FOLDER', 'contents/questions'))
-    repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', 'uae2000uae'))
-    repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', 'Avirta-WebApp'))
-    branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'Avirta-1'))
 
     # Validate required parameters
     if not github_token:
-        return jsonify({"error": "GitHub token not configured"}), 500
-    if not repo_owner or not repo_name:
-        return jsonify({"error": "Repository information not configured"}), 500
+        current_app.logger.error("GitHub token not configured")
+        return jsonify({"error": "GitHub token not configured. Please add a valid token in the API Settings tab."}), 500
 
-    results = []
+    # Check if token is just whitespace or very short (likely invalid)
+    if len(github_token.strip()) == 0:
+        current_app.logger.error("GitHub token contains only whitespace")
+        return jsonify({"error": "GitHub token contains only whitespace. Please add a valid token in the API Settings tab."}), 500
+
+    if len(github_token) < 10:  # GitHub tokens are much longer than this
+        current_app.logger.error(f"GitHub token is suspiciously short ({len(github_token)} characters)")
+        return jsonify({"error": "GitHub token appears to be invalid (too short). Please add a valid token in the API Settings tab."}), 500
+
+    if not repo_owner or not repo_name:
+        current_app.logger.error("Repository information not configured")
+        return jsonify({"error": "Repository information not configured. Please complete all GitHub settings in the API Settings tab."}), 500
+
+    # Setup for GitHub API
+    # Ensure token is properly formatted (no leading/trailing whitespace)
+    github_token = github_token.strip()
+
+    # Log token information (without revealing the actual token)
+    current_app.logger.info(f"GitHub token length: {len(github_token)} characters")
+    if len(github_token) < 30:
+        current_app.logger.warning("GitHub token seems too short. Personal access tokens are typically longer.")
+
+    # Create headers with proper format: "token OAUTH-TOKEN" (with a space between "token" and the actual token)
     headers = {
-        "Authorization": f"Bearer {github_token}",
-        "Accept": "application/vnd.github+json"  # Explicit API version
+        "Authorization": f"token {github_token}",  # Using 'token' prefix instead of 'Bearer'
+        "Accept": "application/vnd.github.v3+json"  # Explicit API version
+    }
+
+    current_app.logger.info("GitHub API headers prepared")
+
+    # Results tracking
+    results = {
+        "success": [],
+        "error": []
     }
 
     try:
         # Validate folder exists
         if not os.path.isdir(local_folder):
+            current_app.logger.error(f"Local folder not found: {local_folder}")
             return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
 
-        # Check if there are any files in the folder
-        files_in_folder = [f for f in os.listdir(local_folder) if os.path.isfile(os.path.join(local_folder, f))]
-        if not files_in_folder:
-            return jsonify({"message": "No files to process"})
+        # Get only JSON files
+        json_files = [f for f in os.listdir(local_folder) 
+                     if os.path.isfile(os.path.join(local_folder, f)) 
+                     and f.lower().endswith('.json')]
 
-        for filename in files_in_folder:
+        if not json_files:
+            current_app.logger.info("No JSON files found to process")
+            return jsonify({"message": "No JSON files to process"})
+
+        # Process each JSON file
+        for filename in json_files:
             try:
                 file_path = os.path.join(local_folder, filename)
-
-                # Determine GitHub path based on local folder
-                # Option 1: Remove the local folder prefix from the GitHub path
-                # Use just the filename for the GitHub path
-                github_path = filename
 
                 # Read file in binary mode to avoid encoding issues
                 with open(file_path, "rb") as file:
                     file_content = file.read()
 
-                # Get existing file info (if it exists)
-                url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{github_path}"
-
-                response = requests.get(url, headers=headers)
-
-                # Prepare payload
-                payload = {
-                    "message": f"Automated update: {filename}",
-                    "content": base64.b64encode(file_content).decode(),
-                    "branch": branch,
-                }
+                # GitHub API URL for the file
+                url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{filename}"
 
                 # Check if file exists on GitHub
-                if response.status_code == 200:
-                    try:
-                        file_info = response.json()
-                        payload["sha"] = file_info.get("sha")
-                    except json.JSONDecodeError:
-                        # Handle case where response is not valid JSON
-                        results.append({
-                            filename: {
-                                "status": "error", 
-                                "message": f"Invalid JSON response when checking if file exists: {response.text[:100]}..."
-                            }
-                        })
-                        continue
-                elif response.status_code != 404:
-                    # Unexpected response
-                    results.append({
-                        filename: {
-                            "status": "error", 
-                            "message": f"Failed to check if file exists: {response.status_code}, Response: {response.text[:100]}..."
-                        }
-                    })
-                    continue
+                try:
+                    current_app.logger.info(f"Checking if {filename} exists on GitHub")
+                    response = requests.get(url, headers=headers)
 
-                # Create or update the file
-                response = requests.put(url, json=payload, headers=headers)
+                    # Log authentication issues during the GET request
+                    if response.status_code == 401:
+                        current_app.logger.error(f"Authentication failed during GET request for {filename}")
+                        current_app.logger.error(f"Response: {response.text}")
+                        current_app.logger.error(f"Using token with length: {len(github_token)} characters")
 
-                # Check if request was successful
-                if 200 <= response.status_code < 300:
-                    try:
-                        results.append({filename: {"status": "success", "data": response.json()}})
-                    except json.JSONDecodeError:
-                        # Handle case where response is not valid JSON
-                        results.append({
-                            filename: {
-                                "status": "error", 
-                                "message": f"Invalid JSON response after successful request: {response.text[:100]}..."
-                            }
-                        })
-                else:
-                    results.append({
-                        filename: {
-                            "status": "error",
-                            "code": response.status_code,
-                            "message": response.text
-                        }
-                    })
+                    # Prepare payload for GitHub API
+                    payload = {
+                        "message": f"Update {filename} from Avirta app",
+                        "content": base64.b64encode(file_content).decode(),
+                        "branch": branch
+                    }
+
+                    # Add SHA if file exists (for update instead of create)
+                    if response.status_code == 200:
+                        payload["sha"] = response.json().get("sha")
+
+                    # Create or update the file
+                    response = requests.put(url, json=payload, headers=headers)
+
+                    # Check if request was successful
+                    if 200 <= response.status_code < 300:
+                        current_app.logger.info(f"Successfully pushed {filename}")
+                        results["success"].append(filename)
+                    else:
+                        # More detailed error logging for authentication issues
+                        if response.status_code == 401:
+                            error_msg = f"Authentication failed for {filename}: 401 Unauthorized - {response.text}"
+                            current_app.logger.error(f"GitHub API authentication failed. Please check your token.")
+                            current_app.logger.error(f"Token length: {len(github_token)} characters")
+                            current_app.logger.error(f"Response: {response.text}")
+                        else:
+                            error_msg = f"Failed to push {filename}: {response.status_code} - {response.text}"
+
+                        current_app.logger.error(error_msg)
+                        results["error"].append({"file": filename, "error": error_msg})
+
+                except requests.RequestException as e:
+                    error_msg = f"Request error for {filename}: {str(e)}"
+                    current_app.logger.error(error_msg)
+                    results["error"].append({"file": filename, "error": error_msg})
 
                 # Respect GitHub API rate limits
                 time.sleep(1)
 
             except Exception as e:
-                results.append({filename: {"status": "error", "message": str(e)}})
+                error_msg = f"Error processing {filename}: {str(e)}"
+                current_app.logger.error(error_msg)
+                results["error"].append({"file": filename, "error": error_msg})
 
-        # Determine overall status
-        success_count = sum(1 for item in results 
-                          for file_data in item.values() 
-                          if file_data.get("status") == "success")
-        error_count = sum(1 for item in results 
-                        for file_data in item.values() 
-                        if file_data.get("status") == "error")
+        # Create summary message
+        success_count = len(results["success"])
+        error_count = len(results["error"])
 
-        # Create a status message
-        status_message = ""
-        if len(results) == 0:
-            status_message = "No files processed"
-        elif error_count == 0:
-            status_message = f"Success: {success_count} files pushed"
-        elif success_count == 0:
-            status_message = f"Failed: {error_count} errors"
+        # Check for authentication errors specifically
+        auth_errors = [err for err in results["error"] if "401" in err.get("error", "")]
+        has_auth_error = len(auth_errors) > 0
+
+        if success_count > 0 and error_count == 0:
+            status = f"Success: {success_count} files pushed to GitHub"
+            message = "All files were successfully pushed to GitHub."
+            status_code = 200
+        elif success_count == 0 and error_count > 0:
+            if has_auth_error:
+                status = "Authentication Failed"
+                message = "GitHub authentication failed. Please check your token and ensure it has the necessary permissions (repo scope)."
+                current_app.logger.error("GitHub authentication failed. Token may be invalid or expired.")
+            else:
+                status = f"Failed: {error_count} errors occurred"
+                message = "Failed to push files to GitHub. Check the logs for details."
+            status_code = 500
+        elif success_count > 0 and error_count > 0:
+            status = f"Partial: {success_count} succeeded, {error_count} failed"
+            if has_auth_error:
+                message = "Some files were pushed successfully, but authentication failed for others. Your token may have limited permissions."
+            else:
+                message = "Some files were pushed successfully, but others failed. Check the logs for details."
+            status_code = 207  # Multi-Status
         else:
-            status_message = f"Partial: {success_count} succeeded, {error_count} failed"
+            status = "No files processed"
+            message = "No files were found to process."
+            status_code = 200
 
-        return jsonify({"results": results, "status": status_message})
+        # If this is a request from the admin page, add a flash message
+        if request.referrer and 'admin_controls' in request.referrer:
+            if status_code == 200:
+                flash(message, "success")
+            elif has_auth_error:
+                flash(message, "error")
+            else:
+                flash(message, "warning")
+
+        return jsonify({
+            "status": status,
+            "message": message,
+            "success_count": success_count,
+            "error_count": error_count,
+            "has_auth_error": has_auth_error,
+            "successful_files": results["success"],
+            "failed_files": results["error"]
+        }), status_code
 
     except Exception as e:
-        return jsonify({"error": str(e), "type": type(e).__name__})
+        error_msg = f"Unexpected error: {str(e)}"
+        current_app.logger.error(error_msg)
+        return jsonify({"error": error_msg}), 500
 
-@app.route('/update_json', methods=['POST'])
+@app.route('/update_json', methods=['GET', 'POST'])
 def update_json():
     """
     Update JSON files to GitHub.
     This endpoint calls the push_to_github function to update JSON files to GitHub.
+    Supports both GET and POST methods for easier testing.
     """
-    return push_to_github()
+    # Log the request
+    current_app.logger.info(f"GitHub push requested via {request.method}")
+
+    # The push_to_github function now handles flash messages based on the result
+    response = push_to_github()
+
+    # If this is a GET request from the admin page, redirect back to the admin page
+    if request.method == 'GET' and request.referrer and 'admin_controls' in request.referrer:
+        return redirect(url_for('admin_controls'))
+
+    # Otherwise return the JSON response
+    return response
 
 if __name__ == '__main__':
     import os

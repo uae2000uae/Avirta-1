@@ -34,7 +34,7 @@
     <div class="admin-tabs">
         <div class="tab-nav">
             <button class="tab-button active" data-tab="game-settings">General</button>
-            <button class="tab-button" data-tab="openai-settings">AI API Settings</button>
+            <button class="tab-button" data-tab="api-settings">API Settings</button>
             <button class="tab-button" data-tab="question-management">Question Management</button>
             <button class="tab-button" data-tab="look-and-feel">Look and Feel</button>
             <button class="tab-button" data-tab="system-info">System Information</button>
@@ -99,11 +99,11 @@
                 </div>
             </div>
 
-            <!-- OpenAI API Settings Tab -->
-            <div id="openai-settings" class="tab-pane">
+            <!-- API Settings Tab -->
+            <div id="api-settings" class="tab-pane">
                 <div class="inner-section">
-                    <h2>OpenAI API Settings</h2>
-                    <p class="info-text">These settings are used for the AI Question Generator. You need to provide your own OpenAI API key to use this feature.</p>
+                    <h2>API Settings</h2>
+                    <p class="info-text">These settings are used for various API integrations. You need to provide your own API keys to use these features.</p>
 
                     <!-- Saved Settings Dropdown -->
                     <div class="section">
@@ -137,6 +137,7 @@
                         <form method="POST" action="{{ url_for('admin_controls') }}">
                             <input type="hidden" name="action" value="update_settings">
 
+                            <h4>OpenAI API Settings</h4>
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
                                 {% if setting_name.startswith('openai_') %}
                                 <div class="form-group-inline">
@@ -153,8 +154,38 @@
                                 {% endif %}
                             {% endfor %}
 
+                            <h4>GitHub API Settings</h4>
+                            <div class="form-group-inline">
+                                <label for="github_token">GitHub Token:</label>
+                                <input type="text" id="github_token" name="github_token" value="{{ admin_setup.game_settings.get('github_token', '') }}" placeholder="Enter your GitHub personal access token">
+                                <small>Your GitHub token is used for pushing question files to GitHub.</small>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="github_repo_owner">Repository Owner:</label>
+                                <input type="text" id="github_repo_owner" name="github_repo_owner" value="{{ admin_setup.game_settings.get('github_repo_owner', '') }}" placeholder="GitHub username or organization">
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="github_repo_name">Repository Name:</label>
+                                <input type="text" id="github_repo_name" name="github_repo_name" value="{{ admin_setup.game_settings.get('github_repo_name', '') }}" placeholder="Name of the repository">
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="github_branch">Branch Name:</label>
+                                <input type="text" id="github_branch" name="github_branch" value="{{ admin_setup.game_settings.get('github_branch', '') }}" placeholder="Branch name (e.g., main)">
+                            </div>
+
                             <div class="form-actions">
                                 <button type="submit" class="button">Update API Settings</button>
+                            </div>
+
+                            <div class="section">
+                                <h4>Test GitHub Connection</h4>
+                                <p class="info-text">Click the button below to test your GitHub credentials by pushing JSON files to the repository.</p>
+                                <div class="form-actions">
+                                    <a href="{{ url_for('update_json') }}" class="button" onclick="return confirm('This will push all JSON files from the contents/questions folder to GitHub using the credentials above. Continue?');">
+                                        <i class="fas fa-cloud-upload-alt"></i> Test GitHub Push
+                                    </a>
+                                </div>
+                                <p class="small-text">Note: If you encounter a "Bad credentials" error, please check that your GitHub token is correct and has the necessary permissions (repo scope).</p>
                             </div>
                         </form>
                     </div>
@@ -248,6 +279,32 @@
             </div>
 
             <style>
+            /* Info text styling */
+            .info-text {
+                background-color: #e0f7fa;
+                border-left: 4px solid #00acc1;
+                padding: 10px 15px;
+                margin: 15px 0;
+                border-radius: 4px;
+                font-size: 0.9em;
+            }
+
+            .small-text {
+                font-size: 0.85em;
+                color: #666;
+                margin-top: 10px;
+                font-style: italic;
+            }
+
+            /* Section styling */
+            .section h4 {
+                margin-top: 20px;
+                margin-bottom: 10px;
+                color: #1e595e;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 5px;
+            }
+
             .theme-selection {
                 margin-top: 20px;
             }
