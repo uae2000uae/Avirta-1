@@ -123,52 +123,6 @@ game_status_manager = GameStatusManager(max_events_per_room=100, persistence_dir
 # Set the global GameStatusManager instance
 set_game_status_manager(game_status_manager)
 
-# Function to get the current Git branch
-def get_current_branch():
-    """
-    Get the current Git branch name.
-
-    Returns:
-        str: The name of the current Git branch or "unknown" if not in a Git repository
-    """
-    try:
-        # Run git command to get current branch
-        result = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return result.stdout.strip()
-    except (subprocess.SubprocessError, FileNotFoundError):
-        # Return unknown if there's an error or git is not installed
-        return "unknown"
-
-# Add context processor to make branch and last modified info available to all templates
-@app.context_processor
-def inject_branch():
-    """
-    Make the current Git branch and last modified information available to all templates.
-
-    Returns:
-        dict: A dictionary containing the current branch and last modified info
-    """
-    branch = get_current_branch()
-
-    # Get the modification time of the base.html file itself
-    base_html_path = os.path.join(current_dir, 'templates', 'base.html')
-    if os.path.exists(base_html_path):
-        mod_time = os.path.getmtime(base_html_path)
-        mod_time_dt = datetime.fromtimestamp(mod_time)
-        last_push_info = f"Last Modified: {mod_time_dt.strftime('%y.%m.%d %H:%M')}"
-    else:
-        last_push_info = "Version control system not found"
-
-    return {
-        'current_branch': branch,
-        'last_push_info': last_push_info
-    }
-
 @app.route('/')
 def index():
     """Render the home page."""

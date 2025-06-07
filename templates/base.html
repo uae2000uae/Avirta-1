@@ -30,7 +30,10 @@
 <body>
     <header>
         <h1>Avirta</h1>
-        <div class="branch-version">{{ last_push_info }}</div>
+        <div class="branch-version">Last Modified: <span id="lastModified"></span></div><br>
+                <script>
+                    document.getElementById("lastModified").textContent = document.lastModified;
+                </script>
         <div class="admin-login-container">
             {% if session.get('admin_authenticated') %}
                 <span class="admin-welcome">Welcome, Admin</span>
