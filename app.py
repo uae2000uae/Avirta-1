@@ -2110,38 +2110,8 @@ def admin_controls():
 
                     admin_setup.update_game_setting(setting_name, value)
 
-            # If any look and feel settings were updated, generate a new custom CSS file
-            look_and_feel_settings = [
-                'primary_color', 'primary_color_light', 'primary_color_dark',
-                'secondary_color', 'secondary_color_hover',
-                'bg_color', 'bg_color_light', 'bg_color_lighter', 'bg_color_dark', 'bg_color_darker', 'bg_color_darkest',
-                'text_color', 'text_color_light', 'text_color_white',
-                'success_color', 'success_color_light', 'success_color_dark', 'success_bg', 'success_text',
-                'error_color', 'error_color_light', 'error_color_dark', 'error_bg', 'error_text',
-                'info_color', 'info_color_light', 'info_color_dark',
-                'border_color', 'border_color_light',
-                'border_radius_small', 'border_radius', 'border_radius_large',
-                'box_shadow',
-                'spacing_xs', 'spacing_sm', 'spacing_md', 'spacing_lg', 'spacing_xl',
-                'font_family', 'font_size_base', 'line_height'
-            ]
-
-            # Check if any look and feel settings were updated
-            look_and_feel_updated = False
-            for setting_name in look_and_feel_settings:
-                if setting_name in request.form:
-                    look_and_feel_updated = True
-                    break
-
-            # If look and feel settings were updated, generate a new custom CSS file
-            if look_and_feel_updated:
-                success, message = admin_setup.save_custom_css()
-                if success:
-                    flash('Look and Feel settings updated successfully. Custom CSS file generated.')
-                else:
-                    flash(f'Error generating custom CSS file: {message}', 'error')
-            else:
-                flash('Game settings updated successfully.')
+            # Individual style variable settings have been removed, only theme selection is available
+            flash('Game settings updated successfully.')
 
         # Handle save API settings
         elif action == 'save_api_settings' and is_authenticated:

@@ -40,8 +40,6 @@ class AdminSetup:
             # Game settings
             'default_time_limit': 45,
             'max_players_per_room': 10,
-            'allow_public_rooms': True,
-            'profanity_filter': True,
             'max_categories_per_room': 6,  # Maximum number of categories per game room (1-6)
 
             # OpenAI settings
