@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="font-size: -1;">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,32 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="../static/css/style.css" rel="stylesheet" type="text/css">
     <link href="../static/css/custom.css" rel="stylesheet" type="text/css">
-    <style>
-        .branch-version {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            font-size: 10px;
-            color: #888;
-            background-color: rgba(255,255,255,0.12);
-			color: lightgray;
-            padding: 2px 5px;
-            border-radius: 3px;
-            z-index: 1000;
-            max-width: 300px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    </style>
 </head>
 <body>
     <header>
+        <div class="timestamp-info" id="timestamp-info">Last synced: Loading...</div>
         <h1>Avirta</h1>
-        <div class="branch-version">Last Modified: <span id="lastModified"></span></div><br>
-                <script>
-                    document.getElementById("lastModified").textContent = document.lastModified;
-                </script>
         <div class="admin-login-container">
             {% if session.get('admin_authenticated') %}
                 <span class="admin-welcome">Welcome, Admin</span>
@@ -122,6 +101,27 @@
                     adminLoginForm.classList.remove('show');
                 }
             });
+        }
+
+        // Fetch and display timestamp information
+        const timestampInfo = document.getElementById('timestamp-info');
+        if (timestampInfo) {
+            fetch('/timestamp.json')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.lastSynced) {
+                        const timestamp = new Date(data.lastSynced);
+                        const formattedDate = timestamp.toLocaleDateString();
+                        const formattedTime = timestamp.toLocaleTimeString();
+                        timestampInfo.textContent = `Last synced: ${formattedDate} ${formattedTime}`;
+                    } else {
+                        timestampInfo.textContent = 'Last synced: Unknown';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching timestamp:', error);
+                    timestampInfo.textContent = 'Last synced: Error loading';
+                });
         }
     });
 </script>

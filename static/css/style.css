@@ -159,7 +159,21 @@ nav ul li a {
 nav ul li a:hover {
     background-color: var(--primary-color-dark);
 }
-
+.timestamp-info {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 10px;
+    color: lightgray;
+    background-color: rgba(255,255,255,0.05);
+    padding: 2px 5px;
+    border-radius: 3px;
+    z-index: 1000;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 /* Main content area */
 main {
     padding: var(--spacing-lg);
