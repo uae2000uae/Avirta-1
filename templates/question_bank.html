@@ -34,11 +34,6 @@
 
 <h2>Question Bank</h2>
 
-{% if session.get('admin_authenticated') %}
-<div class="admin-actions">
-    <button id="push-to-github-btn" class="button primary-button" onclick="pushToGithub()">Push to GitHub</button>
-</div>
-{% endif %}
 
 {% if stats %}
 <h3>Database Statistics</h3>
@@ -181,72 +176,6 @@ function setupScrollPositionSaving() {
         }
     }
 
-    function pushToGithub() {
-        // Disable the button to prevent multiple clicks
-        const button = document.getElementById('push-to-github-btn');
-        button.disabled = true;
-        button.textContent = 'Pushing to GitHub...';
-
-        // Make a POST request to the update_json endpoint
-        fetch('{{ url_for("update_json") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            // Check if the response is JSON
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                return response.json();
-            } else {
-                // If not JSON, throw an error with the text content
-                return response.text().then(text => {
-                    throw new Error(`Received non-JSON response: ${text.substring(0, 100)}...`);
-                });
-            }
-        })
-        .then(data => {
-            // Re-enable the button
-            button.disabled = false;
-            button.textContent = 'Push to GitHub';
-
-            // Display a notification based on the response
-            if (data.error) {
-                alert('Error pushing to GitHub: ' + data.error);
-            } else {
-                // Count successful and failed operations
-                let successCount = 0;
-                let failCount = 0;
-
-                if (data.results && Array.isArray(data.results)) {
-                    data.results.forEach(result => {
-                        const filename = Object.keys(result)[0];
-                        const status = result[filename].status;
-
-                        if (status === 'success') {
-                            successCount++;
-                        } else {
-                            failCount++;
-                        }
-                    });
-
-                    alert(`GitHub push completed: ${successCount} files updated successfully, ${failCount} files failed.`);
-                } else {
-                    alert('GitHub push completed successfully!');
-                }
-            }
-        })
-        .catch(error => {
-            // Re-enable the button
-            button.disabled = false;
-            button.textContent = 'Push to GitHub';
-
-            // Display error message
-            alert('Error pushing to GitHub: ' + error.message);
-        });
-    }
 </script>
 
 {% endblock %}

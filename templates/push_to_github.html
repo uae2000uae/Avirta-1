@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Push Questions to GitHub - Avirta{% endblock %}
+
+{% block content %}
+<h1>Push Questions to GitHub</h1>
+
+{% if not is_authenticated %}
+<div class="login-form">
+    <h2>Admin Login Required</h2>
+    <p>You must be logged in as an admin to access this page.</p>
+    <a href="{{ url_for('admin_controls') }}" class="button">Go to Admin Login</a>
+</div>
+{% else %}
+<div class="github-push-container">
+    <div class="section">
+        <h2>GitHub Integration</h2>
+        <p class="info-text">This tool allows you to push question files from the content/questions folder to GitHub. Make sure you have configured your GitHub API settings in the Admin Controls page.</p>
+        
+        <div class="github-actions">
+            <div class="action-card">
+                <h3>Push All Question Files</h3>
+                <p>Push all question files from the content/questions folder to GitHub. This will create or update files in the repository.</p>
+                <form method="POST" action="{{ url_for('push_questions_to_github') }}">
+                    <input type="hidden" name="action" value="push_all">
+                    <button type="submit" class="button">Push All Files</button>
+                </form>
+            </div>
+            
+            <div class="action-card">
+                <h3>Synchronize Question Files</h3>
+                <p>Synchronize question files between the local directory and GitHub repository. This will create, update, or delete files as necessary.</p>
+                <form method="POST" action="{{ url_for('push_questions_to_github') }}">
+                    <input type="hidden" name="action" value="sync">
+                    <button type="submit" class="button">Synchronize Files</button>
+                </form>
+            </div>
+        </div>
+        
+        {% if messages %}
+        <div class="results-section">
+            <h3>Operation Results</h3>
+            <div class="results-list">
+                {% for message in messages %}
+                <div class="result-item">{{ message }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="github-settings-info">
+            <h3>Current GitHub Settings</h3>
+            <table class="settings-table">
+                <tr>
+                    <th>Setting</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Repository Owner</td>
+                    <td>{{ admin_setup.game_settings.get('github_repo_owner', 'Not set') }}</td>
+                </tr>
+                <tr>
+                    <td>Repository Name</td>
+                    <td>{{ admin_setup.game_settings.get('github_repo_name', 'Not set') }}</td>
+                </tr>
+                <tr>
+                    <td>Branch</td>
+                    <td>{{ admin_setup.game_settings.get('github_branch', 'main') }}</td>
+                </tr>
+                <tr>
+                    <td>GitHub Token</td>
+                    <td>{% if admin_setup.game_settings.get('github_token') %}Set{% else %}Not set{% endif %}</td>
+                </tr>
+            </table>
+            <p>
+                <a href="{{ url_for('admin_controls') }}" class="button">Update GitHub Settings</a>
+            </p>
+        </div>
+    </div>
+    
+    <div class="back-link">
+        <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+    </div>
+</div>
+
+<style>
+    .github-push-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .section {
+        background-color: var(--bg-color-lighter);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--box-shadow);
+    }
+    
+    .info-text {
+        background-color: var(--info-color-light);
+        border-left: 4px solid var(--info-color);
+        padding: 10px 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    
+    .github-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 20px 0;
+    }
+    
+    .action-card {
+        flex: 1;
+        min-width: 300px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        box-shadow: var(--box-shadow);
+    }
+    
+    .action-card h3 {
+        color: var(--primary-color);
+        margin-top: 0;
+    }
+    
+    .results-section {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+    }
+    
+    .results-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-small);
+        padding: 10px;
+        background-color: var(--bg-color-lighter);
+    }
+    
+    .result-item {
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color-light);
+    }
+    
+    .result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .github-settings-info {
+        margin-top: 30px;
+    }
+    
+    .settings-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+    }
+    
+    .settings-table th, .settings-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .settings-table th {
+        background-color: var(--bg-color-dark);
+    }
+    
+    .back-link {
+        margin-top: 20px;
+        text-align: center;
+    }
+</style>
+{% endif %}
+{% endblock %}

@@ -177,16 +177,6 @@
                                 <button type="submit" class="button">Update API Settings</button>
                             </div>
 
-                            <div class="section">
-                                <h4>Test GitHub Connection</h4>
-                                <p class="info-text">Click the button below to test your GitHub credentials by pushing JSON files to the repository.</p>
-                                <div class="form-actions">
-                                    <a href="{{ url_for('update_json') }}" class="button" onclick="return confirm('This will push all JSON files from the contents/questions folder to GitHub using the credentials above. Continue?');">
-                                        <i class="fas fa-cloud-upload-alt"></i> Test GitHub Push
-                                    </a>
-                                </div>
-                                <p class="small-text">Note: If you encounter a "Bad credentials" error, please check that your GitHub token is correct and has the necessary permissions (repo scope).</p>
-                            </div>
                         </form>
                     </div>
 
@@ -217,6 +207,7 @@
 						<a href="{{ url_for('ai_question_generator') }}" class="button">Generate with AI</a>
                         <a href="{{ url_for('ai_question_history') }}" class="button">AI Generate History</a>
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
+                        <a href="{{ url_for('push_questions_to_github') }}" class="button">Push to GitHub</a>
                     </div>
                 </div>
             </div>

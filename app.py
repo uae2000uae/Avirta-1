@@ -12,10 +12,7 @@ import tempfile
 import uuid
 import random
 import subprocess
-import requests
-import base64
 import json
-import time
 from datetime import datetime
 
 # Add the current directory to the Python path
@@ -25,6 +22,7 @@ if current_dir not in sys.path:
 
 # Import modules
 from contents.admin_controls.admin_setup import AdminSetup
+from contents.admin_controls.github_integration import GitHubIntegration
 from contents.categories_questions.category_manager import CategoryManager
 from contents.categories_questions.question_uploader import QuestionUploader
 from contents.game_room.game_room import GameRoom
@@ -2269,254 +2267,7 @@ def get_json():
         current_app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-# Function to push JSON updates to GitHub
-def push_to_github():
-    """
-    Push all JSON files from contents/questions folder to GitHub.
-    This simplified function focuses only on JSON files and uses a more
-    straightforward approach with better error handling.
-    """
-    # Try to get GitHub credentials from API settings first
-    github_token = None
-    repo_owner = None
-    repo_name = None
-    branch = None
 
-    # Get all saved API settings
-    try:
-        saved_settings = admin_setup.get_saved_api_settings()
-        # Look for a setting with GitHub credentials
-        for settings_name, settings in saved_settings.items():
-            if settings.get('github_token'):
-                github_token = settings.get('github_token', '').strip()
-                repo_owner = settings.get('github_repo_owner', '').strip()
-                repo_name = settings.get('github_repo_name', '').strip()
-                branch = settings.get('github_branch', '').strip()
-                current_app.logger.info(f"Using GitHub credentials from saved API settings: {settings_name}")
-                break
-    except Exception as e:
-        current_app.logger.warning(f"Failed to get GitHub credentials from API settings: {str(e)}")
-
-    # Fall back to environment variables or app config if API settings are not available
-    if not github_token:
-        github_token = os.environ.get('GITHUB_TOKEN', current_app.config.get('GITHUB_TOKEN', ''))
-        if github_token:
-            github_token = github_token.strip()
-            current_app.logger.info("Using GitHub token from environment variables or app config")
-        else:
-            current_app.logger.warning("No GitHub token found in saved settings or environment variables")
-
-    if not repo_owner:
-        repo_owner = os.environ.get('REPO_OWNER', current_app.config.get('REPO_OWNER', 'uae2000uae')).strip()
-
-    if not repo_name:
-        repo_name = os.environ.get('REPO_NAME', current_app.config.get('REPO_NAME', 'Avirta-WebApp')).strip()
-
-    if not branch:
-        branch = os.environ.get('BRANCH', current_app.config.get('BRANCH', 'Avirta-1')).strip()
-
-    # Set local folder
-    local_folder = os.environ.get('LOCAL_FOLDER', current_app.config.get('LOCAL_FOLDER', 'contents/questions'))
-
-    # Validate required parameters
-    if not github_token:
-        current_app.logger.error("GitHub token not configured")
-        return jsonify({"error": "GitHub token not configured. Please add a valid token in the API Settings tab."}), 500
-
-    # Check if token is just whitespace or very short (likely invalid)
-    if len(github_token.strip()) == 0:
-        current_app.logger.error("GitHub token contains only whitespace")
-        return jsonify({"error": "GitHub token contains only whitespace. Please add a valid token in the API Settings tab."}), 500
-
-    if len(github_token) < 10:  # GitHub tokens are much longer than this
-        current_app.logger.error(f"GitHub token is suspiciously short ({len(github_token)} characters)")
-        return jsonify({"error": "GitHub token appears to be invalid (too short). Please add a valid token in the API Settings tab."}), 500
-
-    if not repo_owner or not repo_name:
-        current_app.logger.error("Repository information not configured")
-        return jsonify({"error": "Repository information not configured. Please complete all GitHub settings in the API Settings tab."}), 500
-
-    # Setup for GitHub API
-    # Ensure token is properly formatted (no leading/trailing whitespace)
-    github_token = github_token.strip()
-
-    # Log token information (without revealing the actual token)
-    current_app.logger.info(f"GitHub token length: {len(github_token)} characters")
-    if len(github_token) < 30:
-        current_app.logger.warning("GitHub token seems too short. Personal access tokens are typically longer.")
-
-    # Create headers with proper format: "token OAUTH-TOKEN" (with a space between "token" and the actual token)
-    headers = {
-        "Authorization": f"token {github_token}",  # Using 'token' prefix instead of 'Bearer'
-        "Accept": "application/vnd.github.v3+json"  # Explicit API version
-    }
-
-    current_app.logger.info("GitHub API headers prepared")
-
-    # Results tracking
-    results = {
-        "success": [],
-        "error": []
-    }
-
-    try:
-        # Validate folder exists
-        if not os.path.isdir(local_folder):
-            current_app.logger.error(f"Local folder not found: {local_folder}")
-            return jsonify({"error": f"Local folder not found: {local_folder}"}), 404
-
-        # Get only JSON files
-        json_files = [f for f in os.listdir(local_folder) 
-                     if os.path.isfile(os.path.join(local_folder, f)) 
-                     and f.lower().endswith('.json')]
-
-        if not json_files:
-            current_app.logger.info("No JSON files found to process")
-            return jsonify({"message": "No JSON files to process"})
-
-        # Process each JSON file
-        for filename in json_files:
-            try:
-                file_path = os.path.join(local_folder, filename)
-
-                # Read file in binary mode to avoid encoding issues
-                with open(file_path, "rb") as file:
-                    file_content = file.read()
-
-                # GitHub API URL for the file
-                url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{filename}"
-
-                # Check if file exists on GitHub
-                try:
-                    current_app.logger.info(f"Checking if {filename} exists on GitHub")
-                    response = requests.get(url, headers=headers)
-
-                    # Log authentication issues during the GET request
-                    if response.status_code == 401:
-                        current_app.logger.error(f"Authentication failed during GET request for {filename}")
-                        current_app.logger.error(f"Response: {response.text}")
-                        current_app.logger.error(f"Using token with length: {len(github_token)} characters")
-
-                    # Prepare payload for GitHub API
-                    payload = {
-                        "message": f"Update {filename} from Avirta app",
-                        "content": base64.b64encode(file_content).decode(),
-                        "branch": branch
-                    }
-
-                    # Add SHA if file exists (for update instead of create)
-                    if response.status_code == 200:
-                        payload["sha"] = response.json().get("sha")
-
-                    # Create or update the file
-                    response = requests.put(url, json=payload, headers=headers)
-
-                    # Check if request was successful
-                    if 200 <= response.status_code < 300:
-                        current_app.logger.info(f"Successfully pushed {filename}")
-                        results["success"].append(filename)
-                    else:
-                        # More detailed error logging for authentication issues
-                        if response.status_code == 401:
-                            error_msg = f"Authentication failed for {filename}: 401 Unauthorized - {response.text}"
-                            current_app.logger.error(f"GitHub API authentication failed. Please check your token.")
-                            current_app.logger.error(f"Token length: {len(github_token)} characters")
-                            current_app.logger.error(f"Response: {response.text}")
-                        else:
-                            error_msg = f"Failed to push {filename}: {response.status_code} - {response.text}"
-
-                        current_app.logger.error(error_msg)
-                        results["error"].append({"file": filename, "error": error_msg})
-
-                except requests.RequestException as e:
-                    error_msg = f"Request error for {filename}: {str(e)}"
-                    current_app.logger.error(error_msg)
-                    results["error"].append({"file": filename, "error": error_msg})
-
-                # Respect GitHub API rate limits
-                time.sleep(1)
-
-            except Exception as e:
-                error_msg = f"Error processing {filename}: {str(e)}"
-                current_app.logger.error(error_msg)
-                results["error"].append({"file": filename, "error": error_msg})
-
-        # Create summary message
-        success_count = len(results["success"])
-        error_count = len(results["error"])
-
-        # Check for authentication errors specifically
-        auth_errors = [err for err in results["error"] if "401" in err.get("error", "")]
-        has_auth_error = len(auth_errors) > 0
-
-        if success_count > 0 and error_count == 0:
-            status = f"Success: {success_count} files pushed to GitHub"
-            message = "All files were successfully pushed to GitHub."
-            status_code = 200
-        elif success_count == 0 and error_count > 0:
-            if has_auth_error:
-                status = "Authentication Failed"
-                message = "GitHub authentication failed. Please check your token and ensure it has the necessary permissions (repo scope)."
-                current_app.logger.error("GitHub authentication failed. Token may be invalid or expired.")
-            else:
-                status = f"Failed: {error_count} errors occurred"
-                message = "Failed to push files to GitHub. Check the logs for details."
-            status_code = 500
-        elif success_count > 0 and error_count > 0:
-            status = f"Partial: {success_count} succeeded, {error_count} failed"
-            if has_auth_error:
-                message = "Some files were pushed successfully, but authentication failed for others. Your token may have limited permissions."
-            else:
-                message = "Some files were pushed successfully, but others failed. Check the logs for details."
-            status_code = 207  # Multi-Status
-        else:
-            status = "No files processed"
-            message = "No files were found to process."
-            status_code = 200
-
-        # If this is a request from the admin page, add a flash message
-        if request.referrer and 'admin_controls' in request.referrer:
-            if status_code == 200:
-                flash(message, "success")
-            elif has_auth_error:
-                flash(message, "error")
-            else:
-                flash(message, "warning")
-
-        return jsonify({
-            "status": status,
-            "message": message,
-            "success_count": success_count,
-            "error_count": error_count,
-            "has_auth_error": has_auth_error,
-            "successful_files": results["success"],
-            "failed_files": results["error"]
-        }), status_code
-
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        current_app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 500
-
-@app.route('/update_json', methods=['GET', 'POST'])
-def update_json():
-    """
-    Update JSON files to GitHub.
-    This endpoint calls the push_to_github function to update JSON files to GitHub.
-    Supports both GET and POST methods for easier testing.
-    """
-    # Log the request
-    current_app.logger.info(f"GitHub push requested via {request.method}")
-
-    # The push_to_github function now handles flash messages based on the result
-    response = push_to_github()
-
-    # If this is a GET request from the admin page, redirect back to the admin page
-    if request.method == 'GET' and request.referrer and 'admin_controls' in request.referrer:
-        return redirect(url_for('admin_controls'))
-
-    # Otherwise return the JSON response
-    return response
 
 @app.route('/timestamp.json')
 def serve_timestamp():
@@ -2580,6 +2331,107 @@ def serve_timestamp():
         except Exception as fallback_err:
             current_app.logger.error(f"Error generating fallback timestamp: {str(fallback_err)}")
             return jsonify({"error": str(e)}), 500
+
+@app.route('/push_questions_to_github', methods=['GET', 'POST'])
+def push_questions_to_github():
+    """
+    Push question files to GitHub.
+    This endpoint uses the GitHubIntegration class to push all question files to GitHub.
+    """
+    # Check if user is authenticated
+    is_authenticated = session.get('admin_authenticated', False)
+    if not is_authenticated:
+        flash('You must be logged in to access this page.', 'error')
+        return redirect(url_for('admin_controls'))
+
+    # If it's a POST request, push the files to GitHub
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'push_all':
+            # Get GitHub settings from admin_setup
+            github_token = admin_setup.game_settings.get('github_token', '')
+            github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
+            github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
+            github_branch = admin_setup.game_settings.get('github_branch', 'main')
+
+            # Validate GitHub settings
+            if not github_token or not github_repo_owner or not github_repo_name:
+                flash('GitHub settings are incomplete. Please configure them in the API Settings tab.', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+
+            # Initialize GitHub integration
+            github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
+
+            # Validate GitHub credentials
+            success, message = github.validate_credentials()
+            if not success:
+                flash(f'GitHub authentication failed: {message}', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+
+            # Push all question files to GitHub
+            success_count, failed_count, messages = github.push_all_question_files()
+
+            # Log the event
+            admin_setup.log_event(f"Pushed {success_count} question files to GitHub, {failed_count} failed")
+
+            # Flash a message with the results
+            if success_count > 0 and failed_count == 0:
+                flash(f'Successfully pushed {success_count} question files to GitHub.', 'success')
+            elif success_count > 0 and failed_count > 0:
+                flash(f'Pushed {success_count} question files to GitHub, but {failed_count} files failed.', 'warning')
+            else:
+                flash(f'Failed to push any question files to GitHub. {failed_count} files failed.', 'error')
+
+            # Return the template with the messages
+            return render_template('push_to_github.html', 
+                                  is_authenticated=is_authenticated,
+                                  messages=messages,
+                                  admin_setup=admin_setup)
+
+        elif action == 'sync':
+            # Get GitHub settings from admin_setup
+            github_token = admin_setup.game_settings.get('github_token', '')
+            github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
+            github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
+            github_branch = admin_setup.game_settings.get('github_branch', 'main')
+
+            # Validate GitHub settings
+            if not github_token or not github_repo_owner or not github_repo_name:
+                flash('GitHub settings are incomplete. Please configure them in the API Settings tab.', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+
+            # Initialize GitHub integration
+            github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
+
+            # Validate GitHub credentials
+            success, message = github.validate_credentials()
+            if not success:
+                flash(f'GitHub authentication failed: {message}', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+
+            # Synchronize question files with GitHub
+            success_count, failed_count, messages = github.sync_question_files()
+
+            # Log the event
+            admin_setup.log_event(f"Synchronized question files with GitHub: {success_count} successful, {failed_count} failed")
+
+            # Flash a message with the results
+            if success_count > 0 and failed_count == 0:
+                flash(f'Successfully synchronized {success_count} question files with GitHub.', 'success')
+            elif success_count > 0 and failed_count > 0:
+                flash(f'Synchronized {success_count} question files with GitHub, but {failed_count} files failed.', 'warning')
+            else:
+                flash(f'Failed to synchronize any question files with GitHub. {failed_count} files failed.', 'error')
+
+            # Return the template with the messages
+            return render_template('push_to_github.html', 
+                                  is_authenticated=is_authenticated,
+                                  messages=messages,
+                                  admin_setup=admin_setup)
+
+    # If it's a GET request, just render the template
+    return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
 
 if __name__ == '__main__':
     import os
