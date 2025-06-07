@@ -803,7 +803,7 @@ button:hover, .button:hover {
 }
 
 .form-group.full-margin {
-    margin: var(--spacing-zero);
+    margin: var(--spacing-xx);
     flex-basis: 100%;
     gap: var(--spacing-xs);
 }
@@ -829,21 +829,27 @@ button:hover, .button:hover {
     margin: var(--spacing-zero);
     display: inline-flex;
     align-content: flex-end;
-    grid-template-columns: repeat(auto-fill, minmax(40%, 1fr));
+	width: 350px;
+	flex-grow: 1;
+	flex-shrink: 1;
 }
 
 .form-group.equal-md {
     margin: var(--spacing-zero);
     display: inline-flex;
-    align-content: flex-end;
-    grid-template-columns: repeat(auto-fill, minmax(30%, 1fr));
+    align-content: flex-start;
+	width: 250px;
+	flex-grow: 1;
+	flex-shrink: 1;
 }
 
 .form-group.equal-sm {
     margin-top: var(--spacing-zero);
     display: inline-flex;
     align-content: flex-end;
-    grid-template-columns: repeat(auto-fill, minmax(20%, 1fr));
+	width: 150px;
+	flex-grow: 1;
+	flex-shrink: 1;
 }
 
 
@@ -857,10 +863,10 @@ button:hover, .button:hover {
 }
 
 .form-group-inline { 
-    margin-bottom: var(--spacing-zero); 
+    margin-bottom: var(--spacing-Zero); 
     display: inline-grid; 
     width: 100%; 
-    gap: var(--spacing-xs);
+    gap: var(--spacing-md);
 }
 
 .form-group-xx { 
@@ -868,6 +874,16 @@ button:hover, .button:hover {
     display: flex;
     flex-basis: 100%;
     gap: var(--spacing-xs);
+}
+
+.form-group-grid1 { 
+    margin-bottom: var(--spacing-zero); 
+    display: flex; 
+    flex-grow: 1; 
+	flex-wrap: wrap;
+    align-content: flex-start;
+    gap: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 350px));
 }
 
 .form-group-grid2 { 
@@ -889,13 +905,15 @@ button:hover, .button:hover {
 .form-group-equal-lg { 
     margin: var(--spacing-zero); 
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+	column-fill: balance;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fw));
     gap: var(--spacing-sm);
 }
 
 .form-group-equal-md { 
     margin: var(--spacing-zero); 
     display: grid;
+	column-fill: balance;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: var(--spacing-sm);
 }
@@ -1921,6 +1939,14 @@ footer {
 /* To fill a line regardless of the containing class */
 .fill {
 	display: inline-flex;
+	align-items: flex-start;
+	width: 100%;
+	Gap: 10px;
+	padding: 0;
+	margin: 0;
+}
+.fill-stack {
+	display: inline;
 	align-items: flex-start;
 	width: 100%;
 	Gap: 10px;
