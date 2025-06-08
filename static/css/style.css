@@ -129,9 +129,9 @@ header {
 }
 
 header h1 {
+    padding: 0;
     margin: 0;
 }
-
 nav {
     background-color: var(--primary-color-light);
     padding: 0.5rem;
@@ -1941,7 +1941,7 @@ footer {
 	display: inline-flex;
 	align-items: flex-start;
 	width: 100%;
-	Gap: 10px;
+	Gap: 15px;
 	padding: 0;
 	margin: 0;
 }
@@ -1949,7 +1949,7 @@ footer {
 	display: inline;
 	align-items: flex-start;
 	width: 100%;
-	Gap: 10px;
+	Gap: 15px;
 	padding: 0;
 	margin: 0;
 }

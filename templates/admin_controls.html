@@ -132,7 +132,7 @@
                         <form action="{{ url_for('admin_controls') }}" method="POST" class="form-group equal-md">
                             <input type="hidden" name="action" value="update_settings">
 
-                            <label class="fill">OpenAI API Settings</label>
+                            <h4 class="fill">OpenAI API Settings</h4>
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
                                 {% if setting_name.startswith('openai_') %}
                                 <div>
@@ -148,7 +148,7 @@
                                 {% endif %}
                             {% endfor %}
 
-                            <label class="fill">GitHub API Settings</label>
+                            <h4 class="fill">GitHub API Settings</h4>
                             <div>
                                 <label for="github_token">GitHub Token:</label>
                                 <input type="text" id="github_token" name="github_token" value="{{ admin_setup.game_settings.get('github_token', '') }}" placeholder="Enter your GitHub personal access token">
@@ -268,8 +268,8 @@
             .section h4 {
                 margin-top: 20px;
                 margin-bottom: 10px;
-                color: #1e595e;
-                border-bottom: 1px solid #eee;
+                color: var(--text-color-white);
+                border-bottom: 1px solid var(--text-color-white);
                 padding-bottom: 5px;
             }
 
