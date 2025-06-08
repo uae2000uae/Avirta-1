@@ -5,33 +5,31 @@
 {% block title %}AI Question Generator - Avirta{% endblock %}
 
 {% block content %}
-<h1>AI Question Generator</h1>
+<h2>AI Question Generator</h2>
 
 <div class="actions">
     <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
 </div>
 
 <div class="page-section">
-    <h2>Generate Questions with AI</h2>
-    <p>Enter a prompt and customize options to generate questions using AI.</p>
-
     {% if not admin_setup.game_settings.get('openai_api_key') %}
     <div class="warning-message">
         <p> No OpenAI API key is configured. An API key is required to generate questions.</p>
         <p>Please <a href="{{ url_for('admin_controls') }}">configure your OpenAI API key</a> in the Admin Controls before using this feature.</p>
     </div>
     {% endif %}
-
-	<form id="generatorForm" action="{{ url_for('ai_question_generator') }}" method="POST" class="section">
+	<div class="section">
+    <h2>AI Generator</h2>
+    <p>Enter a prompt and customize options to generate questions using AI.</p>
+		<form id="generatorForm" action="{{ url_for('ai_question_generator') }}" method="POST" class="form">
         <div class="form-group-inline">
-            <label for="prompt">Prompt:</label>
+            <h3 for="prompt">Prompt:</h3>
             <textarea id="prompt" name="prompt" rows="4" required placeholder="Enter a topic, subject, or specific instructions for generating questions..."></textarea>
             <div><small>Be specific about the type of questions you want. For example: "Generate questions about ancient Egyptian history."</small>
         </div></div>
 		<div class="form-group">
-		<div class="fill"><h3>Generation Options</h3>
-        </div>
-        <div class="form-group-equal">
+		<div class="fill-stack"><h3>Generation Options:</h3>
+        <div class="form-group equal-md">
                 <label for="question_type">Type:</label>
                 <select id="question_type" name="question_type">
                     <option value="mixed">All Types</option>
@@ -40,7 +38,7 @@
                     <option value="text">Text Answer Only</option>
                 </select>
             </div>
-        <div class="form-group-equal">
+        <div class="form-group equal-md">
                 <label for="difficulty">Difficulty:</label>
                 <select id="difficulty" name="difficulty">
                   <option value="mixed">All Difficulties</option>
@@ -51,14 +49,14 @@
                     <option value="hardest">Hardest (500)</option>
                 </select>
         </div>
-        <div class="form-group-equal">
+        <div class="form-group equal-md">
                 <label for="language">Language:</label>
                 <select id="language" name="language">
                     <option value="english">English</option>
                     <option value="arabic" selected>Arabic</option>
                 </select>
         </div>
-        <div class="form-group-equal">
+        <div class="form-group equal-md">
                 <label for="num_questions">Count:</label>
                 <select id="num_questions" name="num_questions">
                     <option value="3">3</option>
@@ -69,10 +67,10 @@
 					<option value="50">50</option>
                 </select>
             </div>
-			<div class="form-group-grid checkbox-group">
+			<div class="form-group-grid">
           		<input type="checkbox" id="include_explanations" name="include_explanations" checked>
                 <label for="include_explanations">Include explanations for correct answers</label>
-            </div>
+            </div></div>
 		</div>
 		<div class="form-actions clear">
 		    <div class="form-actions">
@@ -80,6 +78,7 @@
 			</div>
         </div>
     <!-- Progress indicator (hidden by default) -->
+		<div class="form-group centered"></div>
 		<div id="progressContainer" class="progress-container" style="display: none;">
 				<h3>Generating Questions...</h3>
 				 <div class="progress-bar-container">
@@ -87,8 +86,11 @@
 				 </div>
 			 <div id="progressStatus" class="progress-status">Initializing...</div>
 		</div>
-</form>
+	</form>
+</div>
+		
 {% if generated_questions %}
+<br>
 <div class="section">
     <h2>Preview Generated Questions</h2>
     <p>Review the generated questions before adding them to your question bank.</p>
@@ -96,11 +98,6 @@
     <form method="POST" action="{{ url_for('save_ai_questions') }}">
         <input type="hidden" name="batch_id" value="{{ batch_id }}">
 
-        <div class="form-group-inline">
-            <label for="custom_category">Category Name:</label>
-            <input type="text" id="custom_category" name="custom_category" required>
-            <small>Enter a category name these questions</small>
-        </div>
 
         {% for i, question in enumerate(generated_questions) %}
         <div class="colored-box blue">
@@ -150,11 +147,17 @@
             </div>
         </div>
         {% endfor %}
+        <div class="form-group-inline">
+            <label for="custom_category">Category Name:</label>
+            <input type="text" id="custom_category" name="custom_category" required>
+            <small>Enter a category name these questions</small>
+        </div>
 
         <div class="form-group form-actions">
             <button type="submit" class="button">Add Selected Questions to Question Bank</button>
-            <a href="{{ url_for('ai_question_generator') }}" class="button secondary">Cancel</a>
+            <button class="button secondary"><a class="text-clear" href="{{ url_for('ai_question_generator') }}">Cancel</a></button>
         </div>
+
     </form>
 </div>
 {% endif %}

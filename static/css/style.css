@@ -18,9 +18,12 @@
 /* Color Theme Variables */
 :root {
     /* Primary Colors */
-    --primary-color: #346176;
-    --primary-color-light: #1e3644;
+    --primary-color-light: #346176;
+    --primary-color: #1e3644;
     --primary-color-dark: #0e212e;
+    --primary-color2-light: #f6efdd;
+    --primary-color2-: #e2c695;
+    --primary-color2-dark: #c58e3f;
 
     /* Secondary Colors */
     --secondary-color-dark: #87949a;
@@ -29,16 +32,16 @@
     --secondary-color-light: #363639;
 
     /* Background Colors */
+    --bg-color-lightest: #B6CEDA;
     --bg-color-lighter: #346176;
     --bg-color-light: #1e3745;
     --bg-color: #0f202d;
-    --bg-color-dark: #f6efdd;
-    --bg-color-darker: #e2c695;
-    --bg-color-darkest: #c58e3f;
 
     /* Text Colors */
+    --text-color2: #7B9EAE;
+    --text-color2-dark: #B6CEDA;
     --text-color: #e0c494;
-    --text-color-light: #c78f40;
+    --text-color-dark: #c78f40;
     --text-color-white: #ffffff;
 
     /* Status Colors */
@@ -63,7 +66,7 @@
     --warning-color: #ff9900;
 
     /* Border Colors */
-    --border-color: #ddd;
+    --border-color: #e0c494;
     --border-color-light: #eee;
 
     /* Common Styling */
@@ -120,6 +123,7 @@ body {
 
 /* Header and navigation */
 header {
+    background: linear-gradient(to top right, var(--bg-color-lighter), var(--bg-color)); /* Gradient from left to right */
     background-color: var(--primary-color);
     color: var(--text-color-white);
     padding: 1rem;
@@ -128,9 +132,16 @@ header {
     position: relative;
 }
 
-header h1 {
-    padding: 0;
-    margin: 0;
+h1 {
+    margin: 10px;
+}
+
+
+h3 {
+    margin: 5px;
+	border-bottom: solid 1px var(--text-color-white);
+	color: var(--text-color-white);
+
 }
 nav {
     background-color: var(--primary-color-light);
@@ -210,7 +221,7 @@ select {
 
 button, .button {
     font-family: Cairo, sans-serif;
-    background-color: var(--primary-color-light);
+    background-color: var(--primary-color);
     color: var(--text-color-white);
     border: none;
     padding-left: var(--spacing-md);
@@ -815,6 +826,7 @@ button:hover, .button:hover {
 
 .form-group.centered {
     width: 100%;
+	align-content: center;
     justify-content: center;
     gap: var(--spacing-md);
 }
@@ -822,11 +834,12 @@ button:hover, .button:hover {
 .form-group.stack {
 	display: inline-flex;
     justify-content: flex-start;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 /* Form group width variants */
 .form-group.equal-lg {
-    margin: var(--spacing-zero);
+    margin: var(--spacing-xs);
+	gap: var(--spacing-xs);
     display: inline-flex;
     align-content: flex-end;
 	width: 350px;
@@ -835,7 +848,8 @@ button:hover, .button:hover {
 }
 
 .form-group.equal-md {
-    margin: var(--spacing-zero);
+    margin: var(--spacing-xs);
+	gap: var(--spacing-xs);
     display: inline-flex;
     align-content: flex-start;
 	width: 250px;
@@ -844,7 +858,8 @@ button:hover, .button:hover {
 }
 
 .form-group.equal-sm {
-    margin-top: var(--spacing-zero);
+    margin: var(--spacing-xs);
+	gap: var(--spacing-xs);
     display: inline-flex;
     align-content: flex-end;
 	width: 150px;
@@ -855,7 +870,7 @@ button:hover, .button:hover {
 
 /* Legacy class names for backward compatibility */
 .form-group-grid { 
-    margin-bottom: var(--spacing-zero); 
+    margin-bottom: var(--spacing-xs); 
     display: flex; 
     flex-basis: 100%; 
     gap: var(--spacing-xs); 
@@ -1801,7 +1816,7 @@ footer {
 }
 /* Progress indicator styles */
 .progress-container {
-    width: fill;
+    width: minmax(350px, 500px);
     margin: 20px 0;
     padding: 15px;
     background-color: var(--bg-color);

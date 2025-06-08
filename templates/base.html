@@ -10,8 +10,8 @@
     <link href="../static/css/custom.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-    <header style="height: 50px">
-        <h1>Avirta</h1>
+    <header style="padding: 5px">
+     <img src="../static/images/Logo.png" width="145" height="70" alt=""/>
         <div class="timestamp-info" id="timestamp-info">Last synced: Loading...</div>
         <div class="admin-login-container">
             {% if session.get('admin_authenticated') %}
@@ -40,6 +40,7 @@
             {% endif %}
         </div>
     </header>
+
 
 {% set hide_navigation = false %}
 {% block hide_nav %}{% endblock %}
