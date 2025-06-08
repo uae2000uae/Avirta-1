@@ -1,48 +1,55 @@
-/* Avirta Game - Light Theme */
-
+/* Color Theme Variables */
 :root {
     /* Primary Colors */
-    --primary-color: #1e595e;
-    --primary-color-light: #2d828a;
-    --primary-color-dark: #113639;
+    --primary-color-light: #346176;
+    --primary-color: #1e3644;
+    --primary-color-dark: #0e212e;
+    --primary-color2-light: #f6efdd;
+    --primary-color2-: #e2c695;
+    --primary-color2-dark: #c58e3f;
 
     /* Secondary Colors */
+    --secondary-color-dark: #87949a;
     --secondary-color: #6c757d;
-    --secondary-color-hover: #5a6268;
+    --secondary-color-hover: #4f565c;
     --secondary-color-light: #363639;
 
     /* Background Colors */
-    --bg-color: #ffffff;
-    --bg-color-light: #f8f8f8;
-    --bg-color-lighter: #f1f1f1;
-    --bg-color-dark: #c3d9dc;
-    --bg-color-darker: #9ab8bc;
-    --bg-color-darkest: #6d8c8f;
+    --bg-color-lightest: #B6CEDA;
+    --bg-color-lighter: #346176;
+    --bg-color-light: #1e3745;
+    --bg-color: #0f202d;
 
     /* Text Colors */
-    --text-color: #346075;
-    --text-color-light: #666666;
+    --text-color2: #7B9EAE;
+    --text-color2-dark: #B6CEDA;
+    --text-color: #e0c494;
+    --text-color-dark: #c78f40;
     --text-color-white: #ffffff;
 
     /* Status Colors */
-    --success-color: #28a745;
-    --success-color-light: #08571b;
-    --success-color-dark: #d2ebd8;
-    --success-bg: #e8f5e9;
-    --success-text: #1b5e20;
+    --success-color-light: #d4edda;
+    --success-color: #489e5c;
+    --success-color-dark: #155724;
+    --success-bg: #243c1e;
+    --success-text: #a1d2a7;
 
+    --error-color-light: #f8d7da;
     --error-color: #dc3545;
-    --error-color-light: #8a0000;
-    --error-color-dark: #f6d5d8;
-    --error-bg: #ffdede;
-    --error-text: #b71c1c;
+    --error-color-dark: #721c24;
+    --error-bg: #8c0000;
+    --error-text: #fde9ec;
 
-    --info-color: #17a2b8;
-    --info-color-light: #e0f7fa;
-    --info-color-dark: #006064;
+    --info-color-light: #005470;
+    --info-color: #0087a6;
+    --info-color-dark: #ccf2ff;
+
+    --warning-bg: #8f5e2b;
+    --warning-text: #ffeebe;
+    --warning-color: #ff9900;
 
     /* Border Colors */
-    --border-color: #346075;
+    --border-color: #e0c494;
     --border-color-light: #eee;
 
     /* Common Styling */
@@ -51,19 +58,38 @@
     --border-radius-large: 5px;
     --border-radius-xlarge: 10px;
 
-    --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --box-shadow: 0 2px 5px rgba(0, 0, 0, 50);
+    --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
 
     /* Spacing */
-    --spacing-xs: 5px;
-    --spacing-sm: 10px;
-    --spacing-md: 15px;
-    --spacing-lg: 20px;
-    --spacing-xl: 30px;
+    --spacing-zero: 0;
+    --spacing-xx: 1px;
+    --spacing-xs: 3px;
+    --spacing-sm: 6px;
+    --spacing-md: 9px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 60px;
+
+    /* Font Sizes */
+    --font-size-small: 14px;
+    --font-size-normal: 16px;
+    --font-size-large: 18px;
+    --font-size-xl: 24px;
+
+    /* Grid Breakpoints */
+    --grid-breakpoint-sm: 150px;
+    --grid-breakpoint-md: 200px;
+    --grid-breakpoint-lg: 250px;
+    --grid-breakpoint-xl: 300px;
 }
 
-/* Base Typography */
+/* Base styles */
 body {
     font-family: Cairo, sans-serif;
-    font-size: 16px;
     line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
 }

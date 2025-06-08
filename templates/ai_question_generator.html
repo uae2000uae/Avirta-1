@@ -95,12 +95,12 @@
     <h2>Preview Generated Questions</h2>
     <p>Review the generated questions before adding them to your question bank.</p>
 
-    <form method="POST" action="{{ url_for('save_ai_questions') }}">
+    <form action="{{ url_for('save_ai_questions') }}" method="POST" class="form-group-grid1">
         <input type="hidden" name="batch_id" value="{{ batch_id }}">
 
 
         {% for i, question in enumerate(generated_questions) %}
-        <div class="colored-box blue">
+        <div class="colored-box blue equal-md">
             <h3>Question {{ i+1 }}</h3>
 
 
@@ -163,7 +163,7 @@
 {% endif %}
 
 <div class="generator-instructions">
-    <h2>Instructions</h2>
+    <h3>Instructions</h3>
     <ol>
         <li>Enter a prompt describing the questions you want to generate</li>
         <li>Customize the generation options (question type, difficulty, etc.)</li>

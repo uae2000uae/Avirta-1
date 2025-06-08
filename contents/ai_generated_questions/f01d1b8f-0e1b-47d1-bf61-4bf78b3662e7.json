@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "prompt": "questions in astrology and astronomy. The more common the answers are the easier they are rated as.",
+    "question_type": "multiple_choice",
+    "difficulty": "mixed",
+    "num_questions": 3,
+    "include_explanations": true,
+    "language": "arabic",
+    "timestamp": "2025-06-08T14:06:21.909981"
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "أي كوكب يُعرف بأنه الكوكب الأحمر في علم الفلك؟",
+      "options": [
+        "الزهرة",
+        "المريخ",
+        "عطارد",
+        "المشتري"
+      ],
+      "correct_answer": "المريخ",
+      "explanation": "يُطلق على كوكب المريخ اسم الكوكب الأحمر بسبب لون سطحه المائل إلى الحُمرة نتيجة لوجود أكاسيد الحديد.",
+      "points": 100
+    },
+    {
+      "type": "multiple_choice",
+      "question": "أي من الأبراج التالية يعتبر من الأبراج المائية في علم التنجيم؟",
+      "options": [
+        "الجدي",
+        "السرطان",
+        "الحمل",
+        "الجوزاء"
+      ],
+      "correct_answer": "السرطان",
+      "explanation": "برج السرطان هو أحد الأبراج الثلاثة المائية (السرطان، العقرب، الحوت) في علم التنجيم.",
+      "points": 200
+    },
+    {
+      "type": "multiple_choice",
+      "question": "كم عدد الكواكب في المجموعة الشمسية التي تم تصنيفها ككواكب رسمية حتى عام 2024؟",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "correct_answer": "8",
+      "explanation": "تم تصنيف ثمانية كواكب رسمية في المجموعة الشمسية، بعد استبعاد بلوتو في عام 2006 من التصنيف الكوكبي.",
+      "points": 300
+    }
+  ]
+}
