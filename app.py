@@ -2166,9 +2166,11 @@ def admin_controls():
                     flash(message, 'error')
             else:
                 flash('Please select a theme to apply', 'error')
+                success = False
+                message = 'Please select a theme to apply'
 
             # For AJAX requests, return a JSON response
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
                 return jsonify({'success': success, 'message': message})
 
             return redirect(url_for('admin_controls'))

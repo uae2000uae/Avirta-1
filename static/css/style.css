@@ -22,7 +22,7 @@
     --primary-color: #1e3644;
     --primary-color-dark: #0e212e;
     --primary-color2-light: #f6efdd;
-    --primary-color2-: #e2c695;
+    --primary-color2: #e2c695;
     --primary-color2-dark: #c58e3f;
 
     /* Secondary Colors */
@@ -275,7 +275,7 @@ button:hover, .button:hover {
 }
 
 .category-header { /*for categories cards*/
-    background-color: var(--primary-color-light);
+    background-color: var(--primary-color);
     color: var(--text-color-white);
     padding: var(--spacing-xs);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
@@ -286,8 +286,8 @@ button:hover, .button:hover {
     align-items: center;
     word-wrap: normal;
 }
-.category-header-grid { /*for categoy head in game board */
-    background-color: var(--primary-color-light);
+.category-header-grid { /*for category head in game board */
+    background-color: var(--primary-color);
     color: var(--text-color-white);
     padding: var(--spacing-xs);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
@@ -308,6 +308,8 @@ button:hover, .button:hover {
 }
 .question-box {
     padding: var(--spacing-xs);
+    background-color: var(--primary-color2-light);
+
 }
 .question-item {
     margin-bottom: var(--spacing-xs);
@@ -316,7 +318,8 @@ button:hover, .button:hover {
 .question-button {
     width: 100%;
     padding: var(--spacing-zero);
-    background-color: var(--bg-color-darkest);
+    background-color: var(--primary-color2);
+    color: #000;
     border: none;
     border-radius: var(--border-radius-large);
     cursor: pointer;
@@ -324,11 +327,11 @@ button:hover, .button:hover {
 }
 
 .question-button:hover {
-    background-color: var(--bg-color-darker);
+    background-color: var(--primary-color2-dark);
 }
 
 .question-button:disabled {
-    background-color: var(--bg-color-darkest);
+    background-color: var(--primary-color2);
 }
 
 /* Double points effect */
@@ -340,7 +343,7 @@ button:hover, .button:hover {
 
 @keyframes pulse {
     0% { transform: scale(0.99); }
-    50% { transform: scale(1.01); }
+    50% { transform: scale(1.03); }
     100% { transform: scale(0.99); }
 }
 
@@ -352,10 +355,6 @@ button:hover, .button:hover {
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
 }
-
-/* .question-text styles consolidated below (line ~905) */
-
-/* Options and Option styles are defined below (line ~936) */
 
 /* Flash messages - updated for animation */
 .flash-messages {
@@ -675,7 +674,7 @@ button:hover, .button:hover {
     background-color: var(--bg-color-lighter);
     border-radius: var(--border-radius-large);
     box-shadow: var(--box-shadow);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
 }
 
 .edit-icon {

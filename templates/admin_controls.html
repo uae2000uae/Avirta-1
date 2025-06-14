@@ -196,52 +196,45 @@
                     <p>Select a theme to customize the appearance of the Avirta web app. Changes will be applied immediately and saved for the current session.</p>
 
                     <div class="theme-selection">
-                        <div class="theme-options">
-                            <!-- Dark Theme Option -->
-                            <div class="theme-option">
-                                <input type="radio" id="theme-dark_theme" name="theme_name" value="dark_theme">
-                                <label for="theme-dark_theme">
-                                    <div class="theme-preview dark_theme"></div>
-                                    <span>Dark Theme</span>
-                                </label>
+                        <form id="theme-form" action="{{ url_for('admin_controls') }}" method="POST">
+                            <input type="hidden" name="action" value="apply_theme">
+
+                            <!-- Dark Themes Section -->
+                            <h3>Dark Themes</h3>
+                            <div class="theme-options">
+                                {% for theme in admin_setup.get_available_themes() %}
+                                    {% if theme.name.startswith('dark_') %}
+                                    <div class="theme-option">
+                                        <input type="radio" id="theme-{{ theme.name }}" name="theme_name" value="{{ theme.name }}">
+                                        <label for="theme-{{ theme.name }}">
+                                            <div class="theme-preview {{ theme.name }}"></div>
+                                            <span>{{ theme.display_name }}</span>
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
                             </div>
 
-                            <!-- Light Theme Option -->
-                            <div class="theme-option">
-                                <input type="radio" id="theme-light_theme" name="theme_name" value="light_theme">
-                                <label for="theme-light_theme">
-                                    <div class="theme-preview light_theme"></div>
-                                    <span>Light Theme</span>
-                                </label>
+                            <!-- Light Themes Section -->
+                            <h3>Light Themes</h3>
+                            <div class="theme-options">
+                                {% for theme in admin_setup.get_available_themes() %}
+                                    {% if theme.name.startswith('light_') %}
+                                    <div class="theme-option">
+                                        <input type="radio" id="theme-{{ theme.name }}" name="theme_name" value="{{ theme.name }}">
+                                        <label for="theme-{{ theme.name }}">
+                                            <div class="theme-preview {{ theme.name }}"></div>
+                                            <span>{{ theme.display_name }}</span>
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
                             </div>
 
-                            <!-- Colorful Theme Option -->
-                            <div class="theme-option">
-                                <input type="radio" id="theme-colorful_theme" name="theme_name" value="colorful_theme">
-                                <label for="theme-colorful_theme">
-                                    <div class="theme-preview colorful_theme"></div>
-                                    <span>Colorful Theme</span>
-                                </label>
+                            <div class="form-actions theme-apply-button">
+                                <button type="submit" class="button">Apply Selected Theme</button>
                             </div>
-
-                            <!-- Purple Dark Theme Option -->
-                            <div class="theme-option">
-                                <input type="radio" id="theme-purple_dark_theme" name="theme_name" value="purple_dark_theme">
-                                <label for="theme-purple_dark_theme">
-                                    <div class="theme-preview purple_dark_theme"></div>
-                                    <span>Purple Dark Theme</span>
-                                </label>
-                            </div>
-
-                            <!-- Green Dark Theme Option -->
-                            <div class="theme-option">
-                                <input type="radio" id="theme-green_dark_theme" name="theme_name" value="green_dark_theme">
-                                <label for="theme-green_dark_theme">
-                                    <div class="theme-preview green_dark_theme"></div>
-                                    <span>Green Dark Theme</span>
-                                </label>
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -305,13 +298,14 @@
             }
 
             /* Theme preview backgrounds */
-            .theme-preview.dark_theme {
+            /* Dark Blue Theme */
+            .theme-preview.dark_blue_theme {
                 background: linear-gradient(to bottom right, #0f202d, #346176);
                 border: 1px solid #e0c494;
                 position: relative;
             }
 
-            .theme-preview.dark_theme::after {
+            .theme-preview.dark_blue_theme::after {
                 content: "Aa";
                 position: absolute;
                 top: 50%;
@@ -322,47 +316,14 @@
                 font-size: 24px;
             }
 
-            .theme-preview.light_theme {
-                background: linear-gradient(to bottom right, #ffffff, #c3d9dc);
-                border: 1px solid #333333;
-                position: relative;
-            }
-
-            .theme-preview.light_theme::after {
-                content: "Aa";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: #1e595e;
-                font-weight: bold;
-                font-size: 24px;
-            }
-
-            .theme-preview.colorful_theme {
-                background: linear-gradient(to bottom right, #ecf0f1, #aed6f1);
-                border: 1px solid #2c3e50;
-                position: relative;
-            }
-
-            .theme-preview.colorful_theme::after {
-                content: "Aa";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: #8e44ad;
-                font-weight: bold;
-                font-size: 24px;
-            }
-
-            .theme-preview.purple_dark_theme {
-                background: linear-gradient(to bottom right, #1a0d24, #7b4397);
+            /* Dark Purple Theme */
+            .theme-preview.dark_purple_theme {
+                background: linear-gradient(to bottom right, #1a0d24, #4a2d6a);
                 border: 1px solid #e0c4f4;
                 position: relative;
             }
 
-            .theme-preview.purple_dark_theme::after {
+            .theme-preview.dark_purple_theme::after {
                 content: "Aa";
                 position: absolute;
                 top: 50%;
@@ -373,13 +334,14 @@
                 font-size: 24px;
             }
 
-            .theme-preview.green_dark_theme {
+            /* Dark Green Theme */
+            .theme-preview.dark_green_theme {
                 background: linear-gradient(to bottom right, #0d1f0e, #2e7d32);
                 border: 1px solid #c4e0c6;
                 position: relative;
             }
 
-            .theme-preview.green_dark_theme::after {
+            .theme-preview.dark_green_theme::after {
                 content: "Aa";
                 position: absolute;
                 top: 50%;
@@ -390,9 +352,83 @@
                 font-size: 24px;
             }
 
+            /* Light Blue Theme */
+            .theme-preview.light_blue_theme {
+                background: linear-gradient(to bottom right, #ffffff, #c3d9dc);
+                border: 1px solid #346075;
+                position: relative;
+            }
+
+            .theme-preview.light_blue_theme::after {
+                content: "Aa";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #1e595e;
+                font-weight: bold;
+                font-size: 24px;
+            }
+
+            /* Light Purple Theme */
+            .theme-preview.light_purple_theme {
+                background: linear-gradient(to bottom right, #ffffff, #e1d5f5);
+                border: 1px solid #673ab7;
+                position: relative;
+            }
+
+            .theme-preview.light_purple_theme::after {
+                content: "Aa";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #4a148c;
+                font-weight: bold;
+                font-size: 24px;
+            }
+
+            /* Light Green Theme */
+            .theme-preview.light_green_theme {
+                background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+                border: 1px solid #2e7d32;
+                position: relative;
+            }
+
+            .theme-preview.light_green_theme::after {
+                content: "Aa";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #1b5e20;
+                font-weight: bold;
+                font-size: 24px;
+            }
+
             .theme-option span {
                 font-weight: 500;
                 margin-top: 5px;
+            }
+
+            .theme-apply-button {
+                margin-top: 20px;
+                text-align: center;
+            }
+
+            .theme-apply-button .button {
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: var(--primary-color);
+                color: var(--text-color-white);
+                border: none;
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .theme-apply-button .button:hover {
+                background-color: var(--primary-color-light);
             }
             </style>
 
@@ -404,28 +440,7 @@
                     document.getElementById('theme-' + selectedTheme).checked = true;
                 }
 
-                // Add event listeners to the radio buttons
-                var themeRadios = document.querySelectorAll('.theme-option input[type="radio"]');
-                themeRadios.forEach(function(radio) {
-                    radio.addEventListener('change', function() {
-                        if (this.checked) {
-                            // Send an AJAX request to apply the theme
-                            fetch("{{ url_for('admin_controls') }}", {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: 'action=apply_theme&theme_name=' + this.value
-                            })
-                            .then(response => {
-                                if (response.ok) {
-                                    // Reload the page to see the changes
-                                    window.location.reload();
-                                }
-                            });
-                        }
-                    });
-                });
+                // No event listeners for radio buttons - we're using the submit button now
             });
             </script>
 

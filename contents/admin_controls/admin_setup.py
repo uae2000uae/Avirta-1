@@ -733,29 +733,40 @@ class AdminSetup:
         Returns:
             tuple: (success, message)
         """
+        # Log the current directory and theme name for debugging
+        current_dir = os.getcwd()
+        self.log_event(f"Current directory: {current_dir}")
+        self.log_event(f"Applying theme: {theme_name}")
+
         # Path to the themes directory
         themes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
                                 'static', 'css', 'themes')
+        self.log_event(f"Themes directory: {themes_dir}")
 
         # Path to the theme file
         theme_file = os.path.join(themes_dir, f"{theme_name}.css")
+        self.log_event(f"Theme file path: {theme_file}")
 
         # Check if the theme file exists
         if not os.path.exists(theme_file):
+            self.log_event(f"Theme file not found: {theme_file}")
             return False, f"Theme '{theme_name}' not found"
 
         try:
             # Read the theme file
             with open(theme_file, 'r') as f:
                 theme_content = f.read()
+            self.log_event(f"Successfully read theme file: {len(theme_content)} bytes")
 
             # Path to the custom CSS file
             custom_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
                                         'static', 'css', 'custom.css')
+            self.log_event(f"Custom CSS path: {custom_css_path}")
 
             # Save the theme content to the custom CSS file
             with open(custom_css_path, 'w') as f:
                 f.write(theme_content)
+            self.log_event(f"Successfully wrote to custom CSS file")
 
             # Store the selected theme in game_settings (for session only)
             self.game_settings['selected_theme'] = theme_name
