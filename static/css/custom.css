@@ -1,10 +1,10 @@
-/* Avirta Game - Dark Purple Theme */
+/* Avirta Game - Dark Blue Theme */
 
 :root {
     /* Primary Colors */
-    --primary-color: #4a148c;
-    --primary-color-light: #7b1fa2;
-    --primary-color-dark: #2a0845;
+    --primary-color: #1e3644;
+    --primary-color-light: #346176;
+    --primary-color-dark: #0e212e;
 
     /* Secondary Colors */
     --secondary-color: #6c757d;
@@ -12,38 +12,38 @@
     --secondary-color-light: #363639;
 
     /* Background Colors */
-    --bg-color: #1a0d24;
-    --bg-color-light: #2d1a3e;
-    --bg-color-lighter: #4a2d6a;
-    --bg-color-dark: #12091a;
-    --bg-color-darker: #0a0510;
-    --bg-color-darkest: #050208;
+    --bg-color: #0f202d;
+    --bg-color-light: #1e3745;
+    --bg-color-lighter: #346176;
+    --bg-color-dark: #0a1a24;
+    --bg-color-darker: #061218;
+    --bg-color-darkest: #030a0e;
 
     /* Text Colors */
-    --text-color: #e0c4f4;
-    --text-color-light: #c78ff0;
+    --text-color: #e0c494;
+    --text-color-light: #c78f40;
     --text-color-white: #ffffff;
 
     /* Status Colors */
-    --success-color: #4caf50;
+    --success-color: #489e5c;
     --success-color-light: #d4edda;
     --success-color-dark: #155724;
     --success-bg: #243c1e;
     --success-text: #a1d2a7;
 
-    --error-color: #ff5252;
+    --error-color: #dc3545;
     --error-color-light: #f8d7da;
     --error-color-dark: #721c24;
     --error-bg: #8c0000;
     --error-text: #fde9ec;
 
-    --info-color: #7e57c2;
-    --info-color-light: #d1c4e9;
-    --info-color-dark: #4527a0;
+    --info-color: #0087a6;
+    --info-color-light: #005470;
+    --info-color-dark: #ccf2ff;
 
     /* Border Colors */
-    --border-color: #e0c4f4;
-    --border-color-light: #4a2d6a;
+    --border-color: #e0c494;
+    --border-color-light: #346176;
 
     /* Common Styling */
     --border-radius-small: 3px;

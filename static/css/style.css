@@ -204,8 +204,8 @@ form {
 
 label {
     display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: bold;
+    margin-bottom: var(--spacing-zero);
+    font-weight: lighter;
 }
 
 input[type="text"],

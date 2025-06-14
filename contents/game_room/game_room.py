@@ -98,13 +98,13 @@ class GameRoom:
 
     def create_board(self, question_uploader):
         """
-        Create a game board with 5 questions per category, each with different point values.
-        Questions are automatically selected, prioritizing those that were least used.
+        Create a game board with 5 questions per category, prioritizing unused questions,
+        but allowing flexible point values when needed.
         """
         if not self.categories:
             return False
 
-        point_values = [500, 400, 300, 200, 100]  # Sorted once upfront
+        point_values = [500, 400, 300, 200, 100]  # Default set of point values
         self.board = {}
 
         for category_id in self.categories:
@@ -113,8 +113,9 @@ class GameRoom:
                 continue
 
             self.board[category_id] = {}
+            used_question_ids = set()
 
-            # Organize questions by point values
+        # Organize questions by point values
             questions_by_points = {}
             for question in category_questions:
                 points_value = question.get("points")
@@ -122,22 +123,35 @@ class GameRoom:
                     continue  # Ignore invalid point values
                 questions_by_points.setdefault(points_value, []).append(question)
 
-            # Assign questions to point values, prioritizing least used ones based on use_count field
+        # Assign questions, allowing flexibility when needed
             for points in point_values:
                 matching_questions = questions_by_points.get(points, [])
 
-                if not matching_questions:  # No exact match, find another available question
-                    all_available_questions = [q for qs in questions_by_points.values() for q in qs]
+            # Filter out already used questions
+                available_matching_questions = [q for q in matching_questions if
+                                            q.get("id", "") not in used_question_ids]
+
+                if not available_matching_questions:
+                    # Expand search to *any* available question, rather than forcing duplication
+                    all_available_questions = [
+                        q for qs in questions_by_points.values()
+                        for q in qs
+                        if q.get("id", "") not in used_question_ids
+                    ]
+
                     if not all_available_questions:
-                        continue
-                    # Use the use_count field from the question JSON file
+                        continue  # No questions available at all
+
+                    # Pick the least-used question from any available point value
                     question = min(all_available_questions, key=lambda q: q.get("use_count", 0))
                 else:
-                    # Use the use_count field from the question JSON file
-                    question = min(matching_questions, key=lambda q: q.get("use_count", 0))
+                    # Select the least-used question of the exact matching point value
+                    question = min(available_matching_questions, key=lambda q: q.get("use_count", 0))
 
                 question_id = question.get("id", "")
+                used_question_ids.add(question_id)
 
+            # Assign question to board, maintaining point values but allowing flexibility
                 self.board[category_id][points] = question.copy()
 
         return bool(self.board)
