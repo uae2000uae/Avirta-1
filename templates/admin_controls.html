@@ -49,7 +49,7 @@
                     <form action="{{ url_for('admin_controls') }}" method="POST" class="form-group">
                         <input type="hidden" name="action" value="update_settings">
                         {% for setting_name, setting_value in admin_setup.game_settings.items() %}
-                            {% if not setting_name.startswith('openai_') and not setting_name.startswith('primary_color') and not setting_name.startswith('secondary_color') and not setting_name.startswith('bg_color') and not setting_name.startswith('text_color') and not setting_name.startswith('success_') and not setting_name.startswith('error_') and not setting_name.startswith('info_') and not setting_name.startswith('border_') and not setting_name.startswith('spacing_') and not setting_name.startswith('font_') and not setting_name == 'line_height' and not setting_name == 'box_shadow' and not setting_name == 'selected_theme' %}
+                            {% if not setting_name.startswith('openai_') and not setting_name.startswith('github_') and not setting_name.startswith('primary_color') and not setting_name.startswith('secondary_color') and not setting_name.startswith('bg_color') and not setting_name.startswith('text_color') and not setting_name.startswith('success_') and not setting_name.startswith('error_') and not setting_name.startswith('info_') and not setting_name.startswith('border_') and not setting_name.startswith('spacing_') and not setting_name.startswith('font_') and not setting_name == 'line_height' and not setting_name == 'box_shadow' and not setting_name == 'selected_theme' %}
                       <div class="form-group-equal-md">
                               <label for="{{ setting_name }}">{{ setting_name|replace('_', ' ')|title }}:</label>
                               {% if setting_value is sameas true or setting_value is sameas false %}
@@ -130,7 +130,7 @@
                         <h3>API Settings</h3>
 						<div class="form-group-grid1">
                         <form action="{{ url_for('admin_controls') }}" method="POST" class="form-group equal-md">
-                            <input type="hidden" name="action" value="update_settings">
+                            <input type="hidden" name="action" value="update_api_settings">
 
                             <h4 class="fill">OpenAI API Settings</h4>
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
@@ -151,19 +151,19 @@
                             <h4 class="fill">GitHub API Settings</h4>
                             <div>
                                 <label for="github_token">GitHub Token:</label>
-                                <input type="text" id="github_token" name="github_token" value="{{ admin_setup.game_settings.get('github_token', '') }}" placeholder="Enter your GitHub personal access token">
+                                <input type="text" id="github_token" name="github_token" value="{{ admin_setup.saved_api_settings.get(admin_setup.get_saved_api_settings().keys()|list|first, {}).get('github_token', '') }}" placeholder="Enter your GitHub personal access token">
                             </div>
                             <div>
                                 <label for="github_repo_owner">Repository Owner:</label>
-                                <input type="text" id="github_repo_owner" name="github_repo_owner" value="{{ admin_setup.game_settings.get('github_repo_owner', '') }}" placeholder="GitHub username or organization">
+                                <input type="text" id="github_repo_owner" name="github_repo_owner" value="{{ admin_setup.saved_api_settings.get(admin_setup.get_saved_api_settings().keys()|list|first, {}).get('github_repo_owner', '') }}" placeholder="GitHub username or organization">
                             </div>
                             <div>
                                 <label for="github_repo_name">Repository Name:</label>
-                                <input type="text" id="github_repo_name" name="github_repo_name" value="{{ admin_setup.game_settings.get('github_repo_name', '') }}" placeholder="Name of the repository">
+                                <input type="text" id="github_repo_name" name="github_repo_name" value="{{ admin_setup.saved_api_settings.get(admin_setup.get_saved_api_settings().keys()|list|first, {}).get('github_repo_name', '') }}" placeholder="Name of the repository">
                             </div>
                             <div>
                                 <label for="github_branch">Branch Name:</label>
-                                <input type="text" id="github_branch" name="github_branch" value="{{ admin_setup.game_settings.get('github_branch', '') }}" placeholder="Branch name (e.g., main)">
+                                <input type="text" id="github_branch" name="github_branch" value="{{ admin_setup.saved_api_settings.get(admin_setup.get_saved_api_settings().keys()|list|first, {}).get('github_branch', '') }}" placeholder="Branch name (e.g., main)">
                             </div>
 
                             <div class="form-actions">

@@ -30,6 +30,7 @@
         background-color: #cccccc;
         cursor: not-allowed;
     }
+
 </style>
 
 <h2>Question Bank</h2>
@@ -50,6 +51,10 @@
         <div class="stat-card">
             <h3>Categories</h3>
             <p class="stat-value">{{ stats.total_categories }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Uses</h3>
+            <p class="stat-value">{{ stats.total_uses }}</p>
         </div>
     </div>
 
@@ -110,6 +115,7 @@
                     </div>
                     <p>ID: {{ category_id }}</p>
                     <p class="question-count">Questions: {{ category.question_count }}</p>
+                    <p class="question-count">Usage: {{ category.usage_percentage }}%</p>
                     <div class="category-actions">
                         {% if session.get('admin_authenticated') %}
                         <a href="{{ url_for('view_questions', category_id=category_id) }}" class="button">Questions</a>

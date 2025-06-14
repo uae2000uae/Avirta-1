@@ -1334,8 +1334,14 @@ def question_bank_page():
         'total_categories': len(categories),
         'points_distribution': {},
         'question_types': {},
-        'active_questions': 0
+        'active_questions': 0,
+        'total_uses': 0  # Initialize total uses count
     }
+
+    # Initialize category use counts
+    category_use_counts = {}
+    for category_id in categories:
+        category_use_counts[category_id] = 0
 
     # Calculate points distribution and question types
     for question_id, question in question_bank.questions.items():
@@ -1360,6 +1366,23 @@ def question_bank_page():
         if q_type not in stats['question_types']:
             stats['question_types'][q_type] = 0
         stats['question_types'][q_type] += 1
+
+        # Add to total uses count
+        use_count = question.get('use_count', 0)
+        stats['total_uses'] += use_count
+
+        # Add to category use count
+        category_id = question.get('category_id')
+        if category_id in category_use_counts:
+            category_use_counts[category_id] += use_count
+
+    # Calculate usage percentage for each category
+    for category_id, category in categories.items():
+        if stats['total_uses'] > 0:
+            usage_percentage = (category_use_counts[category_id] / stats['total_uses']) * 100
+            category['usage_percentage'] = round(usage_percentage, 1)
+        else:
+            category['usage_percentage'] = 0
 
     # Sort the points distribution
     stats['points_distribution'] = dict(sorted(stats['points_distribution'].items()))
@@ -2075,7 +2098,7 @@ def admin_controls():
             flash('You have been logged out.')
             return redirect(url_for('index'))
 
-        # Handle settings update
+        # Handle general settings update
         elif action == 'update_settings' and is_authenticated:
             for setting_name in admin_setup.game_settings.keys():
                 if setting_name in request.form:
@@ -2092,6 +2115,24 @@ def admin_controls():
                         # Validate max_categories_per_room is within range 1-6
                         if setting_name == 'max_categories_per_room':
                             value = max(1, min(6, value))  # Ensure value is between 1 and 6
+
+                    admin_setup.update_game_setting(setting_name, value)
+
+            # Individual style variable settings have been removed, only theme selection is available
+            flash('Game settings updated successfully.')
+
+        # Handle API settings update
+        elif action == 'update_api_settings' and is_authenticated:
+            # Update OpenAI settings in game_settings
+            for setting_name in admin_setup.game_settings.keys():
+                if setting_name.startswith('openai_') and setting_name in request.form:
+                    value = request.form.get(setting_name)
+
+                    # Convert string values to appropriate types
+                    if value.isdigit():
+                        value = int(value)
+                    elif value.replace('.', '', 1).isdigit():
+                        value = float(value)
 
                     # If updating the OpenAI API key, verify the connection
                     if setting_name == 'openai_api_key':
@@ -2110,8 +2151,31 @@ def admin_controls():
 
                     admin_setup.update_game_setting(setting_name, value)
 
-            # Individual style variable settings have been removed, only theme selection is available
-            flash('Game settings updated successfully.')
+            # Create a temporary API settings object to save
+            api_settings = {
+                'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
+                'openai_model': admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo'),
+                'openai_temperature': admin_setup.game_settings.get('openai_temperature', 0.7),
+                'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 3000),
+                # GitHub settings from form
+                'github_token': request.form.get('github_token', ''),
+                'github_repo_owner': request.form.get('github_repo_owner', ''),
+                'github_repo_name': request.form.get('github_repo_name', ''),
+                'github_branch': request.form.get('github_branch', '')
+            }
+
+            # Update the first saved API settings or create a new one if none exist
+            saved_settings = admin_setup.get_saved_api_settings()
+            if saved_settings:
+                first_setting_name = list(saved_settings.keys())[0]
+                admin_setup.saved_api_settings[first_setting_name] = api_settings
+            else:
+                admin_setup.saved_api_settings['Default API Settings'] = api_settings
+
+            # Save to file
+            admin_setup.save_api_settings_to_file()
+
+            flash('API settings updated successfully.')
 
         # Handle save API settings
         elif action == 'save_api_settings' and is_authenticated:

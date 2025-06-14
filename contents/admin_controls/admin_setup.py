@@ -595,17 +595,28 @@ class AdminSetup:
         if not name or not name.strip():
             return False, "Settings name cannot be empty"
 
+        # Get GitHub settings from the first saved settings if available
+        github_settings = {}
+        if self.saved_api_settings:
+            first_setting = list(self.saved_api_settings.values())[0]
+            github_settings = {
+                'github_token': first_setting.get('github_token', ''),
+                'github_repo_owner': first_setting.get('github_repo_owner', ''),
+                'github_repo_name': first_setting.get('github_repo_name', ''),
+                'github_branch': first_setting.get('github_branch', '')
+            }
+
         # Extract OpenAI settings from game_settings
         api_settings = {
             'openai_api_key': self.game_settings.get('openai_api_key', ''),
             'openai_model': self.game_settings.get('openai_model', 'gpt-3.5-turbo'),
             'openai_temperature': self.game_settings.get('openai_temperature', 0.7),
             'openai_max_tokens': self.game_settings.get('openai_max_tokens', 3000),
-            # GitHub settings
-            'github_token': self.game_settings.get('github_token', ''),
-            'github_repo_owner': self.game_settings.get('github_repo_owner', ''),
-            'github_repo_name': self.game_settings.get('github_repo_name', ''),
-            'github_branch': self.game_settings.get('github_branch', '')
+            # GitHub settings from saved settings
+            'github_token': github_settings.get('github_token', ''),
+            'github_repo_owner': github_settings.get('github_repo_owner', ''),
+            'github_repo_name': github_settings.get('github_repo_name', ''),
+            'github_branch': github_settings.get('github_branch', '')
         }
 
         # Save the settings with the given name
@@ -635,9 +646,10 @@ class AdminSetup:
         # Get the saved settings
         api_settings = self.saved_api_settings[name]
 
-        # Update the game_settings with the saved settings
+        # Update only the OpenAI settings in game_settings
         for key, value in api_settings.items():
-            self.game_settings[key] = value
+            if key.startswith('openai_'):
+                self.game_settings[key] = value
 
         # Save settings to file to make changes permanent
         self.save_game_settings()

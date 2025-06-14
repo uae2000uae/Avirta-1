@@ -9,7 +9,7 @@
         "github_repo_name": "Avirta-WebApp",
         "github_branch": "Avirta-1"
     },
-    "OpenAI gpt-4.1 tempr 1": {
+    "OpenAI gpt-4o": {
         "openai_api_key": "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",
         "openai_model": "gpt-4.1",
         "openai_temperature": 1,

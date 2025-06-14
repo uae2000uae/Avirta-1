@@ -50,6 +50,5 @@
     "spacing_xl": "30px",
     "font_family": "Cairo, sans-serif",
     "font_size_base": "16px",
-    "line_height": "1.6",
-    "selected_theme": "dark_theme"
+    "line_height": "1.6"
 }
