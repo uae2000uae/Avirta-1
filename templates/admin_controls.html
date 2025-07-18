@@ -5,6 +5,9 @@
 {% block title %}Admin Controls - Avirta{% endblock %}
 
 {% block content %}
+<div class="back-navigation">
+    <a href="{{ url_for('index') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Homepage</a>
+</div>
 <h1>Admin Controls</h1>
 
 {% if not is_authenticated %}
@@ -64,6 +67,12 @@
                             {% endfor %}
                           </select>
                               {% elif setting_name == 'max_players_per_room' %}
+                          <select id="{{ setting_name }}" name="{{ setting_name }}">
+                            {% for i in range(1, 11) %}
+                              <option value="{{ i }}" {% if setting_value == i %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                          </select>
+                              {% elif setting_name == 'questions_per_category' %}
                           <select id="{{ setting_name }}" name="{{ setting_name }}">
                             {% for i in range(1, 11) %}
                               <option value="{{ i }}" {% if setting_value == i %}selected{% endif %}>{{ i }}</option>
@@ -185,6 +194,7 @@
                         <a href="{{ url_for('ai_question_history') }}" class="button">AI Generate History</a>
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
                         <a href="{{ url_for('push_questions_to_github') }}" class="button">Push to GitHub</a>
+                        <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
                     </div>
                 </div>
             </div>
@@ -622,6 +632,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Tab Styles -->
 <style>
+/* Back Navigation */
+.back-navigation {
+    margin-bottom: 15px;
+}
+
+.back-navigation .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
 /* API Settings Styles */
 .saved-settings-section,
 .current-settings-section,

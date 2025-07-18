@@ -10,6 +10,14 @@ import csv
 import os
 from datetime import datetime
 
+try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+
+from questionmanagement.question_import_export import _import_from_excel
+
 class BulkImport:
     """
     A class to handle bulk importing of Avirta questions.
@@ -32,6 +40,10 @@ class BulkImport:
         self.question_uploader = question_uploader
         self.category_manager = category_manager
         self.supported_formats = ["json", "csv"]
+
+        # Add Excel formats if openpyxl is available
+        if OPENPYXL_AVAILABLE:
+            self.supported_formats.extend(["xlsx", "xls"])
         self.import_stats = {
             "total": 0,
             "successful": 0,
@@ -75,6 +87,11 @@ class BulkImport:
             self._import_from_json(file_path, default_category, create_categories)
         elif file_extension == "csv":
             self._import_from_csv(file_path, default_category, create_categories)
+        elif file_extension in ["xlsx", "xls"]:
+            if not OPENPYXL_AVAILABLE:
+                self.import_stats["errors"].append("openpyxl library is required for Excel import. Install with: pip install openpyxl")
+                return self.import_stats
+            self._import_from_excel_file(file_path, default_category, create_categories)
 
         return self.import_stats
 
@@ -101,6 +118,63 @@ class BulkImport:
             self.import_stats["errors"].append(f"Invalid JSON file: {str(e)}")
         except Exception as e:
             self.import_stats["errors"].append(f"Error importing from JSON: {str(e)}")
+
+    def _import_from_excel_file(self, file_path, default_category, create_categories):
+        """
+        Import questions from an Excel file.
+
+        Args:
+            file_path (str): Path to the Excel file
+            default_category (str): Default category for questions
+            create_categories (bool): Whether to create missing categories
+        """
+        try:
+            # Load workbook
+            wb = openpyxl.load_workbook(file_path, read_only=True)
+
+            # Get the first worksheet (skip any instruction sheets)
+            ws = None
+            for sheet_name in wb.sheetnames:
+                if "instruction" not in sheet_name.lower():
+                    ws = wb[sheet_name]
+                    break
+
+            if not ws:
+                self.import_stats["errors"].append("No valid worksheet found in the Excel file")
+                return
+
+            # Get headers
+            headers = []
+            for cell in ws[1]:
+                headers.append(cell.value)
+
+            questions = []
+
+            # Process rows
+            for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+                # Skip empty rows
+                if not any(row):
+                    continue
+
+                # Convert row to dictionary
+                row_dict = {}
+                for i, value in enumerate(row):
+                    if i < len(headers) and headers[i]:
+                        row_dict[headers[i]] = value
+
+                # Convert row to question format
+                question = self._convert_csv_row_to_question(row_dict)
+                if question:
+                    questions.append(question)
+                else:
+                    self.import_stats["failed"] += 1
+                    self.import_stats["errors"].append(f"Row {row_num}: Invalid question format")
+
+            # Process the questions
+            self._process_questions(questions, default_category, create_categories)
+
+        except Exception as e:
+            self.import_stats["errors"].append(f"Error importing from Excel: {str(e)}")
 
     def _import_from_csv(self, file_path, default_category, create_categories):
         """
@@ -314,11 +388,99 @@ class BulkImport:
                     json.dump(questions, f, indent=2, ensure_ascii=False)
             elif file_extension == "csv":
                 self._export_to_csv(file_path, questions)
+            elif file_extension in ["xlsx", "xls"]:
+                if not OPENPYXL_AVAILABLE:
+                    return False, "openpyxl library is required for Excel export. Install with: pip install openpyxl"
+                self._export_to_excel(file_path, questions)
 
             return True, f"Successfully exported {len(questions)} questions to {file_path}"
 
         except Exception as e:
             return False, f"Error exporting questions: {str(e)}"
+
+    def _export_to_excel(self, file_path, questions):
+        """
+        Export questions to an Excel file.
+
+        Args:
+            file_path (str): Path to save the Excel file
+            questions (list): List of question objects to export
+        """
+        # Create a new workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Questions"
+
+        # Determine all possible fields
+        fields = set()
+        for question in questions:
+            fields.update(question.keys())
+
+        # Ensure essential fields come first
+        essential_fields = ["id", "question", "type", "category_id", "correct_answer", "points"]
+        fieldnames = essential_fields + [f for f in sorted(fields) if f not in essential_fields]
+
+        # Add headers
+        for col_num, header in enumerate(fieldnames, 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.value = header
+            cell.font = openpyxl.styles.Font(bold=True)
+            cell.fill = openpyxl.styles.PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+            cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
+
+            # Set column width based on header length
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = max(15, len(header) + 5)
+
+        # Add data
+        for row_num, question in enumerate(questions, 2):
+            row = question.copy()
+
+            # Convert options list to string for Excel
+            if "options" in row and isinstance(row["options"], list):
+                row["options"] = ",".join(row["options"])
+
+            # Write each field
+            for col_num, field in enumerate(fieldnames, 1):
+                cell = ws.cell(row=row_num, column=col_num)
+                cell.value = row.get(field, "")
+
+        # Add instructions sheet
+        ws_instructions = wb.create_sheet(title="Instructions")
+        instructions = [
+            ["Question Export Instructions"],
+            [""],
+            ["This file contains exported questions from the Avirta system."],
+            [""],
+            ["Field Descriptions:"],
+            ["id", "Unique identifier for the question"],
+            ["question", "The text of the question"],
+            ["type", "The type of question (multiple_choice, true_false, text)"],
+            ["category_id", "The category the question belongs to"],
+            ["correct_answer", "The correct answer to the question"],
+            ["points", "Point value for the question (100, 200, 300, 400, 500)"],
+            ["options", "For multiple_choice questions, comma-separated answer options"]
+        ]
+
+        for row_num, instruction in enumerate(instructions, 1):
+            if len(instruction) == 1:
+                cell = ws_instructions.cell(row=row_num, column=1)
+                cell.value = instruction[0]
+                if row_num == 1:
+                    cell.font = openpyxl.styles.Font(bold=True, size=14)
+            else:
+                cell_label = ws_instructions.cell(row=row_num, column=1)
+                cell_desc = ws_instructions.cell(row=row_num, column=2)
+                cell_label.value = instruction[0]
+                cell_desc.value = instruction[1]
+                if instruction[0] in fieldnames:
+                    cell_label.font = openpyxl.styles.Font(bold=True)
+
+        # Adjust column widths
+        ws_instructions.column_dimensions['A'].width = 20
+        ws_instructions.column_dimensions['B'].width = 80
+
+        # Save the workbook
+        wb.save(file_path)
 
     def _export_to_csv(self, file_path, questions):
         """

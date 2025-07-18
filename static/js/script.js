@@ -59,6 +59,11 @@ function initializeGameInterface() {
  * Set up a timer for answering questions
  */
 function setupQuestionTimer() {
+    // Skip timer functionality for the Fastest game mode
+    if (window.location.pathname.includes('/fastest/')) {
+        return; // Don't add timer functionality to Fastest game pages
+    }
+
     const questionSection = document.querySelector('.question-display');
     if (!questionSection) return; // Not on a question page
 

@@ -8,9 +8,9 @@
     "id": "Q0001331",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.391015",
-    "updated_at": "2025-06-04T00:05:07.392566",
+    "updated_at": "2025-07-18T03:19:55.883560",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -60,9 +60,9 @@
     "id": "Q0001335",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.431082",
-    "updated_at": "2025-06-03T23:59:22.431082",
+    "updated_at": "2025-07-17T03:05:31.313373",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -73,9 +73,9 @@
     "id": "Q0001336",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.443081",
-    "updated_at": "2025-06-03T23:59:22.443081",
+    "updated_at": "2025-07-17T03:06:11.089242",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -86,9 +86,9 @@
     "id": "Q0001337",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.456081",
-    "updated_at": "2025-06-03T23:59:22.456081",
+    "updated_at": "2025-07-17T03:05:48.574330",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -99,9 +99,9 @@
     "id": "Q0001338",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.469080",
-    "updated_at": "2025-06-03T23:59:22.469080",
+    "updated_at": "2025-07-17T03:06:02.403001",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -112,9 +112,9 @@
     "id": "Q0001339",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.481080",
-    "updated_at": "2025-06-03T23:59:22.481080",
+    "updated_at": "2025-07-17T03:05:37.228489",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -125,9 +125,9 @@
     "id": "Q0001340",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.492087",
-    "updated_at": "2025-06-03T23:59:22.492087",
+    "updated_at": "2025-07-17T03:05:58.106341",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -177,9 +177,9 @@
     "id": "Q0001344",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.544128",
-    "updated_at": "2025-06-03T23:59:22.544128",
+    "updated_at": "2025-07-17T03:05:43.871592",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -190,9 +190,9 @@
     "id": "Q0001345",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.558112",
-    "updated_at": "2025-06-03T23:59:22.558112",
+    "updated_at": "2025-07-17T03:05:53.918128",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -203,9 +203,9 @@
     "id": "Q0001346",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.573113",
-    "updated_at": "2025-06-03T23:59:22.573113",
+    "updated_at": "2025-07-17T03:06:06.489580",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -216,9 +216,9 @@
     "id": "Q0001347",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.588113",
-    "updated_at": "2025-06-03T23:59:22.588113",
+    "updated_at": "2025-07-17T03:04:53.358530",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -229,9 +229,9 @@
     "id": "Q0001348",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.603116",
-    "updated_at": "2025-06-03T23:59:22.603116",
+    "updated_at": "2025-07-17T03:37:10.535607",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -242,9 +242,9 @@
     "id": "Q0001349",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.620659",
-    "updated_at": "2025-06-03T23:59:22.620659",
+    "updated_at": "2025-07-17T03:36:03.182367",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -255,9 +255,9 @@
     "id": "Q0001350",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.637670",
-    "updated_at": "2025-06-03T23:59:22.637670",
+    "updated_at": "2025-07-17T03:33:29.806857",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -320,9 +320,9 @@
     "id": "Q0001355",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:22.728388",
-    "updated_at": "2025-06-03T23:59:22.728388",
+    "updated_at": "2025-07-14T04:44:31.614393",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -620,9 +620,9 @@
     "id": "Q0001378",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:23.340844",
-    "updated_at": "2025-06-03T23:59:23.340844",
+    "updated_at": "2025-07-17T03:35:06.790287",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -633,9 +633,9 @@
     "id": "Q0001379",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:23.373851",
-    "updated_at": "2025-06-03T23:59:23.373851",
+    "updated_at": "2025-07-17T03:32:26.354436",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -659,9 +659,9 @@
     "id": "Q0001381",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:23.442389",
-    "updated_at": "2025-06-04T00:34:56.117089",
+    "updated_at": "2025-07-14T04:44:47.030411",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -672,9 +672,9 @@
     "id": "Q0001382",
     "category_id": "car_brands",
     "created_at": "2025-06-03T23:59:23.478403",
-    "updated_at": "2025-06-03T23:59:23.478403",
+    "updated_at": "2025-07-18T03:19:42.436600",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",

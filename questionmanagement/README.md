@@ -94,6 +94,51 @@ reset_used_questions("science")
 reset_used_questions()
 ```
 
+## Question Import/Export
+
+The `question_import_export.py` module provides functions for importing and exporting questions from/to various file formats, including CSV and Excel (XLS/XLSX).
+
+### Features
+
+- **Export Templates**: Generate template files (CSV or Excel) for users to fill in with questions
+- **Import Questions**: Import questions from CSV or Excel files into the question bank
+- **Validation**: Validate uploaded content for proper formatting
+- **Error Reporting**: Provide detailed error reporting for failed imports
+
+### Usage
+
+```python
+from questionmanagement.question_import_export import export_template, import_questions
+
+# Export a template file
+success, message = export_template("template.xlsx", format="xlsx")
+if success:
+    print(f"Template exported: {message}")
+else:
+    print(f"Error exporting template: {message}")
+
+# Export a CSV template
+export_template("template.csv", format="csv")
+
+# Import questions from a file
+import_stats = import_questions("questions.xlsx")
+print(f"Imported {import_stats['successful']} questions successfully")
+print(f"Failed to import {import_stats['failed']} questions")
+
+# Import with custom default category and difficulty
+import_stats = import_questions("questions.csv", default_category="science", default_points=300)
+```
+
+### Requirements
+
+For Excel file support, the `openpyxl` library is required:
+
+```bash
+pip install openpyxl
+```
+
+The module will still work without openpyxl, but only CSV files will be supported.
+
 ## Example
 
 See the `examples/question_bank_demo.py` file for a complete demonstration of how to use the question bank.
@@ -102,10 +147,17 @@ See the `examples/question_bank_demo.py` file for a complete demonstration of ho
 
 ### Functions
 
+#### Question Bank Functions
+
 - `add_question(question_data, category_id="general", difficulty="medium")`: Add a new question to the bank
 - `get_question(category_id, difficulty=None, prevent_repeats=True)`: Get a question from the specified category and difficulty
 - `get_questions_by_category(category_id, difficulty=None, limit=None)`: Get all questions in a category, optionally filtered by difficulty
 - `reset_used_questions(category_id=None)`: Reset the used_questions tracking for a category or all categories
+
+#### Import/Export Functions
+
+- `export_template(output_path, format="xlsx")`: Export a template file for users to fill in with questions
+- `import_questions(file_path, default_category="general", default_points=300)`: Import questions from a file (CSV, XLSX) and add them to the question bank
 
 ### Question Data Format
 

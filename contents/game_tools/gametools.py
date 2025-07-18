@@ -63,14 +63,20 @@ class GameTools:
         """
         Activate the "Change the Question" tool for a player.
         This tool allows the player to swap the current question for another one
-        from the same category with the same point value.
-        Can be used at any time, but only once per player.
+        from the same category with equal or close points value.
+
+        According to PRJ-007:
+        - Can only be used when a question is active
+        - Can only be used when it's the player's turn
+        - Must replace the current question with another from the same category
+        - The new question must be from the same category with equal or close points value
+        - Each player gets one use per game
 
         Args:
             player_tools (dict): Dictionary of player tools
             effective_player (str): Name of the player using the tool
-            current_player (str): Name of the player whose turn it is (not used anymore)
-            question_active (bool): Whether a question is currently active (not used anymore)
+            current_player (str): Name of the player whose turn it is
+            question_active (bool): Whether a question is currently active
             board (dict): Game board with questions organized by category and point value
             answered_questions (set): Set of question IDs that have been answered
             category_id (str): ID of the category
@@ -78,25 +84,35 @@ class GameTools:
             question_uploader (QuestionUploader, optional): Instance of QuestionUploader to get questions.
 
         Returns:
-            dict: The new question or None if the tool couldn't be used
+            dict: The new question if successful, or a dict with error info if the tool couldn't be used
         """
-        # Check if effective player has the tool available (only check if it's been used before)
+        # PRJ-007: Check if effective player has the tool available
         if not player_tools.get(effective_player, {}).get("change_question", {}).get("available", False):
-            return None
+            return {"success": False, "error": "tool_not_available", "message": "This tool has already been used or is not available."}
+
+        # PRJ-007: Can only be used when a question is active
+        if not question_active:
+            return {"success": False, "error": "question_not_active", "message": "No question is currently active."}
+
+        # PRJ-007: Can only be used when it's the player's turn
+        if effective_player != current_player:
+            return {"success": False, "error": "not_player_turn", "message": "It's not your turn to use this tool."}
 
         # Check if category exists in board
         if category_id not in board:
-            return None
+            return {"success": False, "error": "category_not_found", "message": "Category not found on the game board."}
 
-        # Check if point value exists for category
+        # Check if the point value exists in the category
         if current_points not in board[category_id]:
-            return None
+            return {"success": False, "error": "points_not_found", "message": "Point value not found in this category."}
 
-        # Get the current question
-        current_question = board[category_id][current_points]
+        # Get the list of questions for this point value
+        questions_list = board[category_id][current_points]
 
-        # Mark the current question as answered
-        answered_questions.add(current_question['id'])
+        # Since question_active is True, we know there's a current question being asked
+        # We don't need to find a specific "unanswered" question on the board
+        # The current_points parameter tells us the point value of the current question
+        current_points_value = current_points
 
         # If question_uploader is not provided, try to get it from the app context
         if not question_uploader:
@@ -109,85 +125,68 @@ class GameTools:
 
         if not question_uploader:
             # No question_uploader available
-            return None
+            return {"success": False, "error": "no_question_uploader", "message": "Question database is not available."}
 
         # Get all questions for this category
         category_questions = question_uploader.get_questions_by_category(category_id)
 
         # Skip if no questions available
         if not category_questions:
-            return None
+            return {"success": False, "error": "no_category_questions", "message": "No questions available in this category."}
 
         # Get all question IDs currently on the board
         board_question_ids = set()
-        for cat_id, questions in board.items():
-            for points, question in questions.items():
-                board_question_ids.add(question.get('id', ''))
+        for cat_id, points_dict in board.items():
+            for points, questions_list in points_dict.items():
+                for question in questions_list:
+                    board_question_ids.add(question.get('id', ''))
 
         # Filter out questions that are already on the board or have been answered
-        existing_question_ids = {q.get('id') for cat in board.values() for q in cat.values()}
-
         available_questions = [q for q in category_questions
-                               if q.get('id') not in existing_question_ids
+                               if q.get('id') not in board_question_ids
                                and q.get('id') not in answered_questions]
 
         if not available_questions:
-            # If no available questions, return None
-            return None
+            # If no available questions, return error
+            return {"success": False, "error": "no_available_questions", "message": "No alternative questions available for this category."}
 
-        # Get the point value of the current question
-        current_points_value = current_question.get('points', current_points)
+        # Ensure current_points_value is an integer
         if isinstance(current_points_value, str):
             try:
                 current_points_value = int(current_points_value)
             except ValueError:
                 current_points_value = current_points
 
+        # PRJ-007: Find questions with equal or close points value
         # First try to find questions with exactly matching points
         matching_questions = [q for q in available_questions 
                              if q.get('points') == current_points_value]
 
-        # If no exact matches, look for questions with similar points
+        # If no exact matches, look for questions with close points (within 100 points)
         if not matching_questions:
-            # Define a range of acceptable point values (e.g., within 100 points)
             point_range = 100
             matching_questions = [q for q in available_questions 
                                  if abs(int(q.get('points', 0)) - current_points_value) <= point_range]
 
-        # If still no matches, use any available question from the category
+        # If still no matches, return error
         if not matching_questions:
-            matching_questions = available_questions
+            return {"success": False, "error": "no_matching_questions", "message": "No questions with similar point values are available."}
 
-        # If we have matching questions, sort by usage count (least used first)
-        if matching_questions:
-            # Track question usage count if not already present
-            if not hasattr(question_uploader, 'question_usage_count'):
-                question_uploader.question_usage_count = {}
+        # Sort by usage count (least used first) to prioritize fresh questions
+        matching_questions.sort(key=lambda q: q.get("use_count", 0))
 
-            # Sort questions by usage count (least used first)
-            matching_questions.sort(key=lambda q: question_uploader.question_usage_count.get(q.get('id', ''), 0))
+        # Select the least used question
+        new_question = matching_questions[0]
 
-            # Select the next least used question if available, otherwise use the least used
-            if len(matching_questions) > 1:
-                new_question = matching_questions[1]  # Next least used
-            else:
-                new_question = matching_questions[0]  # Least used
+        # Create a copy of the new question and set its point value to match the current question
+        new_question_copy = new_question.copy()
+        new_question_copy["points"] = current_points_value
 
-            # Increment the usage count for this question
-            question_id = new_question.get('id', '')
-            if question_id:
-                question_uploader.question_usage_count[question_id] = question_uploader.question_usage_count.get(question_id, 0) + 1
+        # Mark the tool as used (disable it)
+        player_tools[effective_player]["change_question"]["available"] = False
 
-            # Update the board with the new question
-            board[category_id][current_points].update({
-                key: value for key, value in new_question.items() if key != "id"
-            })
-            # Mark the tool as used (disable but don't remove)
-            player_tools[effective_player]["change_question"]["available"] = False
-
-            return new_question
-
-        return None
+        # Return the new question - the calling code will handle updating the game state
+        return new_question_copy
 
     @staticmethod
     def has_tool_available(player_tools, player_name, tool_name):

@@ -5,6 +5,13 @@ This module handles the creation and management of game rooms where players can 
 """
 
 from contents.game_tools import GameTools
+from contents.game_board_creator import (
+    create_board as create_game_board,
+    select_question as select_board_question,
+    get_available_questions as get_board_available_questions,
+    is_board_completed as is_board_completed,
+    is_id_on_board as is_id_on_board
+)
 
 class GameRoom:
     """
@@ -23,7 +30,7 @@ class GameRoom:
         answered_questions (set): Set of question IDs that have been answered
     """
 
-    def __init__(self, room_id, name, host, categories=None, max_players=10):
+    def __init__(self, room_id, name, host, categories=None, max_players=10, question_types=None):
         """ Initialize a new game room. """
         self.room_id = room_id
         self.name = name
@@ -37,6 +44,9 @@ class GameRoom:
 
         # Initialize categories (using the provided categories list)
         self.categories = categories if categories else []
+
+        # Store question types
+        self.question_types = question_types
 
         # Initialize game board and answered questions
         self.board = {}
@@ -96,65 +106,27 @@ class GameRoom:
         self.answered_questions.clear()
         return True
 
-    def create_board(self, question_uploader):
+    def create_board(self, question_uploader, questions_per_category=10):
         """
-        Create a game board with 5 questions per category, prioritizing unused questions,
-        but allowing flexible point values when needed.
+        Create a game board with an exact number of questions per category,
+        prioritizing unused questions and using flexible point values if needed.
+        Implements sophisticated question selection algorithm as per issue requirements.
+
+        Returns:
+            tuple: (success, enough_questions, error_details) where:
+                - success (bool): True if the board was created successfully, False otherwise
+                - enough_questions (bool): True if enough questions were found that match the criteria
+                - error_details (dict): Detailed information about lacking categories and criteria
         """
-        if not self.categories:
-            return False
+        # Use the imported create_game_board function with question_types parameter
+        self.board, self.answered_questions, enough_questions, error_details = create_game_board(
+            self.categories, 
+            question_uploader, 
+            questions_per_category,
+            question_types=self.question_types
+        )
 
-        point_values = [500, 400, 300, 200, 100]  # Default set of point values
-        self.board = {}
-
-        for category_id in self.categories:
-            category_questions = question_uploader.get_questions_by_category(category_id)
-            if not category_questions:
-                continue
-
-            self.board[category_id] = {}
-            used_question_ids = set()
-
-        # Organize questions by point values
-            questions_by_points = {}
-            for question in category_questions:
-                points_value = question.get("points")
-                if not isinstance(points_value, int):
-                    continue  # Ignore invalid point values
-                questions_by_points.setdefault(points_value, []).append(question)
-
-        # Assign questions, allowing flexibility when needed
-            for points in point_values:
-                matching_questions = questions_by_points.get(points, [])
-
-            # Filter out already used questions
-                available_matching_questions = [q for q in matching_questions if
-                                            q.get("id", "") not in used_question_ids]
-
-                if not available_matching_questions:
-                    # Expand search to *any* available question, rather than forcing duplication
-                    all_available_questions = [
-                        q for qs in questions_by_points.values()
-                        for q in qs
-                        if q.get("id", "") not in used_question_ids
-                    ]
-
-                    if not all_available_questions:
-                        continue  # No questions available at all
-
-                    # Pick the least-used question from any available point value
-                    question = min(all_available_questions, key=lambda q: q.get("use_count", 0))
-                else:
-                    # Select the least-used question of the exact matching point value
-                    question = min(available_matching_questions, key=lambda q: q.get("use_count", 0))
-
-                question_id = question.get("id", "")
-                used_question_ids.add(question_id)
-
-            # Assign question to board, maintaining point values but allowing flexibility
-                self.board[category_id][points] = question.copy()
-
-        return bool(self.board)
+        return bool(self.board), enough_questions, error_details
 
     def select_question(self, category_id, points, player_name, acting_player=None):
         """
@@ -187,23 +159,12 @@ class GameRoom:
             if not (self.is_host(player_name) and acting_player == self.current_player):
                 return None
 
-        # Check if category exists in board
-        if category_id not in self.board:
+        # Use the imported select_board_question function to get the question
+        question = select_board_question(self.board, self.answered_questions, category_id, points)
+
+        # If no question is available, return None
+        if not question:
             return None
-
-        # Check if point value exists for category
-        if points not in self.board[category_id]:
-            return None
-
-        # Get the question
-        question = self.board[category_id][points].copy()
-
-        # Check if question has already been answered
-        if question['id'] in self.answered_questions:
-            return None
-
-        # Mark question as answered
-        self.answered_questions.add(question['id'])
 
         # Apply double points if active for the effective player
         if self.player_tools.get(effective_player, {}).get("double_points", {}).get("active", False):
@@ -230,45 +191,13 @@ class GameRoom:
             dict: Dictionary of questions organized by category and point value,
                  with answered questions marked as {"points": points, "answered": True}
         """
-        available = {}
-
-        for category_id, questions in self.board.items():
-            available[category_id] = {}
-
-            # Create a list of (points_key, question) tuples
-            question_items = []
-            for points_key, question in questions.items():
-                # Use the actual points value from the question, not the position on the board
-                actual_points = question.get('points', points_key)
-
-                # Ensure actual_points is an integer
-                if isinstance(actual_points, str):
-                    try:
-                        actual_points = int(actual_points)
-                    except ValueError:
-                        actual_points = points_key
-
-                # Check if double points is active for the current player
-                doubled = False
-                if self.player_tools.get(self.current_player, {}).get("double_points", {}).get("active", False) and question['id'] not in self.answered_questions:
-                    actual_points = actual_points * 2
-                    doubled = True
-
-                if question['id'] not in self.answered_questions:
-                    # Store the actual point value from the question
-                    question_items.append((points_key, {"points": actual_points, "answered": False, "doubled": doubled}))
-                else:
-                    # Include answered questions but mark them as answered
-                    question_items.append((points_key, {"points": actual_points, "answered": True, "doubled": False}))
-
-            # Sort by actual points in descending order (most difficult to least difficult)
-            question_items.sort(key=lambda item: item[1]["points"], reverse=True)
-
-            # Add sorted items to the available dictionary
-            for points_key, question_info in question_items:
-                available[category_id][points_key] = question_info
-
-        return available
+        # Use the imported get_board_available_questions function
+        return get_board_available_questions(
+            self.board, 
+            self.answered_questions, 
+            self.current_player, 
+            self.player_tools
+        )
 
     def is_board_completed(self):
         """
@@ -277,12 +206,8 @@ class GameRoom:
         Returns:
             bool: True if all questions have been answered, False otherwise
         """
-        for category_id, questions in self.board.items():
-            for points, question in questions.items():
-                if question['id'] not in self.answered_questions:
-                    return False
-
-        return True
+        # Use the imported is_board_completed function
+        return is_board_completed(self.board, self.answered_questions)
 
     def use_double_points(self, player_name, acting_player=None):
         """
@@ -378,11 +303,8 @@ class GameRoom:
         Returns:
             bool: True if the ID exists on the board, False otherwise
         """
-        for category_id, questions in self.board.items():
-            for points, question in questions.items():
-                if question.get('id') == question_id:
-                    return True
-        return False
+        # Use the imported is_id_on_board function
+        return is_id_on_board(self.board, question_id)
 
     def get_player_tools(self, player_name):
         """

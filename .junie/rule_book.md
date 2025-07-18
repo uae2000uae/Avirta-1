@@ -354,6 +354,140 @@ This section contains rules specific to the Avirta project.
 - Leverages the existing persistence infrastructure in GameStatusManager
 - Provides a consistent approach to state management across the application
 
+### PRJ-012: Centralized Game Board Creation
+
+**Rule**: Game board creation must be centralized in the `game_board_creator.py` module, which provides functions for creating game boards, selecting questions, and managing answered questions. This module must support configurable number of questions per category and allow multiple questions with the same point value.
+
+**Examples**:
+- Valid: Using `create_board` function from `game_board_creator.py` to create a game board
+- Valid: Creating a board with 10 questions per category (configurable via admin settings)
+- Valid: Having multiple questions with the same point value in a category
+- Valid: Using `select_question` function to get a question from the board
+- Invalid: Implementing game board creation logic directly in the `GameRoom` or `SpeedGameRoom` classes
+- Invalid: Limiting the number of questions per category to a fixed value
+- Invalid: Preventing multiple questions with the same point value
+
+**Implementation Requirements**:
+1. All game board creation logic must be in the `game_board_creator.py` module
+2. The module must provide these core functions:
+   - `create_board`: Creates a game board with questions for each category
+   - `build_speed_board`: Creates a board for speed mode games with specific point values
+   - `build_standard_board`: Creates a board for standard mode games with default point values
+   - `organize_board`: Organizes selected questions by point value
+   - `select_question`: Selects a question from the board based on category and point value
+   - `get_available_questions`: Gets all available questions on the board, marking answered ones
+   - `is_board_completed`: Checks if all questions on the board have been answered
+   - `is_id_on_board`: Checks if a question ID exists on the board
+3. The `GameRoom` and `SpeedGameRoom` classes must use these functions instead of implementing their own logic
+4. The number of questions per category must be configurable via admin settings (default: 10)
+5. The board structure must support multiple questions with the same point value by storing questions in lists for each point value
+6. Questions must be selected based on use count, prioritizing less-used questions
+7. The board creation process must use a two-pass selection approach:
+   - First pass: Select questions matching the desired point values
+   - Second pass: Fill remaining slots with any available questions, mapping them to the closest point value
+8. For Speed mode, the system must use the point values specified by the host
+9. For Standard mode, the system must use the default point values [500, 400, 300, 200, 100]
+10. The UI must dynamically create and update question elements based on the board data
+
+**Rationale**:
+- Centralizing game board creation improves maintainability by isolating this logic in a single module
+- Supporting configurable number of questions per category provides flexibility for different game scenarios
+- Allowing multiple questions with the same point value increases the variety of questions available
+- Prioritizing less-used questions ensures players see a variety of questions rather than the same ones repeatedly
+- The two-pass selection approach ensures we get enough questions even if there aren't enough matching the desired point values
+- Dynamic UI updates ensure all questions are displayed correctly, regardless of their point values
+
+### PRJ-013: Who is the Fastest Game Mode
+
+**Rule**: The "Who is the fastest" game mode allows players to compete to answer questions the fastest. The host creates a game board, reveals questions one by one, and awards points to the player who answers correctly first.
+
+**Examples**:
+- Valid: Host creates a game with selected categories and point values
+- Valid: Host reveals a question, starts the timer, and waits for players to answer
+- Valid: Host awards points to the player who answers correctly first
+- Valid: Host moves to the next question after awarding points or if no one answers correctly
+- Invalid: Players revealing questions or answers
+- Invalid: Players awarding points to themselves
+- Invalid: Host moving to the next question before revealing the current question and answer
+
+**Implementation Requirements**:
+1. The game must use the FastestGameRoom class which extends GameRoom
+2. The game must support the following flow:
+   - Host creates a game board with selected categories and point values
+   - Host reveals a question and the timer starts
+   - Host reveals the answer when ready
+   - Host awards points to the player who answered correctly first
+   - Host moves to the next question
+3. The game must track and display:
+   - Current question number and total questions
+   - Question category and point value
+   - Timer for each question
+   - Player scores in a leaderboard
+4. Only the host can reveal questions, reveal answers, award points, and move to the next question
+5. The game must persist game state to disk to ensure continuity across sessions
+6. The game must use the existing game board creation and question selection mechanisms
+
+**Rationale**:
+- Provides a new game mode that emphasizes speed and competition
+- Leverages existing game infrastructure for consistency and maintainability
+- Gives the host control over the game flow to ensure fair play
+- Tracks player scores to determine the winner
+- Persists game state to ensure continuity across sessions
+
+### PRJ-014: Sophisticated Question Selection Algorithm for Regular Game
+
+**Rule**: In the regular game, when creating a room, the system must implement a sophisticated question selection algorithm that prioritizes least used questions, ensures proper question distribution, and provides detailed error reporting when insufficient questions are available. The first 5 questions collected must fill all point values, then additional passes go from least point value to most.
+
+**Examples**:
+- Valid: System selects exactly one question for each point value (100, 200, 300, 400, 500) for the first 5 questions
+- Valid: System prioritizes questions with use_count of 0 over questions with use_count of 5
+- Valid: For questions beyond the first 5, system goes from least point value (100) to most (500) repeatedly
+- Valid: System falls back to other question types in the same category if not enough questions of selected types
+- Valid: System falls back to other point values in the same category if not enough questions of needed point values
+- Valid: System provides detailed error message: "Category 'Science' lacks sufficient questions of the selected criteria"
+- Invalid: System randomly selects questions without considering use_count
+- Invalid: System fails to implement the first-5-questions rule for filling all point values
+- Invalid: System doesn't follow the least-to-most point value order for additional questions
+- Invalid: System provides generic error message without specifying which categories lack questions
+
+**Implementation Requirements**:
+1. **Primary Selection Process**:
+   - Look for the specified number of questions per category in the system settings
+   - Filter questions by selected categories and question types during create_room dialog
+   - For each category, sort the filtered list by least used questions to most used questions (use_count ascending)
+   - **First Pass**: Select exactly one question for each point value (100, 200, 300, 400, 500) to get the first 5 questions
+   - **Additional Passes**: If more than 5 questions are needed, go from least point value (100) to most (500) repeatedly until enough questions are collected
+
+2. **Fallback Passes** (if not enough questions available in any category):
+   - **Fallback Pass**: Find questions of other point values and map them to the closest standard point value
+   - **Final Pass**: If still not enough, issue a detailed message to the user stating what category/categories lack questions of the selected criteria
+
+3. **Error Reporting**:
+   - Provide specific category names that lack sufficient questions
+   - Include details about available question types and point values in each category
+   - Generate user-friendly messages that guide users on how to resolve the issue
+   - Return comprehensive error details for debugging and user feedback
+
+4. **Question Distribution Logic**:
+   - **First 5 Questions**: Must fill all point values (100, 200, 300, 400, 500) - one question per point value
+   - **Additional Questions**: Go from least point value (100) to most (500) repeatedly: 100, 200, 300, 400, 500, 100, 200, 300, 400, 500, etc.
+   - Always prioritize least used questions (lowest use_count) within each point value
+
+5. **Integration Requirements**:
+   - The build_standard_board function must implement this algorithm
+   - The create_board function must collect and aggregate error details from all categories
+   - The GameRoom.create_board method must return error details along with success/failure status
+   - The app.py routes must display detailed error messages to users
+
+**Rationale**:
+- Ensures players see the least used questions first, maintaining content freshness
+- Guarantees that all difficulty levels (point values) are represented in the first 5 questions
+- Provides balanced difficulty progression for additional questions by cycling from easiest to hardest
+- Implements robust fallback mechanisms to maximize question availability
+- Offers detailed error reporting to help users understand and resolve issues
+- Maintains backward compatibility while significantly improving question selection quality
+- Enhances user experience by providing specific guidance when insufficient questions are available
+
 ## How to Update This Rule Book
 
 When a new rule needs to be added to the Rule Book:

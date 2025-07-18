@@ -1,0 +1,62 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+<link href="../../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "gamebase.html" %}
+
+{% block title %}Avirta - Who is the fastest Leaderboard{% endblock %}
+
+{% block content %}
+<div class="leaderboard-section">
+    <div class="leaderboard-header">
+        <h2>Who is the fastest - Leaderboard</h2>
+    </div>
+
+    <div class="leaderboard-display">
+        {% if leaderboard %}
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player, score in leaderboard %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ player }}</td>
+                            <td>{{ score }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-scores">
+                <p>No scores yet. Start answering questions to see the leaderboard!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if is_host %}
+        <div class="form-actions">
+            <form action="{{ url_for('fastest_next_question') }}" method="post">
+                <input type="hidden" name="room_id" value="{{ room.room_id }}">
+                <button type="submit" class="button">Next Question</button>
+            </form>
+        </div>
+    {% endif %}
+    
+    {% if room.is_board_completed() %}
+        <div>
+            <form class="form-actions clear center">
+                <input type="hidden" name="room_id" value="{{ room.room_id }}">
+                <a href="{{ url_for('end_game', room_id=room.room_id) }}" class="button large">End Game</a>
+            </form>
+        </div>
+    {% endif %}
+    
+    <div class="form-actions">
+        <a href="{{ url_for('fastest_play', room_id=room.room_id) }}" class="button">Return to Game</a>
+    </div>
+</div>
+{% endblock %}

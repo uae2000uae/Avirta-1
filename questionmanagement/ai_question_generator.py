@@ -12,6 +12,7 @@ import os
 import re
 from datetime import datetime
 import requests
+from questionmanagement.question_bank import question_bank
 
 class AIQuestionGenerator:
     """
@@ -68,6 +69,7 @@ class AIQuestionGenerator:
                 - num_questions: Number of questions to generate
                 - include_explanations: Whether to include explanations for correct answers
                 - language: Language for questions (english, arabic)
+                - reference_categories: List of category IDs to read and avoid repeating questions from
                 - api_key: OpenAI API key
                 - model: OpenAI model to use
                 - temperature: Temperature for generation
@@ -89,6 +91,7 @@ class AIQuestionGenerator:
         num_questions = int(options.get('num_questions', 20))
         include_explanations = options.get('include_explanations', True)
         language = options.get('language', 'arabic')
+        reference_categories = options.get('reference_categories', [])
 
         # Get API settings from options if provided
         self.api_key = options.get('api_key', self.api_key)
@@ -116,7 +119,8 @@ class AIQuestionGenerator:
                 difficulty, 
                 num_questions, 
                 include_explanations,
-                language
+                language,
+                reference_categories
             )
             # If successful, return the questions
             if questions:
@@ -331,7 +335,7 @@ class AIQuestionGenerator:
             print(error_message)
             return False, error_message
 
-    def _generate_questions_with_openai(self, prompt, question_type, difficulty, num_questions, include_explanations, language='english'):
+    def _generate_questions_with_openai(self, prompt, question_type, difficulty, num_questions, include_explanations, language='english', reference_categories=None):
         """
         Generate questions using the OpenAI API.
 
@@ -342,6 +346,7 @@ class AIQuestionGenerator:
             num_questions (int): Number of questions to generate
             include_explanations (bool): Whether to include explanations
             language (str, optional): Language for questions (english, arabic). Defaults to 'english'.
+            reference_categories (list, optional): List of category IDs to read and avoid repeating questions from.
 
         Returns:
             list: A list of generated question dictionaries
@@ -357,6 +362,31 @@ class AIQuestionGenerator:
         print(f"Preparing to call OpenAI API with model: {self.model}, temperature: {self.temperature}")
         print(f"Generating {num_questions} {question_type} questions with difficulty: {difficulty}")
         print(f"Using API key: '{api_key[:5]}...'")
+
+        # Get existing questions from reference categories if provided
+        existing_questions = []
+        if reference_categories and len(reference_categories) > 0:
+            print(f"Reading questions from {len(reference_categories)} reference categories")
+            # Ensure question_bank has the latest data
+            question_bank.load_questions()
+
+            # Collect questions from each selected category
+            for category_id in reference_categories:
+                if category_id in question_bank.categories:
+                    category_questions = []
+                    for question_id in question_bank.categories[category_id]:
+                        if question_id in question_bank.questions:
+                            question = question_bank.questions[question_id]
+                            # Add only the question text to avoid making the prompt too long
+                            question_text = question.get('question', '')
+                            if question_text:
+                                category_questions.append(question_text)
+
+                    if category_questions:
+                        print(f"Found {len(category_questions)} questions in category {category_id}")
+                        existing_questions.extend(category_questions)
+                else:
+                    print(f"Category {category_id} not found in question bank")
 
         # Create a system prompt that instructs the AI how to format the response
         system_prompt = """
@@ -394,6 +424,17 @@ class AIQuestionGenerator:
             "points": 100|200|300|400|500
         }
         """
+
+        # Add existing questions to the system prompt if available
+        if existing_questions:
+            existing_questions_text = "\n".join([f"- {q}" for q in existing_questions[:50]])  # Limit to 50 questions to avoid token limits
+            system_prompt += f"""
+
+            IMPORTANT: Avoid generating questions that are similar to the following existing questions:
+            {existing_questions_text}
+
+            If there are more than 50 existing questions, I've only shown you a subset. Please try to generate questions that are substantially different from these and would explore new aspects of the topic.
+            """
 
         # Add specific instructions based on options
         if question_type != 'mixed':

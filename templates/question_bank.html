@@ -31,8 +31,48 @@
         cursor: not-allowed;
     }
 
+    /* Dropdown styles */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-toggle {
+        cursor: pointer;
+    }
+
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        background-color: var(--background-color, #ffffff);
+        min-width: 120px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+        border-radius: var(--border-radius, 4px);
+        overflow: hidden;
+    }
+
+    .dropdown-menu a {
+        color: var(--text-color, #333333);
+        padding: 8px 12px;
+        text-decoration: none;
+        display: block;
+        text-align: left;
+    }
+
+    .dropdown-menu a:hover {
+        background-color: var(--hover-color, #f1f1f1);
+    }
+
+    .dropdown:hover .dropdown-menu {
+        display: block;
+    }
+
 </style>
 
+<div class="back-navigation">
+    <a href="{{ url_for('admin_controls') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Admin Controls</a>
+</div>
 <h2>Question Bank</h2>
 
 
@@ -119,7 +159,14 @@
                     <div class="category-actions">
                         {% if session.get('admin_authenticated') %}
                         <a href="{{ url_for('view_questions', category_id=category_id) }}" class="button">Questions</a>
-                        <a href="{{ url_for('export_questions', category_id=category_id) }}" class="button">Export</a>
+                        <div class="dropdown">
+                            <button class="button dropdown-toggle">Export</button>
+                            <div class="dropdown-menu">
+                                <a href="{{ url_for('export_questions', category_id=category_id, format='csv') }}">CSV</a>
+                                <a href="{{ url_for('export_questions', category_id=category_id, format='xlsx') }}">Excel</a>
+                                <a href="{{ url_for('export_questions', category_id=category_id, format='json') }}">JSON</a>
+                            </div>
+                        </div>
                         {% else %}{% endif %}
                     </div>
                 </div>
@@ -156,10 +203,8 @@ function setupScrollPositionSaving() {
     // Restore scroll position if it exists in localStorage
     const savedScrollPosition = localStorage.getItem(scrollKey);
     if (savedScrollPosition) {
-        // Use setTimeout to ensure the page has fully loaded before scrolling
-        setTimeout(() => {
-            window.scrollTo(0, parseInt(savedScrollPosition));
-        }, 100);
+        // Restore immediately without delay
+        window.scrollTo(0, parseInt(savedScrollPosition));
     }
 
     // Save scroll position when user navigates away or refreshes
@@ -167,10 +212,17 @@ function setupScrollPositionSaving() {
         localStorage.setItem(scrollKey, window.scrollY);
     });
 
-    // Also save scroll position periodically (every 1 second)
+    // Add event listeners to all form submit buttons to save position before submission
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            localStorage.setItem(scrollKey, window.scrollY);
+        });
+    });
+
+    // Save scroll position more frequently (every 1 second)
     setInterval(function() {
         localStorage.setItem(scrollKey, window.scrollY);
-    }, 3000);
+    }, 1000);
 }
 
 </script>

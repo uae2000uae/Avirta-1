@@ -66,7 +66,21 @@
                     <option value="25" selected>25</option>
 					<option value="50">50</option>
                 </select>
-            </div>
+        </div>
+        <div class="form-group">
+                <label>Select categories if you want AI to avoid repeating questions already in them:</label>
+                <div id="categories-container" class="categories-inline-container">
+                    {% for category_id, category in categories.items() %}
+                    <div class="category-item" data-category-id="{{ category_id }}">{{ category.name }} ({{ category.question_count }})</div>
+                    {% endfor %}
+                </div>
+                <div id="selected-categories-container" class="selected-categories-container">
+                    <p>Selected categories: <span id="selected-categories-text">None</span></p>
+                </div>
+                <div id="hidden-inputs-container"></div>
+                <small>Click on categories to select them</small>
+        </div>
+			<br>
 			<div class="form-group-grid">
           		<input type="checkbox" id="include_explanations" name="include_explanations" checked>
                 <label for="include_explanations">Include explanations for correct answers</label>
@@ -88,7 +102,7 @@
 		</div>
 	</form>
 </div>
-		
+
 {% if generated_questions %}
 <br>
 <div class="section">
@@ -192,6 +206,55 @@
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         const progressStatus = document.getElementById('progressStatus');
+
+        // Reference categories selection
+        const categoryItems = document.querySelectorAll('.category-item');
+        const hiddenInputsContainer = document.getElementById('hidden-inputs-container');
+        const selectedCategoriesText = document.getElementById('selected-categories-text');
+        const selectedCategories = new Set();
+
+        // Add click event listener to each category item
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const categoryId = this.getAttribute('data-category-id');
+
+                // Toggle selection
+                if (selectedCategories.has(categoryId)) {
+                    // Remove from selected categories
+                    selectedCategories.delete(categoryId);
+                    this.classList.remove('selected');
+
+                    // Remove hidden input
+                    const inputToRemove = document.getElementById(`category-input-${categoryId}`);
+                    if (inputToRemove) {
+                        hiddenInputsContainer.removeChild(inputToRemove);
+                    }
+                } else {
+                    // Add to selected categories
+                    selectedCategories.add(categoryId);
+                    this.classList.add('selected');
+
+                    // Create hidden input
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'reference_categories[]';
+                    hiddenInput.value = categoryId;
+                    hiddenInput.id = `category-input-${categoryId}`;
+                    hiddenInputsContainer.appendChild(hiddenInput);
+                }
+
+                // Update selected categories text
+                if (selectedCategories.size === 0) {
+                    selectedCategoriesText.textContent = 'None';
+                } else {
+                    const selectedNames = Array.from(selectedCategories).map(id => {
+                        const item = document.querySelector(`.category-item[data-category-id="${id}"]`);
+                        return item ? item.textContent : id;
+                    });
+                    selectedCategoriesText.textContent = selectedNames.join(', ');
+                }
+            });
+        });
 
         // Define the stages of AI question generation
         const stages = [

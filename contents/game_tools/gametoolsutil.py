@@ -60,16 +60,17 @@ def process_change_question(tool_name, session, game_room, is_ajax, room_id, pla
     category_id, points = question.get('category_id'), question.get('points')
 
     # Determine the effective player (who will be credited with the action)
-    effective_player = game_room.current_player
+    effective_player = player_name
 
     # If acting_player is provided and player_name is the host, use acting_player
     if acting_player and game_room.is_host(player_name) and acting_player in game_room.players:
         effective_player = acting_player
 
-    new_question = game_room.use_change_question(player_name, category_id, points, question_uploader, acting_player)
+    result = game_room.use_change_question(player_name, category_id, points, question_uploader, acting_player)
 
-    if new_question:
-        session['current_question'] = new_question
+    # Check if result is a successful question (dict without 'success' key or with success=True)
+    if result and (not isinstance(result, dict) or result.get('success', True)):
+        session['current_question'] = result
 
         message = 'Question changed successfully!'
 
@@ -90,8 +91,11 @@ def process_change_question(tool_name, session, game_room, is_ajax, room_id, pla
                         'redirect': url_for('question', room_id=room_id)}) if is_ajax else redirect(
             url_for('question', room_id=room_id))
 
-    # Handle failure cases
-    error_message = 'Could not change question.لا يمكن استبدال السؤال'
+    # Handle failure cases with specific error messages
+    if isinstance(result, dict) and result.get('success') == False:
+        error_message = result.get('message', 'Could not change question.')
+    else:
+        error_message = 'Could not change question.'
 
     return handle_error(is_ajax, error_message)
 

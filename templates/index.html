@@ -7,8 +7,13 @@
     <div class="features">
         <div class="feature">
             <a href="{{ url_for('create_room') }}" class="button">Create A New Game<br>ابدأ لعبة جديدة</a>
-
             <p>Start your own game room and invite friends to join. Select up to 5 categories for your game.</p>
+		</div>
+
+
+        <div class="feature">
+            <a href="{{ url_for('fastest_create_room') }}" class="button">Create A "Who is the fastest" Game<br>ابدأ لعبة من هو الأسرع</a>
+            <p>Start a "Who is the fastest" game where players compete to answer questions the fastest.</p>
 		</div>
 
         <div class="feature"> <a href="{{ url_for('join_room') }}" class="button">Join An Active Game<br>انضم إلى لعبة فعالة</a>

@@ -124,10 +124,8 @@ function setupScrollPositionSaving() {
     // Restore scroll position if it exists in localStorage
     const savedScrollPosition = localStorage.getItem(scrollKey);
     if (savedScrollPosition) {
-        // Use setTimeout to ensure the page has fully loaded before scrolling
-        setTimeout(() => {
-            window.scrollTo(0, parseInt(savedScrollPosition));
-        }, 100);
+        // Restore immediately without delay
+        window.scrollTo(0, parseInt(savedScrollPosition));
     }
 
     // Save scroll position when user navigates away or refreshes
@@ -135,10 +133,17 @@ function setupScrollPositionSaving() {
         localStorage.setItem(scrollKey, window.scrollY);
     });
 
-    // Also save scroll position periodically (every 1 second)
+    // Add event listeners to all form submit buttons to save position before submission
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            localStorage.setItem(scrollKey, window.scrollY);
+        });
+    });
+
+    // Save scroll position more frequently (every 1 second)
     setInterval(function() {
         localStorage.setItem(scrollKey, window.scrollY);
-    }, 3000);
+    }, 1000);
 }
 </script>
 {% endblock %}

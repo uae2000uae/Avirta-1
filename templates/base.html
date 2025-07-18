@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" type="text/css">
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet" type="text/css">
+    <link href="../static/css/style.css" rel="stylesheet" type="text/css">
 </head>
 <body>
     <header style="padding: 5px">
@@ -16,10 +17,7 @@
         <div class="admin-login-container">
             {% if session.get('admin_authenticated') %}
                 <span class="admin-welcome">Welcome, Admin</span>
-                <form method="POST" action="{{ url_for('admin_controls') }}" class="admin-logout-form">
-                    <input type="hidden" name="action" value="logout">
-                    <button type="submit" class="admin-logout-btn">Logout</button>
-                </form>
+                <a href="{{ url_for('admin_controls') }}" class="admin-controls-link">Admin Controls</a>
             {% else %}
                 <button id="adminLoginBtn" class="admin-login-btn">Admin Login</button>
                 <div id="adminLoginForm" class="admin-login-dropdown">
@@ -50,17 +48,7 @@
 {% endif %}
 
 
-<nav class="{% if self.hide_nav()|trim == 'true' %}hidden{% endif %}">
-    <ul>
-        <li><a href="{{ url_for('index') }}">Home</a></li>
-        <li><a href="{{ url_for('create_room') }}">Create Room</a></li>
-        <li><a href="{{ url_for('join_room') }}">Join Room</a></li>
-        <li><a href="{{ url_for('question_bank_page') }}">Question Bank</a></li>
-        {% if session.get('admin_authenticated') %}
-        <li><a href="{{ url_for('admin_controls') }}">Admin Settings</a></li>
-        {% endif %}
-    </ul>
-</nav>
+
 
 
     <div class="container">
@@ -126,5 +114,14 @@
         }
     });
 </script>
+
+{% if session.get('error_modal') %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showModal('{{ session.pop("error_modal") }}');
+    });
+</script>
+{% endif %}
+
 </body>
 </html>

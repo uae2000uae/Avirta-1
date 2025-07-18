@@ -15,10 +15,11 @@
     <p>Upload a CSV or Excel file containing questions to import them in bulk.</p>
 
     <div class="template-links">
-        <h3>Template</h3>
-        <p>Use this template to format your questions correctly:</p>
+        <h3>Templates</h3>
+        <p>Use one of these templates to format your questions correctly:</p>
         <div class="template-buttons">
-            <a href="{{ url_for('export_template_route', format='csv') }}" class="button">Export Template</a>
+            <a href="{{ url_for('export_template_route', format='csv') }}" class="button">CSV Template</a>
+            <a href="{{ url_for('export_template_route', format='xlsx') }}" class="button">Excel Template</a>
         </div>
     </div>
 

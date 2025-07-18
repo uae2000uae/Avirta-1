@@ -1,0 +1,2 @@
+{"type": "game_started", "data": {"player_name": "شهاب", "message": "Game started by شهاب", "categories": ["الحرب_العالمية_الثانية", "تاريخ_الإمارات", "رياضة"], "question_types": ["multiple_choice", "true_false", "text"], "players": ["شهاب", "حامد", "عمر"]}, "timestamp": "2025-07-18T03:55:53.377901"}
+{"type": "question_selected", "data": {"player_name": "شهاب", "category": "الحرب_العالمية_الثانية", "points": 200, "message": "شهاب selected a 200-point question from الحرب_العالمية_الثانية"}, "timestamp": "2025-07-18T03:55:54.594092"}

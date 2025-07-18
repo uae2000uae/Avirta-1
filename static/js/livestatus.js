@@ -291,33 +291,113 @@ function updateGameBoard() {
                 const gameBoardSection = document.querySelector('.game-board');
                 if (!gameBoardSection) return;
 
-                // **Loop through existing categories and update them**
-                document.querySelectorAll('.category').forEach(categoryDiv => {
-                    const categoryId = categoryDiv.dataset.category;
-                    const questionList = categoryDiv.querySelector('.question-list');
+                // Loop through categories and update or create them
+                for (const categoryId in data.available_questions) {
+                    // Find or create the category div
+                    let categoryDiv = document.querySelector(`.category[data-category="${categoryId}"]`);
+                    let questionList;
 
-                    if (data.available_questions[categoryId] && questionList) {
-                        // **Loop through existing questions and update only them**
-                        questionList.querySelectorAll('.question-item').forEach(questionItem => {
-                            const points = questionItem.dataset.points;
-                            const questionInfo = data.available_questions[categoryId][points];
+                    if (!categoryDiv) {
+                        // Create new category div if it doesn't exist
+                        categoryDiv = document.createElement('div');
+                        categoryDiv.className = 'category';
+                        categoryDiv.dataset.category = categoryId;
 
-                            if (questionInfo) {
-                                const button = questionItem.querySelector('.question-button');
+                        // Create category header
+                        const categoryHeader = document.createElement('div');
+                        categoryHeader.className = 'category-header-grid';
+                        categoryHeader.textContent = categoryId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                                if (button) {
-                                    // Update the button content with the points value
-                                    button.innerHTML = `<strong>${questionInfo.points}${questionInfo.doubled ? '!' : ''}</strong>`;
-                                    button.disabled = questionInfo.answered;
-                                    button.style.opacity = questionInfo.answered ? '0.5' : '1';
-                                    button.style.cursor = questionInfo.answered ? 'not-allowed' : 'pointer';
-                                    button.classList.toggle('doubled', questionInfo.doubled);
-                                    button.title = questionInfo.doubled ? 'Double Points Active!' : '';
-                                }
-                            }
-                        });
+                        // Create question list
+                        questionList = document.createElement('div');
+                        questionList.className = 'question-list';
+
+                        // Assemble category div
+                        categoryDiv.appendChild(categoryHeader);
+                        categoryDiv.appendChild(questionList);
+
+                        // Add to game board
+                        gameBoardSection.appendChild(categoryDiv);
+                    } else {
+                        // Get existing question list
+                        questionList = categoryDiv.querySelector('.question-list');
                     }
-                });
+
+                    if (questionList) {
+                        // Get all available questions for this category
+                        const categoryQuestions = data.available_questions[categoryId];
+
+                        // Process each question in the category
+                        for (const points in categoryQuestions) {
+                            const questionInfo = categoryQuestions[points];
+
+                            // Check if this question item already exists
+                            let questionItem = questionList.querySelector(`.question-item[data-points="${points}"]`);
+
+                            if (!questionItem) {
+                                // Create new question item if it doesn't exist
+                                questionItem = document.createElement('div');
+                                questionItem.className = 'question-item';
+                                questionItem.dataset.points = points;
+
+                                // Create form for the question
+                                const form = document.createElement('form');
+                                form.action = '/select_question';
+                                form.method = 'post';
+                                form.className = 'question-box';
+
+                                // Create hidden inputs
+                                const categoryInput = document.createElement('input');
+                                categoryInput.type = 'hidden';
+                                categoryInput.name = 'category_id';
+                                categoryInput.value = categoryId;
+
+                                const pointsInput = document.createElement('input');
+                                pointsInput.type = 'hidden';
+                                pointsInput.name = 'points';
+                                pointsInput.value = points;
+
+                                const actingPlayerInput = document.createElement('input');
+                                actingPlayerInput.type = 'hidden';
+                                actingPlayerInput.name = 'acting_player';
+                                actingPlayerInput.className = 'acting-player-input';
+                                actingPlayerInput.value = document.querySelector('.red-badge')?.textContent || '';
+
+                                // Create button
+                                const button = document.createElement('button');
+                                button.type = 'submit';
+                                button.className = 'question-button';
+                                if (questionInfo.doubled) {
+                                    button.classList.add('doubled');
+                                }
+
+                                // Add elements to form
+                                form.appendChild(categoryInput);
+                                form.appendChild(pointsInput);
+                                form.appendChild(actingPlayerInput);
+                                form.appendChild(button);
+
+                                // Add form to question item
+                                questionItem.appendChild(form);
+
+                                // Add question item to question list
+                                questionList.appendChild(questionItem);
+                            }
+
+                            // Update the button (whether it's new or existing)
+                            const button = questionItem.querySelector('.question-button');
+                            if (button) {
+                                // Update the button content with the points value
+                                button.innerHTML = `<strong>${questionInfo.points}${questionInfo.doubled ? '!' : ''}</strong>`;
+                                button.disabled = questionInfo.answered;
+                                button.style.opacity = questionInfo.answered ? '0.5' : '1';
+                                button.style.cursor = questionInfo.answered ? 'not-allowed' : 'pointer';
+                                button.classList.toggle('doubled', questionInfo.doubled);
+                                button.title = questionInfo.doubled ? 'Double Points Active!' : '';
+                            }
+                        }
+                    }
+                }
             }
         })
         .catch(error => console.error('Error updating game board:', error));
