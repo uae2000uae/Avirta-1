@@ -181,7 +181,11 @@ function setupDoublePointsButton() {
                     doublePointsBtn.style.cursor = 'pointer';
 
                     // Show error message
-                    alert(data.message || 'Could not use Double Points tool.');
+                    if (typeof showModal === 'function') {
+                        showModal(data.message || 'Could not use Double Points tool.');
+                    } else {
+                        alert(data.message || 'Could not use Double Points tool.');
+                    }
                 }
             })
             .catch(error => {
@@ -192,7 +196,11 @@ function setupDoublePointsButton() {
                 doublePointsBtn.style.opacity = '1';
                 doublePointsBtn.style.cursor = 'pointer';
 
-                alert('Error using Double Points tool.');
+                if (typeof showModal === 'function') {
+                    showModal('Error using Double Points tool.');
+                } else {
+                    alert('Error using Double Points tool.');
+                }
             });
         });
     }
@@ -294,7 +302,11 @@ function setupChangeQuestionButton() {
                     button.disabled = false;
                     button.style.opacity = '1';
                     button.style.cursor = 'pointer';
-                    alert('Could not change question: ' + (data.message || ''));
+                    if (typeof showModal === 'function') {
+                        showModal('Could not change question: ' + (data.message || ''));
+                    } else {
+                        alert('Could not change question: ' + (data.message || ''));
+                    }
                 }
             })
             .catch(error => {
@@ -309,7 +321,11 @@ function setupChangeQuestionButton() {
                 button.disabled = false;
                 button.style.opacity = '1';
                 button.style.cursor = 'pointer';
-                alert('Error using Change Question tool.');
+                if (typeof showModal === 'function') {
+                    showModal('Error using Change Question tool.');
+                } else {
+                    alert('Error using Change Question tool.');
+                }
             });
         });
     });

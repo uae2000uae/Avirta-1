@@ -264,8 +264,8 @@ def create_room():
             session['error_modal'] = 'Please fill in all fields, select at least one category, and at least one question type.'
             return redirect(url_for('create_room'))
 
-        # Limit to max_categories_per_room (default is 5)
-        max_categories = admin_setup.game_settings.get('max_categories_per_room', 5)
+        # Limit to max_categories_per_room (default is 7)
+        max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
         selected_categories = selected_categories[:max_categories]
 
         # Create a unique room ID
@@ -302,7 +302,9 @@ def create_room():
         if not enough_questions:
             # Use detailed error message from the sophisticated algorithm
             detailed_message = error_details.get('overall_message', 'Couldn\'t find enough questions of the selected criteria.')
-            session['error_modal'] = detailed_message + ' Please try to add more questions or select different categories and question types.'
+            # Convert newlines to HTML breaks for proper display in modal
+            detailed_message_html = detailed_message.replace('\n', '<br>')
+            session['error_modal'] = detailed_message_html
             return redirect(url_for('create_room'))
 
         # Store the game room
@@ -331,7 +333,7 @@ def create_room():
     # Get the maximum number of players per room from admin settings
     max_players = admin_setup.game_settings.get('max_players_per_room', 10)
     # Get the maximum number of categories per room from admin settings
-    max_categories = admin_setup.game_settings.get('max_categories_per_room', 5)
+    max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
     return render_template('create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
 
 
@@ -353,8 +355,8 @@ def fastest_create_room():
             session['error_modal'] = 'Please fill in all fields, select at least one category, at least one point value, and at least one question type.'
             return redirect(url_for('fastest_create_room'))
 
-        # Limit to max_categories_per_room (default is 5)
-        max_categories = admin_setup.game_settings.get('max_categories_per_room', 5)
+        # Limit to max_categories_per_room (default is 7)
+        max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
         selected_categories = selected_categories[:max_categories]
 
         # Create a unique room ID
@@ -394,7 +396,9 @@ def fastest_create_room():
         if not enough_questions:
             # Use detailed error message from the sophisticated algorithm
             detailed_message = error_details.get('overall_message', 'Couldn\'t find enough questions of the selected criteria.')
-            session['error_modal'] = detailed_message + ' Please try to add more questions or select different categories, point values, and question types.'
+            # Convert newlines to HTML breaks for proper display in modal
+            detailed_message_html = detailed_message.replace('\n', '<br>')
+            session['error_modal'] = detailed_message_html
             return redirect(url_for('fastest_create_room'))
 
         # Store the game room
@@ -427,7 +431,7 @@ def fastest_create_room():
     # Get the maximum number of players per room from admin settings
     max_players = admin_setup.game_settings.get('max_players_per_room', 10)
     # Get the maximum number of categories per room from admin settings
-    max_categories = admin_setup.game_settings.get('max_categories_per_room', 5)
+    max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
     return render_template('Fastest/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
 
 @app.route('/fastest/play/<room_id>')
@@ -2498,9 +2502,9 @@ def admin_controls():
                     elif value.isdigit():
                         value = int(value)
 
-                        # Validate max_categories_per_room is within range 1-6
+                        # Validate max_categories_per_room is within range 3-7
                         if setting_name == 'max_categories_per_room':
-                            value = max(1, min(6, value))  # Ensure value is between 1 and 6
+                            value = max(3, min(7, value))  # Ensure value is between 3 and 7
 
                     admin_setup.update_game_setting(setting_name, value)
 

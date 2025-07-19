@@ -39,8 +39,9 @@ class AdminSetup:
         self.game_settings = {
             # Game settings
             'default_time_limit': 45,
-            'max_players_per_room': 10,
-            'max_categories_per_room': 6,  # Maximum number of categories per game room (1-6)
+            'max_players_per_room': 8,
+            'max_categories_per_room': 7,  # Maximum number of categories per game room (3-7)
+            'questions_per_category': 10,  # Number of questions per category (5-10)
 
             # OpenAI settings
             'openai_api_key': '',
@@ -205,6 +206,20 @@ class AdminSetup:
         if setting_name not in self.game_settings:
             return False
 
+        # Validate specific settings with enforced limits
+        if setting_name == 'questions_per_category':
+            if not isinstance(value, int) or value < 5 or value > 10:
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (5-10)")
+                return False
+        elif setting_name == 'max_categories_per_room':
+            if not isinstance(value, int) or value < 3 or value > 7:
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (3-7)")
+                return False
+        elif setting_name == 'max_players_per_room':
+            if not isinstance(value, int) or value < 2 or value > 8:
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (2-8)")
+                return False
+
         old_value = self.game_settings[setting_name]
         self.game_settings[setting_name] = value
 
@@ -365,10 +380,10 @@ class AdminSetup:
         if username and not self.has_permission(username, required_level):
             return False, "Insufficient permissions to select categories"
 
-        # Limit to max_categories_per_room (default is 5)
-        max_categories = self.game_settings.get('max_categories_per_room', 5)
-        # Ensure max_categories is within valid range (1-6)
-        max_categories = max(1, min(6, max_categories))
+        # Limit to max_categories_per_room (default is 7)
+        max_categories = self.game_settings.get('max_categories_per_room', 7)
+        # Ensure max_categories is within valid range (3-7)
+        max_categories = max(3, min(7, max_categories))
         if len(categories) > max_categories:
             categories = categories[:max_categories]
 

@@ -108,10 +108,10 @@ def create_board(categories, question_uploader, questions_per_category=10, point
     if comprehensive_error_details['failed_categories'] > 0:
         lacking_categories_names = comprehensive_error_details['lacking_categories']
         if len(lacking_categories_names) == 1:
-            comprehensive_error_details['overall_message'] = f"Category '{lacking_categories_names[0]}' lacks sufficient questions of the selected criteria."
+            comprehensive_error_details['overall_message'] = f"The following category lacks sufficient questions of the selected criteria:\n• {lacking_categories_names[0]}\nPlease try to add more questions or select different categories and question types."
         else:
-            categories_list = "', '".join(lacking_categories_names[:-1])
-            comprehensive_error_details['overall_message'] = f"Categories '{categories_list}' and '{lacking_categories_names[-1]}' lack sufficient questions of the selected criteria."
+            categories_bullet_list = "\n".join([f"• {category}" for category in lacking_categories_names])
+            comprehensive_error_details['overall_message'] = f"The following categories lack sufficient questions of the selected criteria:\n{categories_bullet_list}\nPlease try to add more questions or select different categories and question types."
     else:
         comprehensive_error_details['overall_message'] = "All categories have sufficient questions."
 

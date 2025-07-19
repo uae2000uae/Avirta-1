@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <link href="/static/css/style.css" rel="stylesheet" type="text/css">
 {% extends "base.html" %}
 
@@ -62,19 +61,19 @@
 						  </select>
                               {% elif setting_name == 'max_categories_per_room' %}
                           <select id="{{ setting_name }}" name="{{ setting_name }}">
-                            {% for i in range(1, 7) %}
+                            {% for i in range(3, 8) %}
                               <option value="{{ i }}" {% if setting_value == i %}selected{% endif %}>{{ i }}</option>
                             {% endfor %}
                           </select>
                               {% elif setting_name == 'max_players_per_room' %}
                           <select id="{{ setting_name }}" name="{{ setting_name }}">
-                            {% for i in range(1, 11) %}
+                            {% for i in range(2, 9) %}
                               <option value="{{ i }}" {% if setting_value == i %}selected{% endif %}>{{ i }}</option>
                             {% endfor %}
                           </select>
                               {% elif setting_name == 'questions_per_category' %}
                           <select id="{{ setting_name }}" name="{{ setting_name }}">
-                            {% for i in range(1, 11) %}
+                            {% for i in range(5, 11) %}
                               <option value="{{ i }}" {% if setting_value == i %}selected{% endif %}>{{ i }}</option>
                             {% endfor %}
                           </select>

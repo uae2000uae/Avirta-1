@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="page-section">
-    <h2>Create a "Who is the fastest" Game</h2>
+    <h2>Create a "Who is the fastest" Game Board</h2>
   <form action="{{ url_for('fastest_create_room') }}" method="post" class="form-group-xx" data-max-categories="{{ max_categories }}">
         <div class="form-group-equal-md">
             <label for="room_name">Room Name:</label>
@@ -43,24 +43,24 @@
         <div class="form-group-inline">
             <label>Select Point Values:</label>
             <div class="form-group-equal-sm">
-                <div class=form-group-grid1>
+                <div class=category-checkbox>
                     <input type="checkbox" id="point_100" name="point_values" value="100" checked>
                     <label for="point_100">100</label>
                 </div>
-                <div class=form-group-grid1>
+                <div class=category-checkbox>
                     <input type="checkbox" id="point_200" name="point_values" value="200" checked>
                     <label for="point_200">200</label>
                 </div>
-                <div class=form-group-grid1>
-                    <input type="checkbox" id="point_300" name="point_values" value="300" checked>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="point_300" name="point_values" value="300">
                     <label for="point_300">300</label>
                 </div>
-                <div class=form-group-grid1>
-                    <input type="checkbox" id="point_400" name="point_values" value="400" checked>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="point_400" name="point_values" value="400">
                     <label for="point_400">400</label>
                 </div>
-                <div class=form-group-grid1>
-                    <input type="checkbox" id="point_500" name="point_values" value="500" checked>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="point_500" name="point_values" value="500">
                     <label for="point_500">500</label>
                 </div>
             </div>
@@ -69,17 +69,17 @@
         <div class="form-group-inline">
             <label>Select Question Types:</label>
             <div class="form-group-equal-sm">
-                <div class=form-group-grid1>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="type_text" name="question_types" value="text" checked>
+                    <label for="type_text">Text</label>
+                </div>
+                <div class=category-checkbox>
                     <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
                     <label for="type_multiple_choice">Multiple Choice</label>
                 </div>
-                <div class=form-group-grid1>
-                    <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="type_true_false" name="question_types" value="true_false">
                     <label for="type_true_false">True/False</label>
-                </div>
-                <div class=form-group-grid1>
-                    <input type="checkbox" id="type_text" name="question_types" value="text" checked>
-                    <label for="type_text">Text</label>
                 </div>
             </div>
         </div>

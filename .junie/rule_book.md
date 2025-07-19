@@ -488,6 +488,65 @@ This section contains rules specific to the Avirta project.
 - Maintains backward compatibility while significantly improving question selection quality
 - Enhances user experience by providing specific guidance when insufficient questions are available
 
+### PRJ-015: Modal Handling and User Interface Messaging
+
+**Rule**: All modal dialogs in the system must use a centralized modal queue system to prevent overlapping, implement proper HTML rendering for organized messages, and follow consistent patterns for error display. Modals must not auto-close and should only be dismissed through user interaction (clicking overlay or pressing Escape).
+
+**Examples**:
+- Valid: Using `showModal('Error message')` which automatically queues if another modal is active
+- Valid: Displaying organized error messages with bullet points: "The following categories lack sufficient questions:\n\n• science\n• history\n\nPlease try to add more questions."
+- Valid: Using `{{ session.pop("error_modal")|safe }}` in templates to render HTML breaks properly
+- Valid: Replacing `alert()` calls with `showModal()` for consistent user experience
+- Invalid: Creating multiple overlapping modals simultaneously
+- Invalid: Using literal `<br>` tags in modal text without the `|safe` filter
+- Invalid: Using `alert()` for error messages instead of the modal system
+- Invalid: Implementing auto-close timers that dismiss modals without user interaction
+
+**Implementation Requirements**:
+
+1. **Modal Queue System**:
+   - All modals must use the centralized `showModal(message, callback)` function
+   - The system must maintain a `modalQueue` array and `isModalActive` flag to prevent overlapping
+   - When a modal is active, new modal requests must be queued and displayed sequentially
+   - The `processModalQueue()` function must automatically display the next modal when the current one closes
+
+2. **Message Formatting and HTML Rendering**:
+   - Backend error messages with newlines (`\n`) must be converted to HTML breaks (`<br>`) before setting `session['error_modal']`
+   - Templates must use the `|safe` filter when displaying modal content: `{{ session.pop("error_modal")|safe }}`
+   - JavaScript modal display must use `innerHTML` instead of `textContent` to render HTML breaks properly
+   - Organized messages should use bullet points (`•`) with proper spacing for better readability
+
+3. **Consistent Error Display Patterns**:
+   - Replace all `alert()` calls with `showModal()` calls that include fallback: `if (typeof showModal === 'function') { showModal(message); } else { alert(message); }`
+   - Backend routes must convert newlines to HTML breaks: `detailed_message_html = detailed_message.replace('\n', '<br>')`
+   - Error messages should be organized with clear structure: introduction, bullet-pointed list, helpful guidance
+
+4. **Template Safety and Loading**:
+   - Use timing checks in templates to ensure `showModal` function is available before calling it
+   - Implement retry mechanism with `setTimeout` if the function is not immediately available
+   - Apply `|safe` filter only to controlled backend-generated content, never to user input
+
+5. **User Interaction Requirements**:
+   - Modals must not auto-close after any time duration
+   - Modals must close when users click on the dark overlay background
+   - Modals must close when users press the Escape key
+   - Modals must support optional callback functions that execute after closing
+
+6. **State Management**:
+   - Track current modal with `currentModal` variable for proper cleanup
+   - Reset modal state (`isModalActive = false`, `currentModal = null`) when modals close
+   - Process the next queued modal automatically after the current modal closes
+   - Use fade-out animations (300ms) for smooth modal transitions
+
+**Rationale**:
+- The modal queue system prevents visual conflicts and ensures users see one clear message at a time
+- Proper HTML rendering allows for organized, readable error messages with bullet points and proper spacing
+- Consistent error display patterns improve user experience and reduce confusion between different message types
+- Removing auto-close functionality gives users full control over when they dismiss messages
+- Template safety measures prevent JavaScript errors while maintaining security
+- Centralized modal handling reduces code duplication and ensures consistent behavior across the application
+- Sequential modal display maintains user focus and prevents information overload
+
 ## How to Update This Rule Book
 
 When a new rule needs to be added to the Rule Book:

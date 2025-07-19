@@ -5,7 +5,11 @@
  */
 
 // Global settings
-const MODAL_AUTO_CLOSE_DURATION = 3000; // Duration in milliseconds before modals auto-close
+
+// Modal queue system
+let modalQueue = [];
+let currentModal = null;
+let isModalActive = false;
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -30,7 +34,7 @@ function initializeGameInterface() {
     if (categoryCheckboxes.length > 0) {
         // Get the maximum number of categories from the form's data attribute
         const form = document.querySelector('form[action*="create_room"]');
-        const maxCategories = form ? parseInt(form.getAttribute('data-max-categories')) || 5 : 5;
+        const maxCategories = form ? parseInt(form.getAttribute('data-max-categories')) || 7 : 7;
 
         categoryCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
@@ -38,11 +42,6 @@ function initializeGameInterface() {
                 if (checked.length > maxCategories) {
                     this.checked = false;
                     showModal(`You can select a maximum of ${maxCategories} categories.`);
-                    // Auto-close the modal after the specified duration
-                    setTimeout(() => {
-                        closeModal(); // Now using the global closeModal function
-                    }, MODAL_AUTO_CLOSE_DURATION);
-
                 }
             });
         });
@@ -188,7 +187,23 @@ function setupFlashMessages() {
         }, 5000); // 5 seconds
     });
 }
-console.log(MODAL_AUTO_CLOSE_DURATION);
+
+/**
+ * Process the next modal in the queue
+ */
+function processModalQueue() {
+    // If there's already a modal active or no modals in queue, return
+    if (isModalActive || modalQueue.length === 0) {
+        return;
+    }
+    
+    // Get the next modal from the queue
+    const nextModal = modalQueue.shift();
+    
+    // Display the modal
+    displayModalNow(nextModal.message, nextModal.callback);
+}
+
 /**
  * Close a modal dialog
  * @param {HTMLElement} [modalElement] - The modal element to close (optional)
@@ -196,7 +211,7 @@ console.log(MODAL_AUTO_CLOSE_DURATION);
  */
 function closeModal(modalElement) {
     // If no specific modal is provided, get the most recently added modal
-    const modalToClose = modalElement || document.querySelector('.modal');
+    const modalToClose = modalElement || currentModal || document.querySelector('.modal');
 
     if (!modalToClose) return; // No modal to close
 
@@ -218,14 +233,25 @@ function closeModal(modalElement) {
         if (typeof callback === 'function') {
             callback();
         }
-    }, MODAL_AUTO_CLOSE_DURATION); // Use the global timeout value
+
+        // Reset modal state
+        currentModal = null;
+        isModalActive = false;
+
+        // Process the next modal in the queue
+        processModalQueue();
+    }, 300); // Use a shorter timeout for fade-out animation (300ms)
 }
+
 /**
- * Display a styled modal dialog instead of using the browser's alert()
+ * Actually display a modal (internal function used by the queue system)
  * @param {string} message - The message to display in the modal
  * @param {Function} callback - Optional callback function to execute after the modal is closed
  */
-function showModal(message, callback) {
+function displayModalNow(message, callback) {
+    // Set modal as active
+    isModalActive = true;
+    
     // Create modal elements
     const modalOverlay = document.createElement('div');
     modalOverlay.className = 'modal';
@@ -242,7 +268,7 @@ function showModal(message, callback) {
     //closeButton.title = 'Close';
 
     const messageElement = document.createElement('p');
-    messageElement.textContent = message;
+    messageElement.innerHTML = message;
 
     // Assemble the modal
     modalContent.appendChild(closeButton);
@@ -251,6 +277,9 @@ function showModal(message, callback) {
 
     // Add to the document
     document.body.appendChild(modalOverlay);
+
+    // Store reference to current modal
+    currentModal = modalOverlay;
 
     // Display the modal
     modalOverlay.style.display = 'block';
@@ -270,11 +299,22 @@ function showModal(message, callback) {
             document.removeEventListener('keydown', escapeHandler);
         }
     });
+}
 
-    // Auto-close the modal after the specified duration
-    setTimeout(() => {
-        closeModal(modalOverlay);
-    }, MODAL_AUTO_CLOSE_DURATION);
+/**
+ * Display a styled modal dialog instead of using the browser's alert()
+ * This function uses a queue system to ensure only one modal is displayed at a time
+ * @param {string} message - The message to display in the modal
+ * @param {Function} callback - Optional callback function to execute after the modal is closed
+ */
+function showModal(message, callback) {
+    // If no modal is currently active, display immediately
+    if (!isModalActive) {
+        displayModalNow(message, callback);
+    } else {
+        // Add to queue if a modal is already active
+        modalQueue.push({ message: message, callback: callback });
+    }
 }
 
 /**
