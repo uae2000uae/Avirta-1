@@ -170,9 +170,9 @@
     "id": "Q0000847",
     "category_id": "رياضيات",
     "created_at": "2025-05-27T19:30:14.305812",
-    "updated_at": "2025-05-31T21:00:45.359684",
+    "updated_at": "2025-09-16T21:46:13.868367",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -508,9 +508,9 @@
     "id": "Q0001571",
     "category_id": "رياضيات",
     "created_at": "2025-07-16T19:18:54.159277",
-    "updated_at": "2025-07-16T19:18:54.159277",
+    "updated_at": "2025-09-13T03:11:02.897095",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -573,9 +573,9 @@
     "id": "Q0001576",
     "category_id": "رياضيات",
     "created_at": "2025-07-16T19:18:54.197931",
-    "updated_at": "2025-07-16T19:18:54.197931",
+    "updated_at": "2025-09-16T21:46:01.717083",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -586,9 +586,9 @@
     "id": "Q0001577",
     "category_id": "رياضيات",
     "created_at": "2025-07-16T19:18:54.203950",
-    "updated_at": "2025-07-16T19:18:54.203950",
+    "updated_at": "2025-09-13T03:08:25.710872",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
