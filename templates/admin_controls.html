@@ -141,16 +141,49 @@
                             <input type="hidden" name="action" value="update_api_settings">
 
                             <h4 class="fill">OpenAI API Settings</h4>
+                            <div>
+                                <label for="openai_api_key">Openai Api Key:</label>
+                                <input type="text" id="openai_api_key" name="openai_api_key" value="{{ admin_setup.game_settings.get('openai_api_key','') }}" placeholder="Enter your OpenAI API key">
+                            </div>
+                            <div>
+                                <label for="openai_model">Openai Model:</label>
+                                <input type="text" id="openai_model" name="openai_model" value="{{ admin_setup.game_settings.get('openai_model','gpt-4o-mini') }}" placeholder="e.g., gpt-4o-mini">
+                            </div>
+                            <div>
+                                <label for="openai_temperature">Openai Temperature:</label>
+                                <input type="number" id="openai_temperature" name="openai_temperature" value="{{ admin_setup.game_settings.get('openai_temperature',0.55) }}" step="0.01" min="0" max="2">
+                            </div>
+                            <div>
+                                <label for="openai_top_p">Openai Top P:</label>
+                                <input type="number" id="openai_top_p" name="openai_top_p" value="{{ admin_setup.game_settings.get('openai_top_p',1.0) }}" step="0.01" min="0" max="1">
+                            </div>
+                            <div>
+                                <label for="openai_frequency_penalty">Openai Frequency Penalty:</label>
+                                <input type="number" id="openai_frequency_penalty" name="openai_frequency_penalty" value="{{ admin_setup.game_settings.get('openai_frequency_penalty',0.3) }}" step="0.01" min="-2" max="2">
+                            </div>
+                            <div>
+                                <label for="openai_presence_penalty">Openai Presence Penalty:</label>
+                                <input type="number" id="openai_presence_penalty" name="openai_presence_penalty" value="{{ admin_setup.game_settings.get('openai_presence_penalty',0.2) }}" step="0.01" min="-2" max="2">
+                            </div>
+                            <div>
+                                <label for="openai_max_output_tokens">Openai Max Output Tokens:</label>
+                                <input type="number" id="openai_max_output_tokens" name="openai_max_output_tokens" value="{{ admin_setup.game_settings.get('openai_max_output_tokens',20000) }}" min="1">
+                            </div>
+                            <div>
+                                <label for="openai_seed">Openai Seed:</label>
+                                <input type="number" id="openai_seed" name="openai_seed" value="{{ admin_setup.game_settings.get('openai_seed',0) }}" min="0">
+                            </div>
+
+                            {# Render any other openai_* settings that are not explicitly handled above #}
+                            {% set explicit_openai = ['openai_api_key','openai_model','openai_temperature','openai_top_p','openai_frequency_penalty','openai_presence_penalty','openai_max_output_tokens','openai_seed'] %}
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
-                                {% if setting_name.startswith('openai_') %}
+                                {% if setting_name.startswith('openai_') and setting_name not in explicit_openai %}
                                 <div>
                                     <label for="{{ setting_name }}">{{ setting_name|replace('_', ' ')|title }}:</label>
-                                    {% if setting_name == 'openai_api_key' %}
-                                        <input type="text" id="{{ setting_name }}" name="{{ setting_name }}" value="{{ setting_value }}" placeholder="Enter your OpenAI API key">
-                                    {% elif setting_value is string %}
+                                    {% if setting_value is string %}
                                         <input type="text" id="{{ setting_name }}" name="{{ setting_name }}" value="{{ setting_value }}">
                                     {% else %}
-                                        <input type="number" id="{{ setting_name }}" name="{{ setting_name }}" value="{{ setting_value }}" step="0.1">
+                                        <input type="number" id="{{ setting_name }}" name="{{ setting_name }}" value="{{ setting_value }}" step="0.01">
                                     {% endif %}
                                 </div>
                                 {% endif %}
@@ -530,7 +563,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const apiKeyInput = document.getElementById('openai_api_key');
                 const modelInput = document.getElementById('openai_model');
                 const temperatureInput = document.getElementById('openai_temperature');
-                const maxTokensInput = document.getElementById('openai_max_tokens');
+                const topPInput = document.getElementById('openai_top_p');
+                const freqPenaltyInput = document.getElementById('openai_frequency_penalty');
+                const presPenaltyInput = document.getElementById('openai_presence_penalty');
+                const maxOutputTokensInput = document.getElementById('openai_max_output_tokens');
+                const seedInput = document.getElementById('openai_seed');
 
                 // Fetch the saved settings from the server
                 fetch(`/get_api_settings/${selectedSetting}`)
@@ -551,8 +588,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (temperatureInput && settings.openai_temperature !== undefined) {
                         temperatureInput.value = settings.openai_temperature;
                     }
-                    if (maxTokensInput && settings.openai_max_tokens !== undefined) {
-                        maxTokensInput.value = settings.openai_max_tokens;
+                    if (topPInput && settings.openai_top_p !== undefined) {
+                        topPInput.value = settings.openai_top_p;
+                    }
+                    if (freqPenaltyInput && settings.openai_frequency_penalty !== undefined) {
+                        freqPenaltyInput.value = settings.openai_frequency_penalty;
+                    }
+                    if (presPenaltyInput && settings.openai_presence_penalty !== undefined) {
+                        presPenaltyInput.value = settings.openai_presence_penalty;
+                    }
+                    if (maxOutputTokensInput && settings.openai_max_output_tokens !== undefined) {
+                        maxOutputTokensInput.value = settings.openai_max_output_tokens;
+                    }
+                    if (seedInput && settings.openai_seed !== undefined) {
+                        seedInput.value = settings.openai_seed;
                     }
 
                     // Show a success message

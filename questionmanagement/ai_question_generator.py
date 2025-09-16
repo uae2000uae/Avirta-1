@@ -51,7 +51,7 @@ class AIQuestionGenerator:
         self.api_key = None
         self.model = "gpt-3.5-turbo"
         self.temperature = 0.7
-        self.max_tokens = 2000
+        self.max_output_tokens = 2000
 
         # API connection status
         self.api_connected = False
@@ -73,7 +73,7 @@ class AIQuestionGenerator:
                 - api_key: OpenAI API key
                 - model: OpenAI model to use
                 - temperature: Temperature for generation
-                - max_tokens: Maximum tokens for generation
+                - max_output_tokens: Maximum output tokens for generation
 
         Returns:
             tuple: (batch_id, questions) where batch_id is a unique identifier for this batch
@@ -97,7 +97,7 @@ class AIQuestionGenerator:
         self.api_key = options.get('api_key', self.api_key)
         self.model = options.get('model', self.model)
         self.temperature = float(options.get('temperature', self.temperature))
-        self.max_tokens = int(options.get('max_tokens', self.max_tokens))
+        self.max_output_tokens = int(options.get('max_output_tokens', self.max_output_tokens))
 
         # Check if API key is provided and not empty
         if not self.api_key or not self.api_key.strip():
@@ -473,7 +473,7 @@ class AIQuestionGenerator:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens
+            "max_tokens": self.max_output_tokens
         }
 
         print("Making API request to OpenAI...")
@@ -588,7 +588,7 @@ def generate_questions(prompt, options=None):
             - api_key: OpenAI API key
             - model: OpenAI model to use
             - temperature: Temperature for generation
-            - max_tokens: Maximum tokens for generation
+            - max_output_tokens: Maximum output tokens for generation
 
     Returns:
         tuple: (batch_id, questions) where batch_id is a unique identifier for this batch

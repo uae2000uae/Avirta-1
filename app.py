@@ -2221,7 +2221,7 @@ def ai_question_generator():
             'api_key': admin_setup.game_settings.get('openai_api_key', ''),
             'model': admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo'),
             'temperature': admin_setup.game_settings.get('openai_temperature', 0.7),
-            'max_tokens': admin_setup.game_settings.get('openai_max_tokens', 2000)
+            'max_output_tokens': admin_setup.game_settings.get('openai_max_output_tokens', 20000)
         }
 
         try:
@@ -2544,9 +2544,13 @@ def admin_controls():
             # Create a temporary API settings object to save
             api_settings = {
                 'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
-                'openai_model': admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo'),
-                'openai_temperature': admin_setup.game_settings.get('openai_temperature', 0.7),
-                'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 3000),
+                'openai_model': admin_setup.game_settings.get('openai_model', 'gpt-4o-mini'),
+                'openai_temperature': admin_setup.game_settings.get('openai_temperature', 0.55),
+                'openai_top_p': admin_setup.game_settings.get('openai_top_p', 1.0),
+                'openai_frequency_penalty': admin_setup.game_settings.get('openai_frequency_penalty', 0.3),
+                'openai_presence_penalty': admin_setup.game_settings.get('openai_presence_penalty', 0.2),
+                'openai_max_output_tokens': admin_setup.game_settings.get('openai_max_output_tokens', 20000),
+                'openai_seed': admin_setup.game_settings.get('openai_seed', 0),
                 # GitHub settings from form
                 'github_token': request.form.get('github_token', ''),
                 'github_repo_owner': request.form.get('github_repo_owner', ''),
