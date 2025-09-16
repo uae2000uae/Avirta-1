@@ -1,0 +1,4 @@
+{"type": "answer_evaluated", "data": {"player_name": "شهاب", "evaluator": "شهاب", "category": "رياضيات", "points": 500, "is_correct": true, "message": "The Host evaluated شهاب's answer as correct and earned 500 points"}, "timestamp": "2025-09-16T21:46:01.729092"}
+{"type": "turn_switch", "data": {"previous_player": "شهاب", "new_player": "حامد", "message": "Turn switched from شهاب to حامد"}, "timestamp": "2025-09-16T21:46:07.824591"}
+{"type": "question_selected", "data": {"player_name": "حامد", "category": "رياضيات", "points": 200, "message": "حامد selected a 200-point question from رياضيات"}, "timestamp": "2025-09-16T21:46:11.222088"}
+{"type": "answer_evaluated", "data": {"player_name": "حامد", "evaluator": "شهاب", "category": "رياضيات", "points": 200, "is_correct": true, "message": "The Host evaluated حامد's answer as correct and earned 200 points"}, "timestamp": "2025-09-16T21:46:13.880376"}

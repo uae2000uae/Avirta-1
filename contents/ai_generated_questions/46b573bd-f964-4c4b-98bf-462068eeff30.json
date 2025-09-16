@@ -1,0 +1,356 @@
+{
+  "metadata": {
+    "prompt": "questions about characters in DC, Marvel, and other similar producers of such movie genres. only within the movies, not the cast or crew.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 50,
+    "include_explanations": false,
+    "language": "english",
+    "timestamp": "2025-08-02T00:54:42.609896"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "What is the real name of the character Batman in the DC Cinematic Universe?",
+      "correct_answer": "Bruce Wayne",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, what is Thor's weapon called?",
+      "correct_answer": "Mjolnir",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who is the main antagonist in DC's 'Man of Steel'?",
+      "correct_answer": "General Zod",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the alias used by the character Natasha Romanoff in the Marvel Cinematic Universe?",
+      "correct_answer": "Black Widow",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is Captain America's shield made out of in the Marvel Cinematic Universe?",
+      "correct_answer": "Vibranium",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the DC Extended Universe, what is the name of Wonder Woman's home island?",
+      "correct_answer": "Themyscira",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which Marvel character says the line, 'I am Groot'?",
+      "correct_answer": "Groot",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who is the half-human, half-Atlantean hero in the DC Cinematic Universe?",
+      "correct_answer": "Aquaman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which Marvel Cinematic Universe film features the villain named Killmonger?",
+      "correct_answer": "Black Panther",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the AI system created by Tony Stark in the Marvel Cinematic Universe?",
+      "correct_answer": "JARVIS",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, what is the alter ego of the character The Flash?",
+      "correct_answer": "Barry Allen",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the real name of the Marvel character known as Spider-Man?",
+      "correct_answer": "Peter Parker",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the DC Extended Universe, who is known as the 'Clown Prince of Crime'?",
+      "correct_answer": "The Joker",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which character in the Marvel Cinematic Universe has a suit powered by the Arc Reactor?",
+      "correct_answer": "Iron Man",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the character played by Benedict Cumberbatch in the Marvel Cinematic Universe?",
+      "correct_answer": "Doctor Strange",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, who is the Amazonian warrior princess?",
+      "correct_answer": "Wonder Woman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of Superman's home planet in the DC Cinematic Universe?",
+      "correct_answer": "Krypton",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who is the ruler of Asgard in the Marvel Cinematic Universe before Thor?",
+      "correct_answer": "Odin",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the real name of Iron Man in the Marvel Cinematic Universe?",
+      "correct_answer": "Tony Stark",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which DC character is known for using a ring that grants superpowers?",
+      "correct_answer": "Green Lantern",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, who is Loki's adoptive brother?",
+      "correct_answer": "Thor",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the secret identity of the DC character Green Arrow?",
+      "correct_answer": "Oliver Queen",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, which character is a sentient tree creature?",
+      "correct_answer": "Groot",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who is the female warrior character from Themyscira in the DC Cinematic Universe?",
+      "correct_answer": "Wonder Woman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of Batman's butler in the DC Cinematic Universe?",
+      "correct_answer": "Alfred Pennyworth",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, which character becomes the Black Panther after T'Chaka?",
+      "correct_answer": "T'Challa",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who is the arch-nemesis of Superman in the DC Cinematic Universe?",
+      "correct_answer": "Lex Luthor",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which Marvel character is a skilled archer and member of the Avengers?",
+      "correct_answer": "Hawkeye",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, who is known as the King of Atlantis?",
+      "correct_answer": "Aquaman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the mystical land in the Marvel Cinematic Universe where Doctor Strange trains?",
+      "correct_answer": "Kamar-Taj",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which DC character is also known as the 'Caped Crusader'?",
+      "correct_answer": "Batman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, who is the adoptive father of Thanos' adopted daughter Gamora?",
+      "correct_answer": "Thanos",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the character in the DC universe who is an expert marksman and a part-time villain?",
+      "correct_answer": "Deadshot",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the organization that Nick Fury works for in the Marvel Cinematic Universe?",
+      "correct_answer": "S.H.I.E.L.D.",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, what is the real name of the character The Flash?",
+      "correct_answer": "Barry Allen",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who is the half-sister of Thor in the Marvel Cinematic Universe?",
+      "correct_answer": "Hela",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the villain in Marvel's 'Guardians of the Galaxy Vol. 2' who is revealed to be Star-Lord's father?",
+      "correct_answer": "Ego the Living Planet",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Who leads the Suicide Squad in the DC Cinematic Universe?",
+      "correct_answer": "Rick Flag",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, who is the guardian of the Soul Stone on Vormir?",
+      "correct_answer": "Red Skull",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which character is the ruler of Wakanda in the Marvel Cinematic Universe?",
+      "correct_answer": "T'Challa",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the planet that Thanos hails from in the Marvel Cinematic Universe?",
+      "correct_answer": "Titan",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, who is the alter ego of Shazam?",
+      "correct_answer": "Billy Batson",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Who is Captain Marvel's mentor in the Marvel Cinematic Universe?",
+      "correct_answer": "Yon-Rogg",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, what is the name of the mother box guardian in 'Justice League'?",
+      "correct_answer": "Steppenwolf",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which Marvel character is known as the 'Winter Soldier'?",
+      "correct_answer": "Bucky Barnes",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the Marvel Cinematic Universe, which character is a master of the mystic arts?",
+      "correct_answer": "Doctor Strange",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the dimensional being that Captain Marvel fights against in her movie?",
+      "correct_answer": "Supreme Intelligence",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Who becomes the new leader of the Avengers after Iron Man and Captain America's departure?",
+      "correct_answer": "Spider-Man",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "In the DC Cinematic Universe, who is the queen of Atlantis?",
+      "correct_answer": "Mera",
+      "explanation": "",
+      "points": 300
+    }
+  ]
+}
