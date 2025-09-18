@@ -151,7 +151,6 @@ function setupFormValidation() {
         createRoomForm.addEventListener('submit', function(event) {
             const roomNameInput = document.getElementById('room_name');
             const hostNameInput = document.getElementById('host_name');
-            const categoryCheckboxes = document.querySelectorAll('input[name="categories"]:checked');
 
             if (roomNameInput && !roomNameInput.value.trim()) {
                 event.preventDefault();
@@ -165,10 +164,15 @@ function setupFormValidation() {
                 return false;
             }
 
-            if (categoryCheckboxes.length === 0) {
-                event.preventDefault();
-                showModal('Please select at least one category.يرجى اختيار مجموعة واحدة على الأقل');
-                return false;
+            // Only enforce category selection if this form actually contains category checkboxes
+            const categoryInputs = this.querySelectorAll('input[name="categories"]');
+            if (categoryInputs.length > 0) {
+                const checkedCount = this.querySelectorAll('input[name="categories"]:checked').length;
+                if (checkedCount === 0) {
+                    event.preventDefault();
+                    showModal('Please select at least one category.يرجى اختيار مجموعة واحدة على الأقل');
+                    return false;
+                }
             }
         });
     }

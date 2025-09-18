@@ -31,6 +31,7 @@ from contents.game_content.question_manager import QuestionManager
 from contents.bulk_upload.bulk_import import BulkImport
 from contents.reported_questions.reported_question_manager import ReportedQuestionManager
 from contents.fastest.fastest_game_room import FastestGameRoom
+from contents.hex.hex_game_room import HexGameRoom
 from questionmanagement.question_bank import QuestionBank, increment_use_count, set_question_bank_instance
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
@@ -260,9 +261,14 @@ def create_room():
         additional_players = request.form.getlist('additional_players')
         selected_question_types = request.form.getlist('question_types')
 
-        if not room_name or not host_name or not selected_categories or not selected_question_types:
-            session['error_modal'] = 'Please fill in all fields, select at least one category, and at least one question type.'
+        if not room_name or not host_name or not selected_question_types:
+            session['error_modal'] = 'Please fill in all fields and select at least one question type.'
             return redirect(url_for('create_room'))
+
+        # If no categories selected, default to all available categories
+        if not selected_categories:
+            categories_dict = get_categories_with_questions()
+            selected_categories = list(categories_dict.keys())
 
         # Limit to max_categories_per_room (default is 7)
         max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
@@ -433,6 +439,126 @@ def fastest_create_room():
     # Get the maximum number of categories per room from admin settings
     max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
     return render_template('Fastest/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
+
+
+@app.route('/hex/create_room', methods=['GET', 'POST'])
+def hex_create_room():
+    """Create a new two-team hex board game room (5x5)."""
+    if request.method == 'POST':
+        room_name = request.form.get('room_name')
+        team_a = request.form.get('team_a')
+        team_b = request.form.get('team_b')
+        selected_point_values = request.form.getlist('point_values')
+
+        if not room_name or not team_a or not team_b or not selected_point_values:
+            session['error_modal'] = 'Please enter room name, both team names, and select at least one point value.'
+            return redirect(url_for('hex_create_room'))
+
+        # Convert to ints
+        try:
+            point_values = sorted([int(pv) for pv in selected_point_values])
+        except ValueError:
+            session['error_modal'] = 'Invalid point values.'
+            return redirect(url_for('hex_create_room'))
+
+        # Create a unique room ID
+        room_id = f"hex_{uuid.uuid4().hex[:8]}"
+
+        # Initialize game room
+        hex_room = HexGameRoom(room_id, room_name, team_a.strip(), team_b.strip(), point_values=point_values)
+
+        # Reload questions and prepare board (multiple-choice enforced within HexGameRoom)
+        question_uploader.load_questions()
+        question_uploader.remove_duplicate_questions()
+        success, enough_questions, error_details = hex_room.create_board(question_uploader)
+        if not enough_questions:
+            detailed_message = error_details.get('overall_message', 'Could not prepare enough questions for the board.')
+            session['error_modal'] = detailed_message.replace('\n', '<br>')
+            return redirect(url_for('hex_create_room'))
+
+        # Store
+        game_rooms[room_id] = hex_room
+        game_status_manager.persist_game_room(room_id, hex_room)
+
+        # Session store as host = team_a by default (for permissions if needed)
+        session['room_id'] = room_id
+        session['player_name'] = team_a
+
+        add_game_event(room_id, 'game_started', {
+            'message': f'Hex game started: {team_a} vs {team_b}',
+            'teams': [team_a, team_b],
+            'point_values': point_values,
+        })
+
+        return redirect(url_for('hex_play', room_id=room_id))
+
+    # GET
+    # Provide common point choices
+    default_points = [100, 200, 300, 400, 500]
+    return render_template('Hex/create_room.html', default_points=default_points)
+
+
+@app.route('/hex/play/<room_id>')
+def hex_play(room_id):
+    if room_id not in game_rooms:
+        loaded = game_status_manager.load_game_room(room_id)
+        if not loaded:
+            flash('Room not found', 'error')
+            return redirect(url_for('index'))
+        game_rooms[room_id] = loaded
+    hex_room = game_rooms[room_id]
+    return render_template('Hex/play.html', room=hex_room.to_dict())
+
+
+@app.route('/hex/select_cell', methods=['POST'])
+def hex_select_cell():
+    room_id = request.form.get('room_id')
+    cell_index = int(request.form.get('cell_index', -1))
+    if room_id not in game_rooms:
+        return jsonify({'success': False, 'message': 'Room not found'}), 404
+    hex_room = game_rooms[room_id]
+    result = hex_room.select_cell(cell_index, question_uploader)
+    if result.get('success'):
+        add_game_event(room_id, 'question_selected', {
+            'cell_index': cell_index,
+            'points': result['cell']['points']
+        })
+    game_status_manager.persist_game_room(room_id, hex_room)
+    return jsonify(result)
+
+
+@app.route('/hex/answer', methods=['POST'])
+def hex_answer():
+    room_id = request.form.get('room_id')
+    team_name = request.form.get('team_name')
+    answer = request.form.get('answer')
+    if room_id not in game_rooms:
+        return jsonify({'success': False, 'message': 'Room not found'}), 404
+    hex_room = game_rooms[room_id]
+    res = hex_room.submit_answer(team_name, answer)
+    if res.get('success'):
+        evt = 'answer_correct' if res.get('correct') else 'answer_incorrect'
+        add_game_event(room_id, evt, {
+            'team': team_name,
+            'cell_index': res['cell']['id'] if res.get('cell') else None,
+            'points': res['cell']['points'] if res.get('cell') else None
+        })
+    game_status_manager.persist_game_room(room_id, hex_room)
+    return jsonify(res)
+
+
+@app.route('/hex/game_updates/<room_id>')
+def hex_game_updates(room_id):
+    if room_id not in game_rooms:
+        loaded = game_status_manager.load_game_room(room_id)
+        if not loaded:
+            return jsonify({'error': 'Room not found'}), 404
+        game_rooms[room_id] = loaded
+    hex_room = game_rooms[room_id]
+    events = game_status_manager.get_events(room_id)
+    data = hex_room.get_board_state()
+    data['events'] = events
+    return jsonify(data)
 
 @app.route('/fastest/play/<room_id>')
 def fastest_play(room_id):
