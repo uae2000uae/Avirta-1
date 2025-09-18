@@ -1,0 +1,338 @@
+{% extends "gamebase.html" %}
+
+{% block title %}{{ room.name }} - Hex Game{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Hex board layout: interlocked hexagons with no visible gaps (edges touch) */
+  .board {
+    --hex-gap: 0px;            /* no space between hexes */
+    --hex-w: 80px;             /* bounding box width (reduced for better proportions) */
+    --hex-h: calc(var(--hex-w) * 0.8660254); /* perfect flat-top hex height = W * sqrt(3)/2 */
+    --hex-overlap-x: 10px;     /* horizontal overlap between columns (increase for tighter fit) */
+    display: grid;
+    grid-template-columns: repeat(5, calc(var(--hex-w) - var(--hex-overlap-x)));
+    gap: var(--hex-gap);
+    justify-content: center;
+    margin-top: 20px;
+    position: relative;
+  }
+  .cell {
+    width: var(--hex-w);
+    height: var(--hex-h);
+    position: relative;
+    cursor: pointer;
+    color: var(--text-color-white);
+    text-align: center;
+    line-height: var(--hex-h);
+    font-weight: bold;
+    transform: translateX(0);  /* default, even rows are offset */
+  }
+  .hex {
+    background: var(--secondary-color);
+    clip-path: polygon(25% 6.5%, 75% 6.5%, 100% 50%, 75% 93.5%, 25% 93.5%, 0% 50%); /* slightly taller flats for tighter fit */
+    border-radius: 0; /* ensure edges fully meet without rounded gaps */
+  }
+  .neutral { background: var(--secondary-color); }
+
+  /* Interlock effect: raise rows 2+ to nest tips so edges touch */
+  .board .cell:nth-child(n+6) {
+    margin-top: calc(-0.25 * var(--hex-h)); /* geometric value for flat-topped hex tiling */
+  }
+
+  /* Horizontal stagger for even rows (rows 2 and 4 in 5x5 board) */
+  .board .cell:nth-child(n+6):nth-child(-n+10),
+  .board .cell:nth-child(n+16):nth-child(-n+20) {
+    transform: translateX(calc(var(--hex-w) / 2));
+  }
+
+  /* Ensure clicks register where the hex is shown */
+  .cell { will-change: transform; }
+
+  /* Multiple-choice option styles (reuse theme) */
+  .form-options { display: grid; gap: var(--spacing-sm); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 10px; }
+  .answer-option {
+    display: inline-block;
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    background: var(--primary-color-light);
+    color: var(--text-color-white);
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+  }
+  .answer-option:hover { background: var(--primary-color); }
+  .answer-option.disabled { opacity: 0.8; cursor: default; }
+  .answer-option.correct { background: var(--success-color) !important; color: var(--text-color-white); border-color: var(--success-color-dark); }
+  .answer-option.wrong { background: var(--error-color) !important; color: var(--text-color-white); border-color: var(--error-color-dark); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="hex_root" data-color-a="{{ room.team_colors[room.team_a] }}" data-color-b="{{ room.team_colors[room.team_b] }}" data-team-a="{{ room.team_a }}" data-team-b="{{ room.team_b }}">
+  <h2>{{ room.name }} - {{ room.team_a }} vs {{ room.team_b }}</h2>
+  <p>Turn: <strong id="turn">{{ room.current_team_turn }}</strong></p>
+
+  <div id="board" class="board">
+    {% for cell in room.grid %}
+      <div class="cell hex" data-index="{{ cell.id }}">{{ cell.points }}</div>
+    {% endfor %}
+  </div>
+
+  <div id="turn_indicator" class="text-center" style="margin-top: 12px;">
+    <button id="turn_button" type="button" class="button" style="pointer-events: none; cursor: default;"></button>
+  </div>
+
+  <div class="content-section mb-large" style="margin-top: 20px;">
+    <h3>Question</h3>
+    <p id="question_text">Select a cell to load a question.</p>
+    <div id="options_container" class="form-options" style="display:none;"></div>
+    <div id="feedback" class="flash-message" style="min-height: 24px;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const roomId = "{{ room.room_id }}";
+  let currentCellIndex = null;
+
+  function getCssVar(name) {
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function highlightActiveCell() {
+    const board = document.getElementById('board');
+    if (!board) return;
+    const primary = getCssVar('--primary-color') || '#1e3644';
+    // Clear previous highlight applied by us (only those marked as selected)
+    const prev = board.querySelector('.cell[data-selected="1"]');
+    if (prev) {
+      prev.removeAttribute('data-selected');
+      // Reset to neutral quickly; periodic/explicit refresh will correct claimed cells if needed
+      prev.style.background = getCssVar('--secondary-color') || '#6c757d';
+    }
+    // Apply to current selection
+    const cell = board.querySelector(`.cell[data-index="${currentCellIndex}"]`);
+    if (cell) {
+      cell.style.background = primary;
+      cell.setAttribute('data-selected', '1');
+    }
+  }
+
+  function clearActiveHighlight() {
+    const board = document.getElementById('board');
+    if (!board) return;
+    const prev = board.querySelector('.cell[data-selected="1"]');
+    if (prev) {
+      prev.removeAttribute('data-selected');
+      prev.style.background = getCssVar('--secondary-color') || '#6c757d';
+    }
+  }
+
+  // Make the turn indicator as wide as the visual board
+  function sizeTurnIndicator() {
+    const board = document.getElementById('board');
+    const ind = document.getElementById('turn_indicator');
+    const btn = document.getElementById('turn_button');
+    if (!board || !ind) return;
+    // Compute visible width using CSS variables (5 columns)
+    const w = parseFloat(getCssVar('--hex-w')) || 90;
+    const overlap = parseFloat(getCssVar('--hex-overlap-x')) || 10;
+    const cols = 5; // current board is 5 columns
+    const visibleWidth = (cols * w) - ((cols - 1) * overlap);
+    ind.style.width = visibleWidth + 'px';
+    ind.style.marginLeft = 'auto';
+    ind.style.marginRight = 'auto';
+    if (btn) {
+      btn.style.width = '100%';
+    }
+  }
+
+  function setTurnButton(currentTeam) {
+    const root = document.getElementById('hex_root');
+    if (!root) return;
+    const colorA = root.dataset.colorA;
+    const colorB = root.dataset.colorB;
+    const teamA = root.dataset.teamA;
+    const teamB = root.dataset.teamB;
+    const btn = document.getElementById('turn_button');
+    if (!btn) return;
+    btn.textContent = currentTeam;
+    const bg = currentTeam === teamA ? colorA : colorB;
+    btn.style.backgroundColor = bg || '';
+    btn.style.borderColor = bg || '';
+    btn.style.color = '#fff';
+    sizeTurnIndicator();
+  }
+
+  function refreshBoard(state) {
+    const board = document.getElementById('board');
+    const turn = document.getElementById('turn');
+    const root = document.getElementById('hex_root');
+    const colorA = root.dataset.colorA;
+    const colorB = root.dataset.colorB;
+    const teamA = root.dataset.teamA;
+    const teamB = root.dataset.teamB;
+    turn.textContent = state.current_team_turn;
+    setTurnButton(state.current_team_turn);
+    const neutral = getCssVar('--secondary-color') || '#6c757d';
+    const primary = getCssVar('--primary-color') || '#1e3644';
+    const cells = board.querySelectorAll('.cell');
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      const idx = parseInt(cell.dataset.index);
+      const c = state.grid[idx];
+      // default background
+      cell.style.background = neutral;
+      if (c.state === teamA) {
+        cell.style.background = colorA;
+      } else if (c.state === teamB) {
+        cell.style.background = colorB;
+      } else if (currentCellIndex !== null && idx === currentCellIndex) {
+        // highlight the currently selected (question-shown) neutral cell
+        cell.style.background = primary;
+        cell.setAttribute('data-selected', '1');
+      } else {
+        cell.removeAttribute('data-selected');
+      }
+      cell.textContent = c.points;
+    }
+    // Ensure the turn indicator matches the board width after any update
+    sizeTurnIndicator();
+  }
+
+  function selectCell(e) {
+    const idx = parseInt(e.target.dataset.index);
+    if (isNaN(idx)) return;
+    fetch("{{ url_for('hex_select_cell') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ room_id: roomId, cell_index: idx })
+    }).then(r => r.json()).then(data => {
+      if (!data.success) { document.getElementById('feedback').textContent = data.message || 'Failed'; return; }
+      currentCellIndex = idx;
+      highlightActiveCell();
+      const qEl = document.getElementById('question_text');
+      qEl.textContent = data.cell.question.question;
+      qEl.setAttribute('dir', isArabic(qEl.textContent) ? 'rtl' : 'ltr');
+      renderOptions(data.cell.question.options || []);
+      document.getElementById('feedback').textContent = '';
+    });
+  }
+
+  function renderOptions(options) {
+    const container = document.getElementById('options_container');
+    container.innerHTML = '';
+    if (!options || options.length === 0) { container.style.display = 'none'; return; }
+    container.style.display = '';
+    options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'answer-option';
+      btn.textContent = opt;
+      btn.dataset.value = opt;
+      btn.dataset.index = String(i);
+      btn.addEventListener('click', handleOptionClick);
+      container.appendChild(btn);
+    });
+  }
+
+  function normalizeText(t) {
+    try {
+      let s = String(t || '').normalize('NFD');
+      // Remove combining marks (diacritics)
+      s = s.replace(/\p{M}/gu, '');
+      s = s.toLowerCase().trim();
+      // Remove whitespace, punctuation, and symbols
+      s = s.replace(/[\s\p{P}\p{S}]/gu, '');
+      return s;
+    } catch (e) {
+      // Fallback for older browsers: lowercase and remove spaces
+      return String(t || '').toLowerCase().replace(/\s+/g, '').trim();
+    }
+  }
+  function isArabic(t) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(String(t || ''));
+  }
+
+  function handleOptionClick(ev) {
+    if (currentCellIndex === null) { return; }
+    const btn = ev.currentTarget;
+    const selected = btn.dataset.value;
+    const team = document.getElementById('turn').textContent;
+
+    // Disable all buttons during submission
+    const container = document.getElementById('options_container');
+    const buttons = Array.from(container.querySelectorAll('.answer-option'));
+    buttons.forEach(b => b.classList.add('disabled'));
+
+    fetch("{{ url_for('hex_answer') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ room_id: roomId, team_name: team, answer: selected })
+    }).then(r => r.json()).then(data => {
+      const fb = document.getElementById('feedback');
+      if (!data.success) {
+        fb.textContent = data.message || 'Error.';
+        return;
+      }
+      const correctAnswer = data.correct_answer;
+      const correctIndex = typeof data.correct_index === 'number' ? data.correct_index : -1;
+      // Highlight clicked and correct
+      if (data.correct) {
+        btn.classList.add('correct');
+        fb.textContent = 'Correct! Cell claimed.';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = 'Incorrect.';
+        let correctBtn = null;
+        if (Number.isInteger(correctIndex) && correctIndex >= 0 && correctIndex < buttons.length) {
+          correctBtn = buttons[correctIndex];
+        }
+        if (!correctBtn) {
+          correctBtn = buttons.find(b => normalizeText(b.dataset.value) === normalizeText(correctAnswer))
+                        || buttons.find(b => normalizeText(b.textContent) === normalizeText(correctAnswer));
+        }
+        if (correctBtn) {
+          correctBtn.classList.remove('disabled');
+          correctBtn.classList.add('correct');
+        }
+      }
+
+      // After short delay, reset UI and refresh board
+      setTimeout(() => {
+        clearActiveHighlight();
+        currentCellIndex = null;
+        fetch(`{{ url_for('hex_game_updates', room_id='__RID__') }}`.replace('__RID__', roomId))
+          .then(r => r.json()).then(state => refreshBoard(state));
+        const qEl2 = document.getElementById('question_text');
+        qEl2.textContent = 'Select a cell to load a question.';
+        qEl2.setAttribute('dir', 'ltr');
+        container.style.display = 'none';
+        container.innerHTML = '';
+      }, 1200);
+    });
+  }
+
+  // Attach listeners
+  document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click', selectCell));
+
+  // Initialize current turn button on load
+  setTurnButton(document.getElementById('turn').textContent);
+  // Size the indicator initially and when window resizes
+  sizeTurnIndicator();
+  window.addEventListener('resize', sizeTurnIndicator);
+
+  // Periodic updates (optional)
+  setInterval(() => {
+    fetch(`{{ url_for('hex_game_updates', room_id='__RID__') }}`.replace('__RID__', roomId))
+      .then(r => r.json()).then(state => refreshBoard(state));
+  }, 1000);
+</script>
+{% endblock %}

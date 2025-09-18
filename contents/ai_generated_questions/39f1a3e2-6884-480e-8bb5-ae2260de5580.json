@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "prompt": "Questions about where something is located in the world.",
+    "question_type": "mixed",
+    "difficulty": "mixed",
+    "num_questions": 5,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-09-17T00:00:38.605269"
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "أين تقع مدينة باريس؟",
+      "options": [
+        "فرنسا",
+        "إسبانيا",
+        "إيطاليا",
+        "ألمانيا"
+      ],
+      "correct_answer": "فرنسا",
+      "points": 100
+    },
+    {
+      "type": "true_false",
+      "question": "يقع جبل كليمنجارو في تنزانيا.",
+      "correct_answer": "True",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "في أي قارة تقع دولة تشيلي؟",
+      "correct_answer": "أمريكا الجنوبية",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "في أي محيط تقع جزر المالديف؟",
+      "options": [
+        "المحيط الأطلسي",
+        "المحيط الهادئ",
+        "المحيط الهندي",
+        "المحيط المتجمد الشمالي"
+      ],
+      "correct_answer": "المحيط الهندي",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "بين أي دولتين يقع مضيق ملقا؟",
+      "correct_answer": "بين ماليزيا وإندونيسيا",
+      "points": 500
+    }
+  ]
+}
