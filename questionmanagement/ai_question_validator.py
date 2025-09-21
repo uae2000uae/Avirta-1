@@ -1,0 +1,778 @@
+"""
+AI Question Validator Module for Question Management
+
+This module provides functionality for validating and assessing existing questions using AI services.
+It can identify inaccurate information, missing answers, and suggest difficulty level adjustments.
+"""
+
+import json
+import uuid
+import os
+import glob
+import requests
+from datetime import datetime
+from questionmanagement.question_bank import question_bank
+
+
+class AIQuestionValidator:
+    """
+    A class to validate and assess questions using AI services.
+
+    This class provides methods for validating question accuracy, completeness,
+    and difficulty level appropriateness.
+    """
+
+    def __init__(self, validation_storage_path=None, admin_setup=None):
+        """
+        Initialize a new AI question validator.
+
+        Args:
+            validation_storage_path (str, optional): Path to store validation results.
+                If None, defaults to "contents/question_validations".
+            admin_setup (AdminSetup, optional): Admin setup instance for centralized API settings.
+                If provided, API settings will be automatically retrieved from system configuration.
+        """
+        # Set default path if none provided
+        if validation_storage_path is None:
+            validation_storage_path = os.path.join("contents", "question_validations")
+        
+        # Convert to absolute path if it's a relative path
+        if not os.path.isabs(validation_storage_path):
+            # Get the absolute path relative to the current script location
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.validation_storage_path = os.path.join(base_dir, validation_storage_path)
+        else:
+            self.validation_storage_path = validation_storage_path
+
+        # Create storage directory if it doesn't exist
+        os.makedirs(self.validation_storage_path, exist_ok=True)
+
+        # Store admin_setup reference for centralized API settings
+        self.admin_setup = admin_setup
+
+        # OpenAI API settings - will be retrieved from admin_setup if available
+        if admin_setup and hasattr(admin_setup, 'game_settings'):
+            self.api_key = admin_setup.game_settings.get('openai_api_key', '')
+            self.model = admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
+            self.temperature = admin_setup.game_settings.get('openai_temperature', 0.3)
+            # Limit max_output_tokens to 16384 to avoid API errors
+            configured_tokens = admin_setup.game_settings.get('openai_max_output_tokens', 3000)
+            self.max_output_tokens = min(configured_tokens, 16384)
+        else:
+            # Fallback to default settings if no admin_setup provided
+            self.api_key = None
+            self.model = "gpt-3.5-turbo"
+            self.temperature = 0.3  # Lower temperature for more consistent validation
+            self.max_output_tokens = 3000
+
+        # API connection status
+        self.api_connected = False
+
+    def validate_category_questions(self, category_id, api_key=None, options=None):
+        """
+        Validate all questions in a specific category.
+
+        Args:
+            category_id (str): The category ID to validate
+            api_key (str, optional): OpenAI API key. If not provided, will use centralized settings.
+            options (dict, optional): Validation options
+
+        Returns:
+            tuple: (validation_id, validation_results) where validation_id is a unique
+                identifier for this validation session and validation_results contains
+                the assessment results
+        """
+        if options is None:
+            options = {}
+
+        # Use provided API key or fall back to centralized settings
+        if api_key:
+            self.api_key = api_key
+        elif not self.api_key and self.admin_setup:
+            # Refresh API settings from admin_setup in case they were updated
+            self.api_key = self.admin_setup.game_settings.get('openai_api_key', '')
+            self.model = self.admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
+            self.temperature = self.admin_setup.game_settings.get('openai_temperature', 0.3)
+            # Limit max_output_tokens to 16384 to avoid API errors
+            configured_tokens = self.admin_setup.game_settings.get('openai_max_output_tokens', 3000)
+            self.max_output_tokens = min(configured_tokens, 16384)
+
+        # Check if we have a valid API key
+        if not self.api_key or not self.api_key.strip():
+            raise ValueError("OpenAI API key not configured. Please configure API settings in admin controls.")
+
+        # Verify API connection
+        if not self._verify_api_connection():
+            raise ValueError("Failed to connect to OpenAI API")
+
+        # Load questions from the category
+        question_bank.load_questions()
+        
+        if category_id not in question_bank.categories:
+            raise ValueError(f"Category '{category_id}' not found")
+
+        # Get all questions in the category
+        questions_to_validate = []
+        for question_id in question_bank.categories[category_id]:
+            if question_id in question_bank.questions:
+                question = question_bank.questions[question_id].copy()
+                questions_to_validate.append(question)
+
+        if not questions_to_validate:
+            raise ValueError(f"No questions found in category '{category_id}'")
+
+        print(f"Validating {len(questions_to_validate)} questions in category '{category_id}'")
+
+        # Validate questions using AI
+        validation_results = self._validate_questions_with_openai(
+            questions_to_validate, 
+            category_id,
+            options
+        )
+
+        # Generate validation ID and save results
+        validation_id = str(uuid.uuid4())
+        self._save_validation_results(validation_id, category_id, validation_results)
+
+        return validation_id, validation_results
+
+    def _verify_api_connection(self):
+        """Verify the connection to the OpenAI API."""
+        if not self.api_key or not self.api_key.strip():
+            return False
+
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key.strip()}"
+            }
+
+            data = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello, test connection."}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 10
+            }
+
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+
+            return response.status_code == 200
+
+        except Exception as e:
+            print(f"API connection failed: {str(e)}")
+            return False
+
+    def _improve_questions_with_openai(self, questions, category_id, options, progress_tracker=None):
+        """
+        Generate improved versions of questions using OpenAI API.
+
+        Args:
+            questions (list): List of question dictionaries to improve
+            category_id (str): The category ID
+            options (dict): Improvement options
+            progress_tracker (dict, optional): Dictionary to track progress based on terminal output
+
+        Returns:
+            list: List of improved question dictionaries
+        """
+        # Create system prompt for question improvement
+        system_prompt = """
+        You are an expert educational content creator. Your task is to improve quiz questions by:
+
+        1. **Fixing inaccuracies**: Correct any factual errors in questions or answers
+        2. **Completing missing information**: Add explanations where missing, fix incomplete answers
+        3. **Adjusting difficulty levels**: Set appropriate point values (100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard)
+        4. **Improving clarity**: Make questions clearer and more precise
+        5. **Fixing formatting issues**: Ensure proper punctuation, grammar, and structure
+
+        For each question, return the COMPLETE improved question object with all original fields preserved plus improvements.
+        
+        Response format should be a JSON array of complete question objects like this:
+        {
+            "type": "original_type",
+            "question": "improved question text (with proper punctuation)",
+            "correct_answer": "improved correct answer (replace 'Add ? at the end' type answers with actual answers)",
+            "options": ["option1", "option2", "option3", "option4"],  // only for multiple_choice
+            "explanation": "clear explanation of why this answer is correct",
+            "points": appropriate_point_value_100_to_500,
+            "id": "original_id",
+            "created_at": "original_created_at",
+            "updated_at": "current_timestamp",
+            "active": original_active_value,
+            "category_id": "original_category_id",
+            "use_count": original_use_count
+        }
+
+        Key improvement rules:
+        - Replace placeholder answers like "Add '?' at the end of the question" with actual correct answers
+        - Add missing explanations for all questions
+        - Fix grammatical errors and improve clarity
+        - Ensure questions end with proper punctuation (? for questions)
+        - Set difficulty points based on question complexity and knowledge requirements
+        - Preserve all original metadata (id, timestamps, etc.)
+        """
+
+        improved_questions = []
+        batch_size = 5  # Smaller batches for more detailed processing
+        total_batches = (len(questions) + batch_size - 1) // batch_size  # Calculate total batches
+
+        for i in range(0, len(questions), batch_size):
+            batch = questions[i:i + batch_size]
+            batch_number = i // batch_size + 1
+            
+            # Update progress tracker BEFORE processing (starting batch)
+            if progress_tracker:
+                progress_tracker['total_batches'] = total_batches
+                progress_tracker['current_batch'] = batch_number
+                progress_tracker['message'] = f"Improving batch {batch_number} ({len(batch)} questions)"
+                progress_tracker['stage'] = f"Processing questions {i + 1}-{min(i + len(batch), len(questions))} of {len(questions)}"
+            
+            # Create user prompt with the batch of questions
+            user_prompt = f"Please improve these questions from the '{category_id}' category. Return the complete improved question objects:\n\n"
+            
+            for question in batch:
+                user_prompt += f"""
+Original Question {question.get('id', 'unknown')}:
+{json.dumps(question, ensure_ascii=False, indent=2)}
+
+---
+"""
+
+            user_prompt += "\nReturn a JSON array with the complete improved question objects (preserve all original fields, just improve the content)."
+
+            try:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.api_key.strip()}"
+                }
+
+                data = {
+                    "model": self.model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_output_tokens
+                }
+
+                print(f"Improving batch {i//batch_size + 1} ({len(batch)} questions)...")
+                response = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers=headers,
+                    json=data,
+                    timeout=90
+                )
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    content = response_data['choices'][0]['message']['content']
+                    
+                    # Parse the JSON response
+                    try:
+                        # Clean up the content - remove markdown code block wrappers if present
+                        cleaned_content = content.strip()
+                        if cleaned_content.startswith('```json'):
+                            cleaned_content = cleaned_content[7:]  # Remove ```json
+                        if cleaned_content.startswith('```'):
+                            cleaned_content = cleaned_content[3:]  # Remove ```
+                        if cleaned_content.endswith('```'):
+                            cleaned_content = cleaned_content[:-3]  # Remove trailing ```
+                        cleaned_content = cleaned_content.strip()
+                        
+                        batch_results = json.loads(cleaned_content)
+                        if isinstance(batch_results, list):
+                            # Update timestamps and ensure all required fields
+                            for improved_q in batch_results:
+                                improved_q['updated_at'] = datetime.now().isoformat()
+                            improved_questions.extend(batch_results)
+                        else:
+                            # If single result, wrap in list
+                            batch_results['updated_at'] = datetime.now().isoformat()
+                            improved_questions.append(batch_results)
+                            
+                        # Update progress tracker AFTER successful batch completion
+                        if progress_tracker:
+                            progress_tracker['completed_batches'] = batch_number
+                            progress_tracker['overall_percentage'] = (batch_number / total_batches) * 100
+                            progress_tracker['message'] = f"Completed batch {batch_number} of {total_batches}"
+                            
+                    except json.JSONDecodeError:
+                        print(f"Failed to parse AI response for batch {i//batch_size + 1}")
+                        print(f"AI response content: {content[:500]}...")  # Show first 500 chars
+                        # If parsing fails, return original questions with minimal improvements
+                        for question in batch:
+                            improved_q = question.copy()
+                            # At least fix obvious issues
+                            if improved_q.get('correct_answer') == "Add '?' at the end of the question":
+                                improved_q['correct_answer'] = "Manual review needed"
+                            if not improved_q.get('explanation'):
+                                improved_q['explanation'] = "Explanation needs to be added"
+                            improved_q['updated_at'] = datetime.now().isoformat()
+                            improved_questions.append(improved_q)
+                            
+                        # Update progress even on parsing failure
+                        if progress_tracker:
+                            progress_tracker['completed_batches'] = batch_number
+                            progress_tracker['overall_percentage'] = (batch_number / total_batches) * 100
+                            progress_tracker['message'] = f"Batch {batch_number} completed with parsing issues"
+                else:
+                    print(f"API request failed for batch {i//batch_size + 1}: {response.status_code}")
+                    print(f"API response: {response.text}")
+                    # If API fails, return original questions
+                    for question in batch:
+                        improved_q = question.copy()
+                        improved_q['updated_at'] = datetime.now().isoformat()
+                        improved_questions.append(improved_q)
+                    
+                    # Update progress even on API failure
+                    if progress_tracker:
+                        progress_tracker['completed_batches'] = batch_number
+                        progress_tracker['overall_percentage'] = (batch_number / total_batches) * 100
+                        progress_tracker['message'] = f"Batch {batch_number} completed with API error"
+
+            except Exception as e:
+                print(f"Error improving batch {i//batch_size + 1}: {str(e)}")
+                # If error occurs, return original questions
+                for question in batch:
+                    improved_q = question.copy()
+                    improved_q['updated_at'] = datetime.now().isoformat()
+                    improved_questions.append(improved_q)
+                
+                # Update progress even on exception
+                if progress_tracker:
+                    progress_tracker['completed_batches'] = batch_number
+                    progress_tracker['overall_percentage'] = (batch_number / total_batches) * 100
+                    progress_tracker['message'] = f"Batch {batch_number} completed with error"
+
+        # Report final completion
+        if progress_tracker:
+            progress_tracker['completed_batches'] = total_batches
+            progress_tracker['overall_percentage'] = 100
+            progress_tracker['message'] = f"Completed all {total_batches} batches"
+            progress_tracker['stage'] = f"Successfully processed all {len(questions)} questions"
+
+        return improved_questions
+
+    def _validate_questions_with_openai(self, questions, category_id, options):
+        """
+        Validate questions using OpenAI API.
+
+        Args:
+            questions (list): List of question dictionaries to validate
+            category_id (str): The category ID
+            options (dict): Validation options
+
+        Returns:
+            list: List of validation results for each question
+        """
+        # Create system prompt for question validation
+        system_prompt = """
+        You are an expert educational content validator. Your task is to assess questions for:
+
+        1. **Accuracy**: Check if the information in the question and answer is factually correct
+        2. **Completeness**: Verify that answers are complete and not missing
+        3. **Difficulty Level**: Assess if the difficulty level (based on points: 100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard) matches the question complexity
+
+        For each question, provide a JSON response with this exact structure:
+        {
+            "question_id": "the original question ID",
+            "accuracy_issues": [
+                {
+                    "issue": "description of inaccuracy",
+                    "severity": "low|medium|high",
+                    "suggested_fix": "suggested correction"
+                }
+            ],
+            "completeness_issues": [
+                {
+                    "issue": "description of missing information",
+                    "severity": "low|medium|high", 
+                    "suggested_fix": "suggested completion"
+                }
+            ],
+            "difficulty_assessment": {
+                "current_points": current_point_value,
+                "suggested_points": suggested_point_value,
+                "reasoning": "explanation for difficulty adjustment"
+            },
+            "overall_score": "excellent|good|fair|poor",
+            "recommended_action": "keep_as_is|minor_edit|major_revision|remove"
+        }
+
+        If there are no issues in a category, return an empty array for that category.
+        Be thorough but practical - focus on significant issues that would impact educational value.
+        """
+
+        validation_results = []
+        batch_size = 10  # Process questions in batches to avoid token limits
+
+        for i in range(0, len(questions), batch_size):
+            batch = questions[i:i + batch_size]
+            
+            # Create user prompt with the batch of questions
+            user_prompt = f"Please validate these questions from the '{category_id}' category:\n\n"
+            
+            for question in batch:
+                user_prompt += f"""
+Question ID: {question.get('id', 'unknown')}
+Type: {question.get('type', 'unknown')}
+Question: {question.get('question', '')}
+Correct Answer: {question.get('correct_answer', '')}
+Current Points: {question.get('points', 0)}
+Explanation: {question.get('explanation', '')}
+
+---
+"""
+
+            user_prompt += "\nRespond with a JSON array containing validation results for each question."
+
+            try:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.api_key.strip()}"
+                }
+
+                data = {
+                    "model": self.model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_output_tokens
+                }
+
+                print(f"Validating batch {i//batch_size + 1} ({len(batch)} questions)...")
+                response = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers=headers,
+                    json=data,
+                    timeout=60
+                )
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    content = response_data['choices'][0]['message']['content']
+                    
+                    # Parse the JSON response
+                    try:
+                        # Clean up the content - remove markdown code block wrappers if present
+                        cleaned_content = content.strip()
+                        if cleaned_content.startswith('```json'):
+                            cleaned_content = cleaned_content[7:]  # Remove ```json
+                        if cleaned_content.startswith('```'):
+                            cleaned_content = cleaned_content[3:]  # Remove ```
+                        if cleaned_content.endswith('```'):
+                            cleaned_content = cleaned_content[:-3]  # Remove trailing ```
+                        cleaned_content = cleaned_content.strip()
+                        
+                        batch_results = json.loads(cleaned_content)
+                        if isinstance(batch_results, list):
+                            validation_results.extend(batch_results)
+                        else:
+                            # If single result, wrap in list
+                            validation_results.append(batch_results)
+                    except json.JSONDecodeError:
+                        print(f"Failed to parse AI response for batch {i//batch_size + 1}")
+                        print(f"AI response content: {content[:500]}...")  # Show first 500 chars
+                        # Create fallback results for this batch
+                        for question in batch:
+                            validation_results.append({
+                                "question_id": question.get('id', 'unknown'),
+                                "accuracy_issues": [],
+                                "completeness_issues": [{"issue": "Could not validate - AI response parsing failed", "severity": "medium", "suggested_fix": "Manual review required"}],
+                                "difficulty_assessment": {
+                                    "current_points": question.get('points', 0),
+                                    "suggested_points": question.get('points', 0),
+                                    "reasoning": "Could not assess due to parsing error"
+                                },
+                                "overall_score": "unknown",
+                                "recommended_action": "manual_review"
+                            })
+                else:
+                    print(f"API request failed for batch {i//batch_size + 1}: {response.status_code}")
+                    print(f"API response: {response.text}")
+                    # Create fallback results for this batch
+                    for question in batch:
+                        validation_results.append({
+                            "question_id": question.get('id', 'unknown'),
+                            "accuracy_issues": [],
+                            "completeness_issues": [{"issue": "Could not validate - API request failed", "severity": "medium", "suggested_fix": "Manual review required"}],
+                            "difficulty_assessment": {
+                                "current_points": question.get('points', 0),
+                                "suggested_points": question.get('points', 0),
+                                "reasoning": "Could not assess due to API error"
+                            },
+                            "overall_score": "unknown",
+                            "recommended_action": "manual_review"
+                        })
+
+            except Exception as e:
+                print(f"Error validating batch {i//batch_size + 1}: {str(e)}")
+                # Create fallback results for this batch
+                for question in batch:
+                    validation_results.append({
+                        "question_id": question.get('id', 'unknown'),
+                        "accuracy_issues": [],
+                        "completeness_issues": [{"issue": f"Could not validate - {str(e)}", "severity": "medium", "suggested_fix": "Manual review required"}],
+                        "difficulty_assessment": {
+                            "current_points": question.get('points', 0),
+                            "suggested_points": question.get('points', 0),
+                            "reasoning": "Could not assess due to error"
+                        },
+                        "overall_score": "unknown",
+                        "recommended_action": "manual_review"
+                    })
+
+        return validation_results
+
+    def _save_validation_results(self, validation_id, category_id, results):
+        """Save validation results to file."""
+        try:
+            validation_data = {
+                "validation_id": validation_id,
+                "category_id": category_id,
+                "timestamp": datetime.now().isoformat(),
+                "total_questions": len(results),
+                "results": results
+            }
+
+            filename = f"validation_{category_id}_{validation_id}.json"
+            filepath = os.path.join(self.validation_storage_path, filename)
+
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(validation_data, f, ensure_ascii=False, indent=2)
+
+            print(f"Validation results saved to: {filepath}")
+        except Exception as e:
+            print(f"Error saving validation results: {str(e)}")
+
+    def get_validation_results(self, validation_id):
+        """Retrieve validation results by ID."""
+        try:
+            pattern = os.path.join(self.validation_storage_path, f"validation_*_{validation_id}.json")
+            matching_files = glob.glob(pattern)
+            
+            if not matching_files:
+                return None
+            
+            with open(matching_files[0], 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error retrieving validation results: {str(e)}")
+            return None
+
+    def apply_validation_edits(self, validation_id, selected_edits, username=None):
+        """
+        Apply selected validation edits to question files.
+        
+        Args:
+            validation_id (str): The validation session ID
+            selected_edits (dict): Dictionary mapping question_id to selected edit actions
+            username (str, optional): Username applying the edits
+            
+        Returns:
+            dict: Summary of applied changes
+        """
+        # Get validation results
+        validation_data = self.get_validation_results(validation_id)
+        if not validation_data:
+            raise ValueError(f"Validation results not found for ID: {validation_id}")
+
+        category_id = validation_data['category_id']
+        results = validation_data['results']
+        
+        # Load current questions
+        question_bank.load_questions()
+        
+        changes_summary = {
+            "updated_questions": 0,
+            "failed_updates": 0,
+            "changes_log": []
+        }
+
+        # Apply selected edits
+        for result in results:
+            question_id = result['question_id']
+            
+            if question_id not in selected_edits:
+                continue
+                
+            edit_actions = selected_edits[question_id]
+            
+            if question_id not in question_bank.questions:
+                changes_summary["failed_updates"] += 1
+                changes_summary["changes_log"].append({
+                    "question_id": question_id,
+                    "status": "failed",
+                    "reason": "Question not found in database"
+                })
+                continue
+
+            # Get the current question
+            current_question = question_bank.questions[question_id].copy()
+            original_question = current_question.copy()
+            question_updated = False
+
+            # Apply accuracy fixes
+            if 'accuracy_fixes' in edit_actions:
+                for fix_index in edit_actions['accuracy_fixes']:
+                    if fix_index < len(result['accuracy_issues']):
+                        fix = result['accuracy_issues'][fix_index]
+                        # Apply the suggested fix (this is a simplified implementation)
+                        # In a real implementation, you'd have more sophisticated logic
+                        if 'correct_answer' in fix['suggested_fix'].lower():
+                            current_question['correct_answer'] = fix['suggested_fix'].replace('Suggested answer: ', '')
+                        elif 'question' in fix['suggested_fix'].lower():
+                            current_question['question'] = fix['suggested_fix'].replace('Suggested question: ', '')
+                        question_updated = True
+
+            # Apply completeness fixes
+            if 'completeness_fixes' in edit_actions:
+                for fix_index in edit_actions['completeness_fixes']:
+                    if fix_index < len(result['completeness_issues']):
+                        fix = result['completeness_issues'][fix_index]
+                        # Apply completeness fix
+                        if 'explanation' in fix['issue'].lower() and not current_question.get('explanation'):
+                            current_question['explanation'] = fix['suggested_fix']
+                        question_updated = True
+
+            # Apply difficulty adjustment
+            if 'apply_difficulty_adjustment' in edit_actions and edit_actions['apply_difficulty_adjustment']:
+                new_points = result['difficulty_assessment']['suggested_points']
+                if new_points != current_question.get('points', 0):
+                    current_question['points'] = new_points
+                    question_updated = True
+
+            # Update timestamp if question was modified
+            if question_updated:
+                current_question['updated_at'] = datetime.now().isoformat()
+                
+                # Update the question in the database
+                try:
+                    question_bank.questions[question_id] = current_question
+                    # Save to the actual JSON file
+                    self._update_question_in_file(category_id, question_id, current_question)
+                    
+                    changes_summary["updated_questions"] += 1
+                    changes_summary["changes_log"].append({
+                        "question_id": question_id,
+                        "status": "updated",
+                        "original": original_question,
+                        "updated": current_question,
+                        "applied_by": username,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    
+                except Exception as e:
+                    changes_summary["failed_updates"] += 1
+                    changes_summary["changes_log"].append({
+                        "question_id": question_id,
+                        "status": "failed",
+                        "reason": str(e)
+                    })
+
+        # Save change log to separate file
+        self._save_change_log(validation_id, changes_summary)
+        
+        return changes_summary
+
+    def _update_question_in_file(self, category_id, question_id, updated_question):
+        """Update a specific question in its JSON file."""
+        try:
+            # Find the question file - get the project root and construct the correct path
+            # validation_storage_path is typically contents/question_validations
+            # So we need to go up to project root and then to contents/questions
+            project_root = os.path.dirname(os.path.dirname(self.validation_storage_path))
+            questions_dir = os.path.join(project_root, "contents", "questions")
+            question_file = os.path.join(questions_dir, f"{category_id}.json")
+            
+            if not os.path.exists(question_file):
+                raise ValueError(f"Question file not found: {question_file}")
+            
+            # Load the current file
+            with open(question_file, 'r', encoding='utf-8') as f:
+                questions_data = json.load(f)
+            
+            # Find and update the specific question
+            for i, question in enumerate(questions_data):
+                if question.get('id') == question_id:
+                    questions_data[i] = updated_question
+                    break
+            else:
+                raise ValueError(f"Question {question_id} not found in file")
+            
+            # Save the updated file
+            with open(question_file, 'w', encoding='utf-8') as f:
+                json.dump(questions_data, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            raise Exception(f"Failed to update question file: {str(e)}")
+
+    def _save_change_log(self, validation_id, changes_summary):
+        """Save the change log to a separate dataset."""
+        try:
+            log_filename = f"validation_changes_{validation_id}.json"
+            log_filepath = os.path.join(self.validation_storage_path, log_filename)
+            
+            with open(log_filepath, 'w', encoding='utf-8') as f:
+                json.dump(changes_summary, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            print(f"Error saving change log: {str(e)}")
+
+
+# Standalone functions for easy integration
+def validate_category_questions(category_id, api_key, options=None):
+    """
+    Standalone function to validate questions in a category.
+    
+    Args:
+        category_id (str): Category to validate
+        api_key (str): OpenAI API key
+        options (dict, optional): Validation options
+        
+    Returns:
+        tuple: (validation_id, validation_results)
+    """
+    validator = AIQuestionValidator()
+    return validator.validate_category_questions(category_id, api_key, options)
+
+
+def get_validation_results(validation_id):
+    """
+    Standalone function to get validation results.
+    
+    Args:
+        validation_id (str): Validation ID
+        
+    Returns:
+        dict: Validation results or None if not found
+    """
+    validator = AIQuestionValidator()
+    return validator.get_validation_results(validation_id)
+
+
+def apply_validation_edits(validation_id, selected_edits, username=None):
+    """
+    Standalone function to apply validation edits.
+    
+    Args:
+        validation_id (str): Validation ID
+        selected_edits (dict): Selected edit actions
+        username (str, optional): Username applying edits
+        
+    Returns:
+        dict: Summary of applied changes
+    """
+    validator = AIQuestionValidator()
+    return validator.apply_validation_edits(validation_id, selected_edits, username)

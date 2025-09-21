@@ -1,0 +1,927 @@
+{% extends "base.html" %}
+
+{% block title %}AI Question Validator - Avirta{% endblock %}
+
+{% block content %}
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
+
+<div class="back-navigation">
+    <a href="{{ url_for('admin_controls') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Admin Controls</a>
+</div>
+
+<div class="content-section">
+    <h1>AI Question Validator</h1>
+    <p>Upload question files for AI validation and download improved versions.</p>
+    
+    <!-- File Upload Section -->
+    <div id="upload-section" class="upload-section">
+        <h3>Upload Question Files</h3>
+        <div class="file-upload-area" id="file-upload-area">
+            <div class="upload-content">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <p>Drag and drop JSON files here or click to browse</p>
+                <input type="file" id="file-input" accept=".json" multiple style="display: none;">
+                <button class="button" onclick="document.getElementById('file-input').click()">Choose Files</button>
+            </div>
+        </div>
+        
+        <div id="file-list" class="file-list" style="display: none;">
+            <h4>Selected Files:</h4>
+            <ul id="selected-files"></ul>
+            <div class="form-actions">
+                <button id="process-files" class="button" onclick="processFiles()">Process with AI</button>
+                <button class="button secondary" onclick="clearFiles()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div id="processing-progress" class="progress-container" style="display: none;">
+        <div class="progress-header">
+            <div id="progress-text">Processing files...</div>
+            <div id="progress-time">Elapsed: 0s</div>
+        </div>
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="progress-details">
+            <div id="progress-stage">Initializing...</div>
+            <div id="progress-percentage">0%</div>
+        </div>
+        <div id="progress-cancel-container" style="display: none;">
+            <button id="progress-cancel" class="button secondary small">Cancel Process</button>
+        </div>
+    </div>
+
+    <!-- File Comparison Section -->
+    <div id="comparison-section" class="comparison-section" style="display: none;">
+        <h3>File Comparison</h3>
+        <div class="file-tabs" id="file-tabs">
+            <!-- File tabs will be added dynamically -->
+        </div>
+        
+        <div class="comparison-container">
+            <div class="terminal-view">
+                <div class="terminal-header">
+                    <span class="terminal-title">Original</span>
+                </div>
+                <div class="terminal-content" id="original-terminal" data-terminal="original">
+                    <div class="json-wrapper">
+                        <div class="line-numbers" id="original-line-numbers"></div>
+                        <pre id="original-content" class="json-content"></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="terminal-view">
+                <div class="terminal-header">
+                    <span class="terminal-title">AI Improved</span>
+                </div>
+                <div class="terminal-content" id="updated-terminal" data-terminal="updated">
+                    <div class="json-wrapper">
+                        <div class="line-numbers" id="updated-line-numbers"></div>
+                        <pre id="updated-content" class="json-content"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="comparison-actions">
+            <button id="download-updated" class="button" onclick="downloadUpdatedFiles()">Download Updated Files</button>
+            <button id="save-to-database" class="button primary" onclick="saveToDatabase()">Save to Database</button>
+            <button class="button secondary" onclick="startOver()">Start Over</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* File Upload Styling */
+.upload-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: var(--bg-color-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.file-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 40px 20px;
+    text-align: center;
+    background-color: var(--bg-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary-color);
+    background-color: var(--bg-color-lighter);
+}
+
+.file-upload-area.drag-over {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color-light);
+    opacity: 0.8;
+}
+
+.upload-content {
+    pointer-events: none;
+}
+
+.upload-icon {
+    font-size: 3em;
+    color: var(--text-color-light);
+    margin-bottom: 15px;
+    display: block;
+}
+
+.file-list {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--bg-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.file-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.file-list li {
+    padding: 8px;
+    margin: 5px 0;
+    background-color: var(--bg-color-lighter);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.file-info {
+    flex-grow: 1;
+}
+
+.file-name {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.file-size {
+    font-size: 0.9em;
+    color: var(--text-color-light);
+    margin-left: 10px;
+}
+
+/* Progress Styling */
+.progress-container {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: var(--bg-color-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#progress-text {
+    font-weight: bold;
+    color: var(--text-color);
+    font-size: 1em;
+}
+
+#progress-time {
+    font-size: 0.85em;
+    color: var(--text-color-light);
+    font-family: monospace;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 24px;
+    background-color: var(--bg-color-dark);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-color-light));
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 12px;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#progress-stage {
+    color: var(--text-color);
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+#progress-percentage {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 0.9em;
+    font-family: monospace;
+}
+
+#progress-cancel-container {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.button.small {
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
+/* Comparison Section Styling */
+.comparison-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: var(--bg-color-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.file-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.file-tab {
+    padding: 10px 20px;
+    background-color: var(--bg-color-dark);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    cursor: pointer;
+    margin-right: 5px;
+    border-radius: 5px 5px 0 0;
+    transition: background-color 0.3s;
+}
+
+.file-tab:hover {
+    background-color: var(--bg-color-darker);
+}
+
+.file-tab.active {
+    background-color: var(--primary-color);
+    color: var(--text-color-white);
+}
+
+.comparison-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.terminal-view {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+    min-height: 400px;
+}
+
+.terminal-header {
+    background-color: #2d2d2d;
+    padding: 8px 15px;
+    border-bottom: 1px solid #3e3e3e;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.terminal-title {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.terminal-content {
+    padding: 0;
+    height: 380px;
+    overflow-y: auto;
+}
+
+.json-wrapper {
+    display: flex;
+    padding: 15px 0;
+}
+
+.line-numbers {
+    background-color: #1a1a1a;
+    color: #666;
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+    font-size: 0.85em;
+    line-height: 1.4;
+    padding: 0 10px 0 15px;
+    border-right: 1px solid #3e3e3e;
+    user-select: none;
+    text-align: right;
+    min-width: 40px;
+    white-space: pre;
+}
+
+.json-content {
+    margin: 0;
+    font-size: 0.85em;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 0 15px;
+    flex: 1;
+}
+
+/* JSON Syntax Highlighting */
+.json-key {
+    color: #9cdcfe;
+}
+
+.json-string {
+    color: #ce9178;
+}
+
+.json-number {
+    color: #b5cea8;
+}
+
+.json-boolean {
+    color: #569cd6;
+}
+
+.json-null {
+    color: #569cd6;
+}
+
+.comparison-actions {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.comparison-actions .button {
+    margin: 0 10px;
+}
+
+.button.primary {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.button.primary:hover {
+    background-color: var(--success-color-dark);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .comparison-container {
+        flex-direction: column;
+    }
+    
+    .file-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .comparison-actions .button {
+        display: block;
+        margin: 5px 0;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+// Global variables
+let selectedFiles = [];
+let processedResults = {};
+let currentFileIndex = 0;
+let progressStartTime = null;
+let progressTimer = null;
+let processingCancelled = false;
+let progressTimeout = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupFileUpload();
+    setupTerminalSync();
+    setupProgressCancelButton();
+});
+
+function setupProgressCancelButton() {
+    const cancelButton = document.getElementById('progress-cancel');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', cancelProcessing);
+    }
+}
+
+function setupTerminalSync() {
+    const originalTerminal = document.getElementById('original-terminal');
+    const updatedTerminal = document.getElementById('updated-terminal');
+    
+    let isScrolling = false;
+    
+    // Synchronize scrolling between terminals
+    originalTerminal.addEventListener('scroll', function() {
+        if (!isScrolling) {
+            isScrolling = true;
+            updatedTerminal.scrollTop = this.scrollTop;
+            updatedTerminal.scrollLeft = this.scrollLeft;
+            setTimeout(() => isScrolling = false, 10);
+        }
+    });
+    
+    updatedTerminal.addEventListener('scroll', function() {
+        if (!isScrolling) {
+            isScrolling = true;
+            originalTerminal.scrollTop = this.scrollTop;
+            originalTerminal.scrollLeft = this.scrollLeft;
+            setTimeout(() => isScrolling = false, 10);
+        }
+    });
+}
+
+function generateLineNumbers(content) {
+    const lines = content.split('\n');
+    return lines.map((line, index) => index + 1).join('\n');
+}
+
+function setupFileUpload() {
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.getElementById('file-input');
+    
+    // Click to upload
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Drag and drop functionality
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.add('drag-over');
+    });
+    
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+    });
+    
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+    });
+    
+    // File input change
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+}
+
+function handleFiles(files) {
+    selectedFiles = [];
+    
+    for (let file of files) {
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            selectedFiles.push(file);
+        }
+    }
+    
+    if (selectedFiles.length > 0) {
+        displaySelectedFiles();
+    } else {
+        alert('Please select only JSON files.');
+    }
+}
+
+function displaySelectedFiles() {
+    const fileList = document.getElementById('file-list');
+    const selectedFilesList = document.getElementById('selected-files');
+    
+    selectedFilesList.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="file-info">
+                <span class="file-name">${file.name}</span>
+                <span class="file-size">(${formatFileSize(file.size)})</span>
+            </div>
+            <button class="button secondary small" onclick="removeFile(${index})">Remove</button>
+        `;
+        selectedFilesList.appendChild(li);
+    });
+    
+    fileList.style.display = 'block';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return Math.round(bytes / (1024 * 1024)) + ' MB';
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    if (selectedFiles.length > 0) {
+        displaySelectedFiles();
+    } else {
+        document.getElementById('file-list').style.display = 'none';
+    }
+}
+
+function clearFiles() {
+    selectedFiles = [];
+    document.getElementById('file-list').style.display = 'none';
+    document.getElementById('file-input').value = '';
+}
+
+async function processFiles() {
+    if (selectedFiles.length === 0) {
+        alert('Please select files to process.');
+        return;
+    }
+    
+    // Show progress and start timer
+    document.getElementById('processing-progress').style.display = 'block';
+    document.getElementById('upload-section').style.display = 'none';
+    
+    // Start progress tracking
+    startProgressTimer();
+    
+    // Start real progress tracking
+    const progressInterval = trackRealProgress();
+    
+    try {
+        const formData = new FormData();
+        selectedFiles.forEach((file, index) => {
+            formData.append(`files`, file);
+        });
+        
+        updateProgress(5, 'Starting process...', 'Initializing AI processing');
+        
+        // Check for cancellation before making request
+        if (processingCancelled) {
+            throw new Error('Processing cancelled by user');
+        }
+        
+        const response = await fetch('/process_question_files', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // Stop the simulation as we have real progress now
+        clearInterval(progressInterval);
+        
+        updateProgress(60, 'Processing server response...', 'Analyzing server response');
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        updateProgress(85, 'Preparing results...', 'Formatting improved content');
+        
+        if (result.success) {
+            processedResults = result.processed_files;
+            updateProgress(95, 'Loading comparison view...', 'Setting up file comparison');
+            
+            displayComparison();
+            updateProgress(100, 'Processing complete!', 'All files processed successfully');
+            
+            setTimeout(() => {
+                stopProgressTimer();
+                document.getElementById('processing-progress').style.display = 'none';
+                document.getElementById('comparison-section').style.display = 'block';
+            }, 1500);
+        } else {
+            throw new Error(result.error || 'Processing failed');
+        }
+        
+    } catch (error) {
+        // Stop progress tracking
+        clearInterval(progressInterval);
+        stopProgressTimer();
+        
+        console.error('Processing error:', error);
+        
+        if (!processingCancelled) {
+            alert(`Error processing files: ${error.message}`);
+        }
+        
+        document.getElementById('processing-progress').style.display = 'none';
+        document.getElementById('upload-section').style.display = 'block';
+    }
+}
+
+function updateProgress(percentage, message, stage = null) {
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const progressStage = document.getElementById('progress-stage');
+    const progressPercentage = document.getElementById('progress-percentage');
+    
+    progressFill.style.width = percentage + '%';
+    progressText.textContent = message;
+    progressPercentage.textContent = Math.round(percentage) + '%';
+    
+    if (stage) {
+        progressStage.textContent = stage;
+    }
+}
+
+function startProgressTimer() {
+    progressStartTime = Date.now();
+    processingCancelled = false;
+    
+    // Update elapsed time every second
+    progressTimer = setInterval(() => {
+        if (!processingCancelled) {
+            const elapsed = Math.floor((Date.now() - progressStartTime) / 1000);
+            const progressTimeElement = document.getElementById('progress-time');
+            if (progressTimeElement) {
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                progressTimeElement.textContent = `Elapsed: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    }, 1000);
+    
+    // Set up timeout for very long operations (10 minutes)
+    progressTimeout = setTimeout(() => {
+        if (!processingCancelled) {
+            console.warn('Processing taking longer than expected...');
+            updateProgress(75, 'Processing taking longer than expected...', 'Please wait, this may take several more minutes');
+            
+            // Show cancel button after 10 minutes
+            const cancelContainer = document.getElementById('progress-cancel-container');
+            if (cancelContainer) {
+                cancelContainer.style.display = 'block';
+            }
+        }
+    }, 600000); // 10 minutes
+}
+
+function stopProgressTimer() {
+    if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+    }
+    if (progressTimeout) {
+        clearTimeout(progressTimeout);
+        progressTimeout = null;
+    }
+    
+    // Hide cancel button
+    const cancelContainer = document.getElementById('progress-cancel-container');
+    if (cancelContainer) {
+        cancelContainer.style.display = 'none';
+    }
+}
+
+function cancelProcessing() {
+    processingCancelled = true;
+    stopProgressTimer();
+    
+    // Hide progress and show upload section
+    document.getElementById('processing-progress').style.display = 'none';
+    document.getElementById('upload-section').style.display = 'block';
+    
+    alert('Processing cancelled by user.');
+}
+
+// Real progress tracking from server
+function trackRealProgress() {
+    const progressInterval = setInterval(async () => {
+        if (processingCancelled) {
+            clearInterval(progressInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/get_processing_progress');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const progressData = await response.json();
+            
+            if (!progressData.processing) {
+                // Processing completed or not in progress
+                clearInterval(progressInterval);
+                return;
+            }
+            
+            // Update progress with real data
+            const percentage = Math.round(progressData.overall_percentage || 0);
+            const message = progressData.message || 'Processing...';
+            const stage = progressData.stage || `Batch ${progressData.completed_batches}/${progressData.total_batches}`;
+            
+            updateProgress(percentage, message, stage);
+            
+            // If we've reached 100%, stop polling
+            if (percentage >= 100) {
+                clearInterval(progressInterval);
+            }
+            
+        } catch (error) {
+            console.error('Error fetching progress:', error);
+            // Don't stop polling on individual errors, just log them
+        }
+        
+    }, 1000); // Poll every 1 second for real-time updates
+    
+    return progressInterval;
+}
+
+function displayComparison() {
+    const fileTabs = document.getElementById('file-tabs');
+    fileTabs.innerHTML = '';
+    
+    // Create tabs for each processed file
+    Object.keys(processedResults).forEach((filename, index) => {
+        const tab = document.createElement('div');
+        tab.className = `file-tab ${index === 0 ? 'active' : ''}`;
+        tab.textContent = filename;
+        tab.onclick = () => showFileComparison(filename, index);
+        fileTabs.appendChild(tab);
+    });
+    
+    // Show first file by default
+    if (Object.keys(processedResults).length > 0) {
+        const firstFile = Object.keys(processedResults)[0];
+        showFileComparison(firstFile, 0);
+    }
+}
+
+function showFileComparison(filename, index) {
+    // Update active tab
+    document.querySelectorAll('.file-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.file-tab')[index].classList.add('active');
+    
+    const fileData = processedResults[filename];
+    
+    // Display original and updated content with syntax highlighting
+    const originalContent = document.getElementById('original-content');
+    const updatedContent = document.getElementById('updated-content');
+    const originalLineNumbers = document.getElementById('original-line-numbers');
+    const updatedLineNumbers = document.getElementById('updated-line-numbers');
+    
+    // Format JSON content
+    const originalJSON = JSON.stringify(fileData.original, null, 2);
+    const updatedJSON = JSON.stringify(fileData.updated, null, 2);
+    
+    // Set content with syntax highlighting
+    originalContent.innerHTML = syntaxHighlightJSON(originalJSON);
+    updatedContent.innerHTML = syntaxHighlightJSON(updatedJSON);
+    
+    // Generate and set line numbers
+    originalLineNumbers.textContent = generateLineNumbers(originalJSON);
+    updatedLineNumbers.textContent = generateLineNumbers(updatedJSON);
+    
+    currentFileIndex = index;
+}
+
+function syntaxHighlightJSON(json) {
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        var cls = 'json-number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'json-key';
+            } else {
+                cls = 'json-string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+            cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
+async function downloadUpdatedFiles() {
+    try {
+        const response = await fetch('/download_processed_files', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                processed_files: processedResults
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        
+        // Create download link
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'ai_improved_questions.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        alert(`Error downloading files: ${error.message}`);
+    }
+}
+
+async function saveToDatabase() {
+    if (!confirm('This will replace the original database files with the AI-improved versions. Are you sure?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/save_processed_files_to_database', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                processed_files: processedResults
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Successfully updated ${result.updated_count} files in the database.`);
+        } else {
+            throw new Error(result.error || 'Save failed');
+        }
+        
+    } catch (error) {
+        console.error('Save error:', error);
+        alert(`Error saving to database: ${error.message}`);
+    }
+}
+
+function startOver() {
+    // Stop any ongoing progress tracking
+    stopProgressTimer();
+    processingCancelled = true;
+    
+    // Reset everything
+    selectedFiles = [];
+    processedResults = {};
+    currentFileIndex = 0;
+    
+    // Reset progress states
+    progressStartTime = null;
+    processingCancelled = false;
+    
+    // Hide all sections except upload
+    document.getElementById('upload-section').style.display = 'block';
+    document.getElementById('processing-progress').style.display = 'none';
+    document.getElementById('comparison-section').style.display = 'none';
+    
+    // Reset progress display
+    updateProgress(0, 'Ready to process files...', 'Select files to get started');
+    
+    // Clear file input and list
+    clearFiles();
+}
+</script>
+{% endblock %}

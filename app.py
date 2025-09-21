@@ -2551,7 +2551,7 @@ def export_questions_xlsx(category_id):
                 cell = ws.cell(row=row_num, column=col_num)
                 value = question.get(field, "")
 
-                # Handle lists (options, alternative_answers)
+                # Handle lists (options)
                 if isinstance(value, list):
                     value = ", ".join(value)
 
@@ -2780,6 +2780,287 @@ def admin_controls():
         login_error=login_error,
         admin_setup=admin_setup
     )
+
+
+@app.route('/aivalidator', methods=['GET'])
+def aivalidator():
+    """AI Question Validator page with authentication."""
+    # Check if user is authenticated as admin
+    if not session.get('admin_authenticated', False):
+        flash('Please login as admin to access AI Question Validator.')
+        return redirect(url_for('admin_controls'))
+    
+    return render_template('aivalidator.html')
+
+@app.route('/process_question_files', methods=['POST'])
+def process_question_files():
+    """Process uploaded question files with AI validation and improvement."""
+    # Check if user is authenticated as admin
+    if not session.get('admin_authenticated', False):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        # Get uploaded files
+        uploaded_files = request.files.getlist('files')
+        
+        if not uploaded_files:
+            return jsonify({'error': 'No files uploaded'}), 400
+        
+        # Initialize progress tracking immediately for frontend polling
+        initial_progress = {
+            'total_batches': 0,
+            'completed_batches': 0,
+            'current_file': '',
+            'current_batch': 0,
+            'total_files': 0,
+            'overall_percentage': 0,
+            'message': 'Preparing files for processing...',
+            'stage': 'Analyzing uploaded files...'
+        }
+        
+        # Store initial progress in session immediately
+        session['processing_progress'] = initial_progress
+        session.modified = True
+        
+        processed_files = {}
+        
+        from questionmanagement.ai_question_validator import AIQuestionValidator
+        
+        # Initialize validator with admin setup for centralized API settings
+        validator = AIQuestionValidator(admin_setup=admin_setup)
+        
+        # Calculate total batches across all files for accurate progress tracking
+        total_questions = 0
+        file_question_counts = {}
+        
+        # Update progress while counting questions
+        initial_progress['message'] = 'Counting questions in uploaded files...'
+        initial_progress['stage'] = 'Analyzing file contents...'
+        session['processing_progress'] = initial_progress
+        session.modified = True
+        
+        # First pass: count questions in each file
+        for file in uploaded_files:
+            if not file.filename.endswith('.json'):
+                continue
+                
+            try:
+                file_content = file.read().decode('utf-8')
+                original_data = json.loads(file_content)
+                
+                if isinstance(original_data, list):
+                    file_question_counts[file.filename] = len(original_data)
+                    total_questions += len(original_data)
+                    
+                # Reset file pointer for second pass
+                file.seek(0)
+                
+            except Exception as e:
+                print(f"Error reading {file.filename} for counting: {str(e)}")
+                continue
+        
+        batch_size = 5  # Must match the batch size in AI validator
+        total_batches = (total_questions + batch_size - 1) // batch_size
+        completed_batches = 0
+        
+        # Progress tracking variables - shared progress tracker dictionary
+        progress_tracker = {
+            'total_batches': total_batches,
+            'completed_batches': 0,
+            'current_file': '',
+            'current_batch': 0,
+            'total_files': len(file_question_counts),
+            'overall_percentage': 0,
+            'message': 'Starting AI processing...',
+            'stage': f'Ready to process {total_questions} questions in {total_batches} batches'
+        }
+        
+        # Update session with complete progress tracker
+        session['processing_progress'] = progress_tracker
+        session.modified = True
+        
+        for file in uploaded_files:
+            if not file.filename.endswith('.json'):
+                continue
+                
+            try:
+                # Read and parse JSON file
+                file_content = file.read().decode('utf-8')
+                original_data = json.loads(file_content)
+                
+                # Validate the file structure
+                if not isinstance(original_data, list):
+                    continue
+                
+                # Update progress for current file
+                progress_tracker['current_file'] = file.filename
+                session['processing_progress'] = progress_tracker
+                session.modified = True
+                
+                # Use AI validator to improve all questions in the file at once
+                # This will provide proper batch-level progress tracking based on terminal output
+                try:
+                    improved_data = validator._improve_questions_with_openai(
+                        questions=original_data,
+                        category_id=file.filename.replace('.json', ''),
+                        options={},
+                        progress_tracker=progress_tracker
+                    )
+                    
+                    # The progress_tracker is updated by the AI validator based on actual batch processing
+                    # Update session with final progress tracker state
+                    session['processing_progress'] = progress_tracker
+                    session.modified = True
+                        
+                except Exception as e:
+                    print(f"Error processing file {file.filename}: {str(e)}")
+                    # If AI processing fails, just copy original data
+                    improved_data = original_data
+                
+                processed_files[file.filename] = {
+                    'original': original_data,
+                    'updated': improved_data,
+                    'filename': file.filename
+                }
+                
+            except Exception as e:
+                print(f"Error processing file {file.filename}: {str(e)}")
+                continue
+        
+        if not processed_files:
+            return jsonify({'error': 'No valid JSON files were processed'}), 400
+        
+        # Store processed files in session for later use
+        session['processed_files'] = processed_files
+        
+        return jsonify({
+            'success': True,
+            'processed_files': processed_files,
+            'message': f'Successfully processed {len(processed_files)} files'
+        })
+        
+    except Exception as e:
+        print(f"Error processing question files: {str(e)}")
+        return jsonify({'error': f'Processing failed: {str(e)}'}), 500
+
+@app.route('/get_processing_progress', methods=['GET'])
+def get_processing_progress():
+    """Get current processing progress for AI question validation."""
+    # Check if user is authenticated as admin
+    if not session.get('admin_authenticated', False):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    progress_data = session.get('processing_progress', {})
+    
+    if not progress_data:
+        return jsonify({
+            'processing': False,
+            'message': 'No processing in progress'
+        })
+    
+    return jsonify({
+        'processing': True,
+        'overall_percentage': progress_data.get('overall_percentage', 0),
+        'total_batches': progress_data.get('total_batches', 0),
+        'completed_batches': progress_data.get('completed_batches', 0),
+        'current_file': progress_data.get('current_file', ''),
+        'message': progress_data.get('message', 'Processing...'),
+        'stage': progress_data.get('stage', ''),
+        'total_files': progress_data.get('total_files', 0)
+    })
+
+@app.route('/download_processed_files', methods=['POST'])
+def download_processed_files():
+    """Download processed files as a ZIP archive."""
+    # Check if user is authenticated as admin
+    if not session.get('admin_authenticated', False):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        processed_files = data.get('processed_files', {})
+        
+        if not processed_files:
+            return jsonify({'error': 'No processed files to download'}), 400
+        
+        import zipfile
+        from io import BytesIO
+        
+        # Create ZIP file in memory
+        zip_buffer = BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for filename, file_data in processed_files.items():
+                # Add improved version to ZIP
+                improved_content = json.dumps(file_data['updated'], ensure_ascii=False, indent=2)
+                zip_file.writestr(f"improved_{filename}", improved_content)
+        
+        zip_buffer.seek(0)
+        
+        return send_file(
+            BytesIO(zip_buffer.read()),
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name='ai_improved_questions.zip'
+        )
+        
+    except Exception as e:
+        print(f"Error creating download: {str(e)}")
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
+
+@app.route('/save_processed_files_to_database', methods=['POST'])
+def save_processed_files_to_database():
+    """Save processed files back to the original database files."""
+    # Check if user is authenticated as admin
+    if not session.get('admin_authenticated', False):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        processed_files = data.get('processed_files', {})
+        
+        if not processed_files:
+            return jsonify({'error': 'No processed files to save'}), 400
+        
+        updated_count = 0
+        
+        # Get questions directory path
+        questions_dir = os.path.join(os.path.dirname(__file__), "contents", "questions")
+        
+        for filename, file_data in processed_files.items():
+            try:
+                # Construct full path to original file
+                file_path = os.path.join(questions_dir, filename)
+                
+                if os.path.exists(file_path):
+                    # Create backup of original file
+                    backup_path = f"{file_path}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    import shutil
+                    shutil.copy2(file_path, backup_path)
+                    
+                    # Write improved data to original file
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        json.dump(file_data['updated'], f, ensure_ascii=False, indent=2)
+                    
+                    updated_count += 1
+                    print(f"Updated {filename} (backup saved as {os.path.basename(backup_path)})")
+                
+            except Exception as e:
+                print(f"Error saving {filename}: {str(e)}")
+                continue
+        
+        # Reload question bank to reflect changes
+        question_bank.load_questions()
+        
+        return jsonify({
+            'success': True,
+            'updated_count': updated_count,
+            'message': f'Successfully updated {updated_count} files in the database'
+        })
+        
+    except Exception as e:
+        print(f"Error saving files to database: {str(e)}")
+        return jsonify({'error': f'Save failed: {str(e)}'}), 500
 
 @app.route('/get_game_state/<room_id>')
 def get_game_state(room_id):

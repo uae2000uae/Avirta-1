@@ -73,7 +73,7 @@ def _export_xlsx_template(output_path):
         headers = [
             "question", "type", "category", "points", "correct_answer", 
             "option1", "option2", "option3", "option4", 
-            "alternative_answers", "notes"
+            "notes"
         ]
 
         # Add headers
@@ -105,7 +105,6 @@ def _export_xlsx_template(output_path):
             ["points", f"Point value for the question. Must be one of: {', '.join(map(str, POINTS_LEVELS))}"],
             ["correct_answer", "The correct answer to the question"],
             ["option1-4", "For multiple_choice questions, the possible answer options"],
-            ["alternative_answers", "For text questions, comma-separated alternative correct answers"],
             ["notes", "Any additional notes about the question (optional)"]
         ]
 
@@ -149,7 +148,7 @@ def _export_csv_template(output_path):
         headers = [
             "question", "type", "category", "points", "correct_answer", 
             "option1", "option2", "option3", "option4", 
-            "alternative_answers", "notes"
+            "notes"
         ]
 
         # Write to CSV file

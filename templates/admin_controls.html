@@ -224,10 +224,12 @@
 						<a href="{{ url_for('bulk_import_page') }}" class="button">Bulk Import</a>
 						<a href="{{ url_for('ai_question_generator') }}" class="button">Generate with AI</a>
                         <a href="{{ url_for('ai_question_history') }}" class="button">AI Generate History</a>
+                        <a href="{{ url_for('aivalidator') }}" class="button">AI Question Validator</a>
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
                         <a href="{{ url_for('push_questions_to_github') }}" class="button">Push to GitHub</a>
                         <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
                     </div>
+
                 </div>
             </div>
 
@@ -472,6 +474,7 @@
             .theme-apply-button .button:hover {
                 background-color: var(--primary-color-light);
             }
+
             </style>
 
             <script>
@@ -676,6 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Individual style variable settings have been removed, only theme selection is available
 });
+
 </script>
 
 <!-- Tab Styles -->
