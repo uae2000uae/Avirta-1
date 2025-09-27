@@ -613,8 +613,8 @@
     "points": 400,
     "question": "ما هو عدد الأهداف التي سجلها بيليه في نهائيات كأس العالم عبر مسيرته؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:11.214034",
-    "use_count": 0
+    "updated_at": "2025-09-27T09:55:05.713717",
+    "use_count": 1
   },
   {
     "active": true,
@@ -645,8 +645,8 @@
     "points": 200,
     "question": "أي دولة استضافت نهائيات كأس العالم لأول مرة في قارة آسيا؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:19.807992",
-    "use_count": 0
+    "updated_at": "2025-09-27T11:45:58.838959",
+    "use_count": 1
   },
   {
     "active": true,
@@ -709,8 +709,8 @@
     "points": 400,
     "question": "من كان أصغر لاعب يسجل في نهائي كأس العالم؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:30.151372",
-    "use_count": 0
+    "updated_at": "2025-09-27T10:53:08.214637",
+    "use_count": 1
   },
   {
     "active": true,
@@ -741,8 +741,8 @@
     "points": 400,
     "question": "أي ملعب استضاف المباراة النهائية لكأس العالم 1998؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:30.151372",
-    "use_count": 0
+    "updated_at": "2025-09-27T09:35:18.589373",
+    "use_count": 1
   },
   {
     "active": true,
@@ -805,8 +805,8 @@
     "points": 200,
     "question": "في أي سنة أصبحت نهائيات كأس العالم تضم 32 منتخبًا؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:38.365425",
-    "use_count": 0
+    "updated_at": "2025-09-26T20:40:19.899413",
+    "use_count": 1
   },
   {
     "active": true,
@@ -843,8 +843,8 @@
     "points": 200,
     "question": "أي ملعب استضاف أكبر عدد من المباريات النهائية لكأس العالم؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T17:22:38.365425",
-    "use_count": 0
+    "updated_at": "2025-09-27T11:46:00.336299",
+    "use_count": 1
   },
   {
     "active": true,

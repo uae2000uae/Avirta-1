@@ -291,9 +291,9 @@
     "id": "Q0001803",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:02.747123",
-    "updated_at": "2025-09-16T22:46:11.068529",
+    "updated_at": "2025-09-26T21:17:03.476986",
     "active": true,
-    "use_count": 0,
+    "use_count": 1,
     "reported": true
   },
   {
@@ -453,9 +453,9 @@
     "id": "Q0001813",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:03.154837",
-    "updated_at": "2025-09-13T03:03:43.415924",
+    "updated_at": "2025-09-27T11:45:46.008389",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -517,9 +517,9 @@
     "id": "Q0001817",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:03.315015",
-    "updated_at": "2025-08-02T01:10:03.315015",
+    "updated_at": "2025-09-27T11:45:50.232390",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -626,9 +626,9 @@
     "id": "Q0001824",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:03.610576",
-    "updated_at": "2025-08-02T01:10:03.610576",
+    "updated_at": "2025-09-26T21:19:02.049082",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "true_false",
@@ -690,9 +690,9 @@
     "id": "Q0001828",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:03.794644",
-    "updated_at": "2025-08-02T01:10:03.794644",
+    "updated_at": "2025-09-27T10:53:33.219328",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "true_false",
@@ -754,9 +754,9 @@
     "id": "Q0001832",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:04.018622",
-    "updated_at": "2025-08-02T01:10:04.018622",
+    "updated_at": "2025-09-27T11:46:16.242948",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "true_false",
@@ -786,9 +786,9 @@
     "id": "Q0001834",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:04.125212",
-    "updated_at": "2025-08-02T01:10:04.125212",
+    "updated_at": "2025-09-27T11:14:15.539875",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "text",
@@ -818,9 +818,9 @@
     "id": "Q0001836",
     "category_id": "تاريخ_الإمارات",
     "created_at": "2025-08-02T01:10:04.236848",
-    "updated_at": "2025-08-02T01:10:04.236848",
+    "updated_at": "2025-09-26T21:18:04.662722",
     "active": true,
-    "use_count": 0
+    "use_count": 1
   },
   {
     "type": "true_false",
