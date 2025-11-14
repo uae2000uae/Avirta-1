@@ -85,8 +85,8 @@
     "points": 200,
     "question": "أي من الدول التالية لديها أكبر عدد من السكان بين الدول العربية؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:10.947512",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:11:38.991212",
+    "use_count": 1
   },
   {
     "active": true,
@@ -104,8 +104,8 @@
     "points": 100,
     "question": "ما هي العملة الرسمية في الإمارات العربية المتحدة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:22.518660",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:19:34.249184",
+    "use_count": 1
   },
   {
     "active": true,
@@ -123,8 +123,8 @@
     "points": 100,
     "question": "أي من هذه الدول ليست دولة عربية؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:22.518660",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:31:19.524764",
+    "use_count": 1
   },
   {
     "active": true,
@@ -219,8 +219,8 @@
     "points": 100,
     "question": "ما هي عاصمة سوريا؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:34.497438",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:31:33.077113",
+    "use_count": 1
   },
   {
     "active": true,
@@ -270,8 +270,8 @@
     "points": 100,
     "question": "أي من الدول العربية التالية تعتبر جزيرة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:47.967334",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:31:43.400227",
+    "use_count": 1
   },
   {
     "active": true,
@@ -506,8 +506,8 @@
     "points": 200,
     "question": "أي دولة عربية تشتهر بصناعة اللؤلؤ التقليدية؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:27:13.251574",
-    "use_count": 0
+    "updated_at": "2025-11-14T18:34:07.852549",
+    "use_count": 1
   },
   {
     "active": true,
