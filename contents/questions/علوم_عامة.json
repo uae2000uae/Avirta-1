@@ -90,9 +90,9 @@
     "id": "Q0000729",
     "category_id": "علوم_عامة",
     "created_at": "2025-05-27T02:44:24.295961",
-    "updated_at": "2025-05-30T18:33:04.196134",
+    "updated_at": "2025-11-14T17:54:34.942194",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "true_false",
@@ -154,9 +154,9 @@
     "id": "Q0000733",
     "category_id": "علوم_عامة",
     "created_at": "2025-05-27T02:44:24.319257",
-    "updated_at": "2025-05-31T03:27:48.796250",
+    "updated_at": "2025-11-14T18:15:15.337237",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "text",
@@ -186,9 +186,9 @@
     "id": "Q0000735",
     "category_id": "علوم_عامة",
     "created_at": "2025-05-27T02:44:24.328262",
-    "updated_at": "2025-05-31T10:37:03.891118",
+    "updated_at": "2025-11-14T18:23:26.028611",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "true_false",
@@ -231,9 +231,9 @@
     "id": "Q0000738",
     "category_id": "علوم_عامة",
     "created_at": "2025-05-27T02:44:24.342257",
-    "updated_at": "2025-05-31T20:59:41.135714",
+    "updated_at": "2025-11-14T18:08:36.253378",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -697,9 +697,9 @@
     "id": "Q0000769",
     "category_id": "علوم_عامة",
     "created_at": "2025-05-27T02:44:24.481489",
-    "updated_at": "2025-05-31T04:08:10.441240",
+    "updated_at": "2025-11-14T18:10:27.902177",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
