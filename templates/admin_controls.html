@@ -166,8 +166,8 @@
                                 <input type="number" id="openai_presence_penalty" name="openai_presence_penalty" value="{{ admin_setup.game_settings.get('openai_presence_penalty',0.2) }}" step="0.01" min="-2" max="2">
                             </div>
                             <div>
-                                <label for="openai_max_output_tokens">Openai Max Output Tokens:</label>
-                                <input type="number" id="openai_max_output_tokens" name="openai_max_output_tokens" value="{{ admin_setup.game_settings.get('openai_max_output_tokens',20000) }}" min="1">
+                                <label for="openai_max_tokens">Openai Max Tokens:</label>
+                                <input type="number" id="openai_max_tokens" name="openai_max_tokens" value="{{ admin_setup.game_settings.get('openai_max_tokens',20000) }}" min="1">
                             </div>
                             <div>
                                 <label for="openai_seed">Openai Seed:</label>
@@ -175,7 +175,7 @@
                             </div>
 
                             {# Render any other openai_* settings that are not explicitly handled above #}
-                            {% set explicit_openai = ['openai_api_key','openai_model','openai_temperature','openai_top_p','openai_frequency_penalty','openai_presence_penalty','openai_max_output_tokens','openai_seed'] %}
+                            {% set explicit_openai = ['openai_api_key','openai_model','openai_temperature','openai_top_p','openai_frequency_penalty','openai_presence_penalty','openai_max_tokens','openai_seed'] %}
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
                                 {% if setting_name.startswith('openai_') and setting_name not in explicit_openai %}
                                 <div>
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const topPInput = document.getElementById('openai_top_p');
                 const freqPenaltyInput = document.getElementById('openai_frequency_penalty');
                 const presPenaltyInput = document.getElementById('openai_presence_penalty');
-                const maxOutputTokensInput = document.getElementById('openai_max_output_tokens');
+                const maxOutputTokensInput = document.getElementById('openai_max_tokens');
                 const seedInput = document.getElementById('openai_seed');
 
                 // Fetch the saved settings from the server
@@ -600,8 +600,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (presPenaltyInput && settings.openai_presence_penalty !== undefined) {
                         presPenaltyInput.value = settings.openai_presence_penalty;
                     }
-                    if (maxOutputTokensInput && settings.openai_max_output_tokens !== undefined) {
-                        maxOutputTokensInput.value = settings.openai_max_output_tokens;
+                    if (maxOutputTokensInput) {
+                        const val = (settings.openai_max_tokens !== undefined) ? settings.openai_max_tokens : settings.openai_max_output_tokens;
+                        if (val !== undefined) {
+                            maxOutputTokensInput.value = val;
+                        }
                     }
                     if (seedInput && settings.openai_seed !== undefined) {
                         seedInput.value = settings.openai_seed;

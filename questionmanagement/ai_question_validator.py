@@ -56,7 +56,7 @@ class AIQuestionValidator:
             self.model = admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
             self.temperature = admin_setup.game_settings.get('openai_temperature', 0.3)
             # Limit max_output_tokens to 16384 to avoid API errors
-            configured_tokens = admin_setup.game_settings.get('openai_max_output_tokens', 3000)
+            configured_tokens = admin_setup.game_settings.get('openai_max_tokens', admin_setup.game_settings.get('openai_max_output_tokens', 3000))
             self.max_output_tokens = min(configured_tokens, 16384)
         else:
             # Fallback to default settings if no admin_setup provided
@@ -94,7 +94,7 @@ class AIQuestionValidator:
             self.model = self.admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
             self.temperature = self.admin_setup.game_settings.get('openai_temperature', 0.3)
             # Limit max_output_tokens to 16384 to avoid API errors
-            configured_tokens = self.admin_setup.game_settings.get('openai_max_output_tokens', 3000)
+            configured_tokens = self.admin_setup.game_settings.get('openai_max_tokens', self.admin_setup.game_settings.get('openai_max_output_tokens', 3000))
             self.max_output_tokens = min(configured_tokens, 16384)
 
         # Check if we have a valid API key

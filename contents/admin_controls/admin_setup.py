@@ -50,7 +50,7 @@ class AdminSetup:
             'openai_top_p': 1.0,
             'openai_frequency_penalty': 0.3,
             'openai_presence_penalty': 0.2,
-            'openai_max_output_tokens': 20000,
+            'openai_max_tokens': 20000,
             'openai_seed': 0,
 
             # GitHub settings
@@ -633,7 +633,7 @@ class AdminSetup:
             'openai_top_p': self.game_settings.get('openai_top_p', 1.0),
             'openai_frequency_penalty': self.game_settings.get('openai_frequency_penalty', 0.3),
             'openai_presence_penalty': self.game_settings.get('openai_presence_penalty', 0.2),
-            'openai_max_output_tokens': self.game_settings.get('openai_max_output_tokens', 20000),
+            'openai_max_tokens': self.game_settings.get('openai_max_tokens', 20000),
             'openai_seed': self.game_settings.get('openai_seed', 0),
             # GitHub settings from saved settings
             'github_token': github_settings.get('github_token', ''),
@@ -669,17 +669,19 @@ class AdminSetup:
         # Get the saved settings
         api_settings = self.saved_api_settings[name]
 
-        # Backward compatibility: map legacy openai_max_tokens to openai_max_output_tokens if needed
-        if 'openai_max_output_tokens' not in api_settings and 'openai_max_tokens' in api_settings:
+        # Backward compatibility: map legacy openai_max_output_tokens to openai_max_tokens if needed
+        if 'openai_max_tokens' not in api_settings and 'openai_max_output_tokens' in api_settings:
             try:
-                self.game_settings['openai_max_output_tokens'] = int(api_settings.get('openai_max_tokens') or 0)
+                self.game_settings['openai_max_tokens'] = int(api_settings.get('openai_max_output_tokens') or 0)
             except (TypeError, ValueError):
                 pass
 
         # Update only the OpenAI settings in game_settings
         for key, value in api_settings.items():
-            if key.startswith('openai_') and key != 'openai_max_tokens':
-                self.game_settings[key] = value
+            if key.startswith('openai_'):
+                # Normalize old key to new key
+                target_key = 'openai_max_tokens' if key == 'openai_max_output_tokens' else key
+                self.game_settings[target_key] = value
 
         # Save settings to file to make changes permanent
         self.save_game_settings()
