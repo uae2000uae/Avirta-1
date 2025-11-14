@@ -485,7 +485,7 @@ def hex_create_room():
         session['player_name'] = team_a
 
         add_game_event(room_id, 'game_started', {
-            'message': f'Hex game started: {team_a} vs {team_b}',
+            'message': f'The Hive game started: {team_a} vs {team_b}',
             'teams': [team_a, team_b],
             'point_values': point_values,
         })

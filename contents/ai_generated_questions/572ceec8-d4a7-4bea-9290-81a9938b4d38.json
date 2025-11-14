@@ -15,7 +15,7 @@
   {
     "type": "true_false",
     "question": "هل الصومال هي جزء من الدول العربية؟",
-    "correct_answer": "صحيح",
+    "correct_answer": "True",
     "explanation": "الصومال هي جزء من الدول العربية، وهي عضو في جامعة الدول العربية.",
     "points": 200
   },
