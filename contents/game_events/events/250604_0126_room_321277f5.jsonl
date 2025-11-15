@@ -1,7 +1,0 @@
-{"type": "game_started", "data": {"player_name": "Shihab", "message": "Game started by Shihab", "categories": ["جغرافيا"], "players": ["Shihab"]}, "timestamp": "2025-06-04T01:26:23.375758"}
-{"type": "question_selected", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 200, "message": "Shihab selected a 200-point question from جغرافيا"}, "timestamp": "2025-06-04T01:26:25.310080"}
-{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 200, "is_correct": true, "message": "Shihab answered correct and earned 200 points"}, "timestamp": "2025-06-04T01:26:40.512184"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Shihab", "message": "Turn switched from Shihab to Shihab"}, "timestamp": "2025-06-04T01:26:41.921528"}
-{"type": "question_selected", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 100, "message": "Shihab selected a 100-point question from جغرافيا"}, "timestamp": "2025-06-04T01:26:43.426930"}
-{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 100, "is_correct": false, "message": "Shihab answered incorrect and earned 0 points"}, "timestamp": "2025-06-04T01:26:47.993073"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Shihab", "message": "Turn switched from Shihab to Shihab"}, "timestamp": "2025-06-04T01:26:49.203749"}

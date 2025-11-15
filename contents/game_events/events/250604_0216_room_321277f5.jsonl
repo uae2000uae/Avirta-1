@@ -1,3 +1,0 @@
-{"type": "question_selected", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 400, "message": "Shihab selected a 400-point question from جغرافيا"}, "timestamp": "2025-06-04T02:16:40.550969"}
-{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "جغرافيا", "points": 400, "is_correct": false, "message": "Shihab answered incorrect and earned 0 points"}, "timestamp": "2025-06-04T02:16:42.364528"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T02:16:44.142732"}

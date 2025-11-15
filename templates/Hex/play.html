@@ -102,7 +102,6 @@
   transform: translateX(-13px);
   margin-top: -15px;
 }
-
 /* Question section */
 .question-section {
   padding: 10px;
@@ -142,6 +141,84 @@
     width: auto;
   }
 }
+/* Top edge row of upside-down triangles */
+.board-edge {
+  display: grid;
+  grid-template-columns: repeat(5, 52px);
+  gap: 3px;
+  justify-content: center;
+  margin: 20px auto -20px; /* pull closer to the hex row below */
+  max-width: 360px;
+  transform: translateX(14.5px) translateY(-18px); /* interlock with first hex row */
+}
+.top-edge {
+  width: 52px;
+  height: 15px; /* small height to fill the top gaps */
+  transform: translateY(0px); /* align with first hex row */
+  background: steelblue;
+  clip-path: polygon(50% 100%, 100% 0, 0 0); /* upside-down triangle */
+  pointer-events: none; /* non-interactive */
+}
+.bottom-edge {
+  width: 52px;
+  height: 15px; /* small height to fill the top gaps */
+  transform: translateY(-44px); /* align with lat hex row */
+  background: steelblue;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%); /* triangle */
+  pointer-events: none; /* non-interactive */
+}
+/* Top edge row of upside-down triangles */
+.board-side-edge {
+  display: grid;
+  grid-template-columns: repeat(2, 52px);
+  gap: 30px 168px;
+  justify-content: center;
+  max-width: 400px;
+  transform: translateX(-2px) translateY(-13px);
+  /* to make it overlay other elements: */
+  position: absolute; /* or 'fixed' depending on your needs */
+  top: auto; /* adjust as needed */
+  left: auto; /* adjust as needed */
+  z-index: 0000; /* higher than other elements */
+  pointer-events: none; /* optional: allows clicks to pass through */
+}
+.side-edge-barL {
+    width: 32px;
+    height: 258px;
+    transform: translateX(42px) translateY(13px);
+    cursor: none;
+    background: red;
+    position: relative;
+    clip-path: polygon(98% 0%, 100% 0%, 100% 100%, 98% 100%, 0% 92.7%, 0% 7.3%);
+}
+.side-edge-barR {
+    width: 32px;
+    height: 258px;
+    transform: translateX(-18px) translateY(13px);
+    cursor: none;
+    background: red;
+    position: relative;
+clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
+}
+.side-edge-1 {
+  width: 58px;
+  height: 66px;
+  transform: translateX(0px);
+  cursor: none;
+  background: var(--bg-color);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  position: relative;
+}
+.side-edge-2 {
+  width: 58px;
+  height: 66px;
+  transform: translateX(27px) translateY(48px);
+  cursor: none;
+  background: var(--bg-color);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  position: relative;
+}
+
 </style>
 {% endblock %}
 
@@ -162,9 +239,41 @@
           {{ room.team_b }}
         </div>
       </div>
+      <div class="board-edge">
+        <div class="top-edge"></div>
+        <div class="top-edge"></div>
+        <div class="top-edge"></div>
+        <div class="top-edge"></div>
+        <div class="top-edge"></div>
+      <div class="board-side-edge">
+        <div class="side-edge-barR"></div>
+        <div class="side-edge-barL"></div>
+      </div>
+      </div>
+      <div class="board-side-edge">
+        <div class="side-edge-1"></div>
+        <div class="side-edge-1"></div>
+        <div class="side-edge-1"></div>
+        <div class="side-edge-1"></div>
+        <div class="side-edge-1"></div>
+        <div class="side-edge-1"></div>
+      </div>
+      <div class="board-side-edge">
+        <div class="side-edge-2"></div>
+        <div class="side-edge-2"></div>
+        <div class="side-edge-2"></div>
+        <div class="side-edge-2"></div>
+      </div>
       <div id="board" class="board"> {% for cell in room.grid %}
         <div class="cell" data-index="{{ cell.id }}">{{ cell.points }}</div>
         {% endfor %} </div>
+              <div class="board-edge">
+        <div class="bottom-edge"></div>
+        <div class="bottom-edge"></div>
+        <div class="bottom-edge"></div>
+        <div class="bottom-edge"></div>
+        <div class="bottom-edge"></div>
+      </div>
     </div>
 
     <div class="question-section">
@@ -215,6 +324,27 @@
       teamASection.classList.add('active-glow');
     } else if (state.current_team_turn === teamB) {
       teamBSection.classList.add('active-glow');
+    }
+
+    // Update side/top/bottom edges to match teams and glow on active turn
+    const topEdges = document.querySelectorAll('.top-edge');
+    const bottomEdges = document.querySelectorAll('.bottom-edge');
+    const sideBarsL = document.querySelectorAll('.side-edge-barL');
+    const sideBarsR = document.querySelectorAll('.side-edge-barR');
+
+    // Base colors: Team A (red) for top/bottom edges, Team B (blue) for side bars
+    [...topEdges].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
+    [...bottomEdges].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
+    [...sideBarsL].forEach(el => { el.style.backgroundColor = colorB; el.classList.remove('active-glow'); });
+    [...sideBarsR].forEach(el => { el.style.backgroundColor = colorB; el.classList.remove('active-glow'); });
+
+    // Glow assignment based on current turn
+    if (state.current_team_turn === teamA) {
+      [...topEdges].forEach(el => el.classList.add('active-glow'));
+      [...bottomEdges].forEach(el => el.classList.add('active-glow'));
+    } else if (state.current_team_turn === teamB) {
+      [...sideBarsL].forEach(el => el.classList.add('active-glow'));
+      [...sideBarsR].forEach(el => el.classList.add('active-glow'));
     }
 
     // Update board cells

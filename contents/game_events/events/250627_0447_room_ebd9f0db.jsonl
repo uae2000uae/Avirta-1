@@ -1,3 +1,0 @@
-{"type": "question_selected", "data": {"player_name": "Shihab", "category": "علوم_عامة", "points": 500, "message": "Shihab selected a 500-point question from علوم_عامة"}, "timestamp": "2025-06-27T04:47:04.356555"}
-{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "علوم_عامة", "points": 500, "is_correct": true, "message": "Shihab answered correct and earned 500 points"}, "timestamp": "2025-06-27T04:47:14.666351"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Hamad", "message": "Turn switched from Shihab to Hamad"}, "timestamp": "2025-06-27T04:47:20.633702"}

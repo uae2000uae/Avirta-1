@@ -1,7 +1,0 @@
-{"type": "tool_used", "data": {"player_name": "Shihab", "tool_name": "change_question", "category": "التاريخ_المعاصر", "points": 500, "target_player": null, "message": "Shihab used Change Question to get a new question"}, "timestamp": "2025-06-04T01:24:03.172823"}
-{"type": "answer_submitted", "data": {"player_name": "Shihab", "category": "التاريخ_المعاصر", "points": 500, "is_correct": false, "message": "Shihab answered incorrect and earned 0 points"}, "timestamp": "2025-06-04T01:24:06.140550"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T01:24:07.813149"}
-{"type": "question_selected", "data": {"player_name": "Omar", "category": "التاريخ_المعاصر", "points": 200, "message": "Omar selected a 200-point question from التاريخ_المعاصر"}, "timestamp": "2025-06-04T01:24:09.070788"}
-{"type": "answer_submitted", "data": {"player_name": "Omar", "category": "التاريخ_المعاصر", "points": 200, "is_correct": false, "message": "Omar answered incorrect and earned 0 points"}, "timestamp": "2025-06-04T01:24:18.010845"}
-{"type": "turn_switch", "data": {"previous_player": "Omar", "new_player": "Shihab", "message": "Turn switched from Omar to Shihab"}, "timestamp": "2025-06-04T01:24:19.432560"}
-{"type": "question_selected", "data": {"player_name": "Shihab", "category": "التاريخ_المعاصر", "points": 100, "message": "Shihab selected a 100-point question from التاريخ_المعاصر"}, "timestamp": "2025-06-04T01:24:20.697305"}

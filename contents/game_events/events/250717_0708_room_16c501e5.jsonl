@@ -1,7 +1,0 @@
-{"type": "answer_submitted", "data": {"player_name": "شهاب", "category": "علم_الفلك", "points": 100, "is_correct": false, "message": "شهاب answered incorrect and earned 0 points"}, "timestamp": "2025-07-17T07:08:02.578198"}
-{"type": "turn_switch", "data": {"previous_player": "شهاب", "new_player": "حامد", "message": "Turn switched from شهاب to حامد"}, "timestamp": "2025-07-17T07:08:04.337948"}
-{"type": "question_selected", "data": {"player_name": "حامد", "category": "علم_الفلك", "points": 100, "message": "حامد selected a 100-point question from علم_الفلك"}, "timestamp": "2025-07-17T07:08:06.579589"}
-{"type": "answer_submitted", "data": {"player_name": "حامد", "category": "علم_الفلك", "points": 100, "is_correct": true, "message": "حامد answered correct and earned 100 points"}, "timestamp": "2025-07-17T07:08:09.037246"}
-{"type": "turn_switch", "data": {"previous_player": "حامد", "new_player": "عمر", "message": "Turn switched from حامد to عمر"}, "timestamp": "2025-07-17T07:08:10.558064"}
-{"type": "question_selected", "data": {"player_name": "عمر", "category": "علم_الفلك", "points": 200, "message": "عمر selected a 200-point question from علم_الفلك"}, "timestamp": "2025-07-17T07:08:12.234903"}
-{"type": "answer_submitted", "data": {"player_name": "عمر", "category": "علم_الفلك", "points": 200, "is_correct": false, "message": "عمر answered incorrect and earned 0 points"}, "timestamp": "2025-07-17T07:08:13.400183"}

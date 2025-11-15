@@ -1,3 +1,0 @@
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T01:42:00.846135"}
-{"type": "turn_switch", "data": {"previous_player": "Omar", "new_player": "Shihab", "message": "Turn switched from Omar to Shihab"}, "timestamp": "2025-06-04T01:42:09.960799"}
-{"type": "turn_switch", "data": {"previous_player": "Shihab", "new_player": "Omar", "message": "Turn switched from Shihab to Omar"}, "timestamp": "2025-06-04T01:42:11.944987"}
