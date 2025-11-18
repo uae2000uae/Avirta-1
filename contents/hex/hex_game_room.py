@@ -169,12 +169,7 @@ class HexGameRoom:
         cell['question'] = question
         cell['asked'] = True
         self.current_cell_index = cell_index
-        # Increment global use_count on reveal to balance exposure across rooms
-        try:
-            if question.get('id'):
-                increment_use_count(question['id'])
-        except Exception:
-            pass
+        # Note: use_count is updated upon answering to reflect actual usage, not just reveal.
         return {'success': True, 'cell': cell}
 
     def _pick_random_question_for_points(self, question_uploader: QuestionUploader, points: int) -> Optional[Dict[str, Any]]:
@@ -244,6 +239,12 @@ class HexGameRoom:
                 pass
 
         if is_correct:
+            # Update use_count upon answering
+            try:
+                if q.get('id'):
+                    increment_use_count(q['id'])
+            except Exception:
+                pass
             cell['state'] = team_name
             self.answered_question_ids.add(q['id'])
             cell['asked'] = False
@@ -258,6 +259,11 @@ class HexGameRoom:
                 'correct_index': correct_index,
             }
         # Incorrect: reset cell to neutral and clear question
+        try:
+            if q.get('id'):
+                increment_use_count(q['id'])
+        except Exception:
+            pass
         cell['question'] = None
         cell['asked'] = False
         self.current_cell_index = None

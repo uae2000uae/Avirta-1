@@ -175,8 +175,8 @@ class FastestGameRoom(GameRoom):
         # Mark question as answered
         self.answered_questions.add(selected_question['id'])
 
-        # Increment the use_count for this question
-        increment_use_count(selected_question['id'])
+        # Note: use_count is updated when a player answers (awarded points), not on selection
+        # to reflect actual usage and avoid overcounting.
 
         # Update current question number
         self.current_question_number += 1
@@ -209,6 +209,10 @@ class FastestGameRoom(GameRoom):
         """
         Reveal the answer to the current question and stop the timer.
 
+        Also ensures use_count is incremented when the answer is revealed
+        and no correct answer was awarded (i.e., no points). This keeps
+        counting consistent: increment on answering regardless of correctness.
+
         Returns:
             bool: True if the answer was revealed, False otherwise
         """
@@ -217,11 +221,27 @@ class FastestGameRoom(GameRoom):
 
         self.answer_revealed = True
         self.timer_active = False
+
+        # Ensure use_count increments when the question is answered/revealed
+        # in scenarios where no player was awarded points (incorrect/timeout).
+        try:
+            qid = self.current_question.get('id') if isinstance(self.current_question, dict) else None
+            if qid and not self.current_question.get('_use_count_updated'):
+                increment_use_count(qid)
+                # Mark as updated to avoid double counting if points later get awarded unexpectedly
+                self.current_question['_use_count_updated'] = True
+        except Exception:
+            # Do not interrupt gameplay if persistence fails
+            pass
+
         return True
 
     def award_points_to_player(self, player_name):
         """
         Award points to the player who answered the question correctly.
+
+        Also increments the question's use_count exactly once when it is answered,
+        not when it is merely selected or revealed.
 
         Args:
             player_name (str): Name of the player who answered correctly
@@ -229,12 +249,24 @@ class FastestGameRoom(GameRoom):
         Returns:
             bool: True if points were awarded, False otherwise
         """
-        if not self.current_question or not player_name in self.players:
+        if not self.current_question or player_name not in self.players:
             return False
 
         # Award points to the player
         points = self.current_question.get('points', 0)
         self.player_scores[player_name] = self.player_scores.get(player_name, 0) + points
+
+        # Increment use_count once per answered question
+        try:
+            qid = self.current_question.get('id') if isinstance(self.current_question, dict) else None
+            if qid and not self.current_question.get('_use_count_updated'):
+                increment_use_count(qid)
+                # Mark as updated to prevent double counting
+                self.current_question['_use_count_updated'] = True
+        except Exception:
+            # Avoid breaking gameplay if increment fails
+            pass
+
         return True
 
     def get_leaderboard(self):

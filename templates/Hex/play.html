@@ -22,6 +22,8 @@
   width: 300px;             /* fixed width */
   height: 270px;            /* fixed height */
   flex: 0 0 300px;           /* prevents it from stretching */
+  transform: translateY(-20px);
+
 }
 
 /* Team color bar */
@@ -31,7 +33,7 @@
   margin: 10px auto 0;
   border-radius: 6px;
   overflow: hidden;
-  transform: translateY(-30px);
+  transform: translateY(-10px);
 }
 
 .team-section {
@@ -153,18 +155,34 @@
 }
 .top-edge {
   width: 52px;
-  height: 15px; /* small height to fill the top gaps */
+  height: 20px; /* small height to fill the top gaps */
   transform: translateY(0px); /* align with first hex row */
   background: steelblue;
-  clip-path: polygon(50% 100%, 100% 0, 0 0); /* upside-down triangle */
+  clip-path: polygon(100% 0%, 100% 25%, 50% 100%, 50% 100%, 0% 25%, 0% 0%); /* upside-down triangle */
+  pointer-events: none; /* non-interactive */
+}
+.top-edge-end {
+  width: 52px;
+  height: 20px; /* small height to fill the top gaps */
+  transform: translateY(0px); /* align with first hex row */
+  background: steelblue;
+  clip-path: polygon(50% 0%, 63.5% 25%, 80% 55%, 50% 100%, 0% 25%, 0% 0%);
   pointer-events: none; /* non-interactive */
 }
 .bottom-edge {
   width: 52px;
-  height: 15px; /* small height to fill the top gaps */
+  height: 20px; /* small height to fill the top gaps */
   transform: translateY(-44px); /* align with lat hex row */
   background: steelblue;
-  clip-path: polygon(50% 0, 0 100%, 100% 100%); /* triangle */
+  clip-path: polygon(50% 0%, 100% 75%, 100% 100%, 0% 100%, 0% 100%, 0% 75%); /* triangle */
+  pointer-events: none; /* non-interactive */
+}
+.bottom-edge-end {
+  width: 52px;
+  height: 20px; /* small height to fill the top gaps */
+  transform: translateY(-44px); /* align with lat hex row */
+  background: steelblue;
+  clip-path: polygon(50% 0%, 78% 43%, 44% 100%, 44% 100%, 0% 100%, 0% 75%); /* triangle */
   pointer-events: none; /* non-interactive */
 }
 /* Top edge row of upside-down triangles */
@@ -183,22 +201,22 @@
   pointer-events: none; /* optional: allows clicks to pass through */
 }
 .side-edge-barL {
-    width: 32px;
-    height: 258px;
-    transform: translateX(42px) translateY(13px);
+    width: 31px;
+    height: 268px;
+    transform: translateX(43px) translateY(13px);
     cursor: none;
-    background: red;
+    background: darkred;
     position: relative;
-    clip-path: polygon(98% 0%, 100% 0%, 100% 100%, 98% 100%, 0% 92.7%, 0% 7.3%);
+    clip-path: polygon(54% 4.8%, 100% 8.5%, 100% 91.5%, 50% 95%, 0% 91.5%, 0% 8.5%);
 }
 .side-edge-barR {
-    width: 32px;
-    height: 258px;
+    width: 31px;
+    height: 268px;
     transform: translateX(-18px) translateY(13px);
     cursor: none;
     background: red;
     position: relative;
-clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
+clip-path: polygon(100% 0.5%, 100% 0%, 100% 100%, 100% 99.5%, 0% 93%, 0% 7%);
 }
 .side-edge-1 {
   width: 58px;
@@ -244,7 +262,7 @@ clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
         <div class="top-edge"></div>
         <div class="top-edge"></div>
         <div class="top-edge"></div>
-        <div class="top-edge"></div>
+        <div class="top-edge-end"></div>
       <div class="board-side-edge">
         <div class="side-edge-barR"></div>
         <div class="side-edge-barL"></div>
@@ -272,7 +290,7 @@ clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
         <div class="bottom-edge"></div>
         <div class="bottom-edge"></div>
         <div class="bottom-edge"></div>
-        <div class="bottom-edge"></div>
+        <div class="bottom-edge-end"></div>
       </div>
     </div>
 
@@ -329,12 +347,17 @@ clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
     // Update side/top/bottom edges to match teams and glow on active turn
     const topEdges = document.querySelectorAll('.top-edge');
     const bottomEdges = document.querySelectorAll('.bottom-edge');
+    const topEdgesEnd = document.querySelectorAll('.top-edge-end');
+    const bottomEdgesEnd = document.querySelectorAll('.bottom-edge-end');
+
     const sideBarsL = document.querySelectorAll('.side-edge-barL');
     const sideBarsR = document.querySelectorAll('.side-edge-barR');
 
     // Base colors: Team A (red) for top/bottom edges, Team B (blue) for side bars
     [...topEdges].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
     [...bottomEdges].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
+    [...topEdgesEnd].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
+    [...bottomEdgesEnd].forEach(el => { el.style.backgroundColor = colorA; el.classList.remove('active-glow'); });
     [...sideBarsL].forEach(el => { el.style.backgroundColor = colorB; el.classList.remove('active-glow'); });
     [...sideBarsR].forEach(el => { el.style.backgroundColor = colorB; el.classList.remove('active-glow'); });
 
@@ -342,6 +365,8 @@ clip-path: polygon(83% 0%, 100% 0%, 100% 100%, 83% 100%, 0% 94%, 0% 6%);
     if (state.current_team_turn === teamA) {
       [...topEdges].forEach(el => el.classList.add('active-glow'));
       [...bottomEdges].forEach(el => el.classList.add('active-glow'));
+      [...topEdgesEnd].forEach(el => el.classList.add('active-glow'));
+      [...bottomEdgesEnd].forEach(el => el.classList.add('active-glow'));
     } else if (state.current_team_turn === teamB) {
       [...sideBarsL].forEach(el => el.classList.add('active-glow'));
       [...sideBarsR].forEach(el => el.classList.add('active-glow'));

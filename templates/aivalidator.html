@@ -53,6 +53,24 @@
         </div>
     </div>
 
+    <!-- AI Terminal Modal -->
+    <div id="ai-terminal-modal" class="ai-terminal-modal" style="display:none;">
+        <div class="ai-terminal-backdrop" onclick="closeAiTerminal()"></div>
+        <div class="ai-terminal-window" role="dialog" aria-modal="true" aria-labelledby="ai-terminal-title">
+            <div class="ai-terminal-header">
+                <div class="ai-terminal-title" id="ai-terminal-title">AI Validation Progress</div>
+                <div class="ai-terminal-actions">
+                    <button class="button secondary small" id="ai-terminal-copy" title="Copy logs" onclick="copyAiTerminalLogs()">Copy</button>
+                    <button class="button secondary small" id="ai-terminal-download" title="Download logs" onclick="downloadAiTerminalLogs()">Download</button>
+                    <button class="button small" id="ai-terminal-close" title="Close" onclick="closeAiTerminal()" disabled>Close</button>
+                </div>
+            </div>
+            <div class="ai-terminal-body">
+                <pre id="ai-terminal-content" class="ai-terminal-content"></pre>
+            </div>
+        </div>
+    </div>
+
     <!-- File Comparison Section -->
     <div id="comparison-section" class="comparison-section" style="display: none;">
         <h3>File Comparison</h3>
@@ -91,6 +109,9 @@
             <button id="save-to-database" class="button primary" onclick="saveToDatabase()">Save to Database</button>
             <button class="button secondary" onclick="startOver()">Start Over</button>
         </div>
+        
+        <!-- AI Change Summary (appears after processing completes) -->
+        <div id="ai-change-summary" class="ai-change-summary" style="display:none;" aria-live="polite"></div>
     </div>
 </div>
 
@@ -423,6 +444,26 @@
         width: 100%;
     }
 }
+/* AI Terminal Modal Styles */
+.ai-terminal-modal{ position:fixed; inset:0; z-index:9999; }
+.ai-terminal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.5); }
+.ai-terminal-window{ position:relative; width:min(1000px,90vw); height:min(70vh,90vh); margin:6vh auto; background:#0b0f14; color:#d1d5db; border:1px solid #111827; border-radius:10px; box-shadow:0 20px 40px rgba(0,0,0,.35); display:flex; flex-direction:column; }
+.ai-terminal-header{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #1f2937; background:#0f1620; }
+.ai-terminal-title{ font-weight:600; color:#e5e7eb; }
+.ai-terminal-actions .button{ margin-left:8px; }
+.ai-terminal-body{ flex:1; overflow:auto; }
+.ai-terminal-content{ margin:0; padding:12px; white-space:pre-wrap; word-break:break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; line-height:1.5; background:#0b0f14; color:#9fef00; /* terminal green */ }
+
+.ai-change-summary{ margin-top:12px; padding:12px; border:1px solid #1f2937; border-radius:8px; background:#0f1520; color:#e5e7eb; }
+.ai-change-summary h4{ margin:0 0 8px; font-size:16px; color:#d1d5db; }
+.ai-change-summary .summary-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:8px; }
+.ai-change-summary .summary-item{ background:#0b0f14; border:1px solid #1f2937; border-radius:6px; padding:8px 10px; }
+.ai-change-summary .summary-item .k{ color:#9ca3af; font-size:12px; }
+.ai-change-summary .summary-item .v{ color:#9fef00; font-weight:600; font-variant-numeric:tabular-nums; }
+.ai-change-summary .files{ margin-top:10px; }
+.ai-change-summary .files li{ margin:4px 0; color:#cbd5e1; }
+.ai-change-summary .actions{ margin-top:10px; }
+.ai-change-summary .actions .button.small{ padding:6px 10px; font-size:12px; }
 </style>
 
 <script>
@@ -434,6 +475,73 @@ let progressStartTime = null;
 let progressTimer = null;
 let processingCancelled = false;
 let progressTimeout = null;
+
+// AI Terminal helpers
+let aiTerminalLogs = [];
+let aiTerminalLastLine = '';
+let aiLastMessage = '';
+let aiLastStage = '';
+let aiLastPercent = -1;
+
+function openAiTerminal(){
+    const modal = document.getElementById('ai-terminal-modal');
+    const closeBtn = document.getElementById('ai-terminal-close');
+    if (modal) modal.style.display = 'block';
+    if (closeBtn) closeBtn.disabled = true; // enabled on completion
+}
+function closeAiTerminal(){
+    const modal = document.getElementById('ai-terminal-modal');
+    if (modal) modal.style.display = 'none';
+}
+function resetAiTerminal(){
+    aiTerminalLogs = [];
+    aiTerminalLastLine = '';
+    const pre = document.getElementById('ai-terminal-content');
+    if (pre) pre.textContent = '';
+}
+function appendAiTerminalLine(text){
+    if (!text) return;
+    const ts = new Date().toLocaleTimeString();
+    const line = `[${ts}] ${text}`;
+    if (line === aiTerminalLastLine) return;
+    aiTerminalLastLine = line;
+    aiTerminalLogs.push(line);
+    const pre = document.getElementById('ai-terminal-content');
+    if (pre){
+        if (pre.textContent && !pre.textContent.endsWith('\n')) pre.textContent += '\n';
+        pre.textContent += line;
+        // auto-scroll
+        const body = pre.parentElement;
+        if (body) body.scrollTop = body.scrollHeight;
+    }
+}
+function copyAiTerminalLogs(){
+    const text = aiTerminalLogs.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('ai-terminal-copy');
+        if (btn){ btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy', 1200); }
+    }).catch(()=>{
+        // fallback
+        const pre = document.getElementById('ai-terminal-content');
+        if (pre){
+            const range = document.createRange();
+            range.selectNodeContents(pre);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand('copy');
+            sel.removeAllRanges();
+        }
+    });
+}
+function downloadAiTerminalLogs(){
+    const blob = new Blob([aiTerminalLogs.join('\n')], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ai_validation_progress.log';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
@@ -578,6 +686,11 @@ async function processFiles() {
     // Show progress and start timer
     document.getElementById('processing-progress').style.display = 'block';
     document.getElementById('upload-section').style.display = 'none';
+
+    // Open terminal popup to show backend progress
+    openAiTerminal();
+    resetAiTerminal();
+    appendAiTerminalLine('Starting AI processing...');
     
     // Start progress tracking
     startProgressTimer();
@@ -623,10 +736,25 @@ async function processFiles() {
             displayComparison();
             updateProgress(100, 'Processing complete!', 'All files processed successfully');
             
+            // Render AI change summary text below action buttons
+            try {
+                renderChangeSummary(processedResults);
+            } catch (e) {
+                console.warn('Failed to render change summary:', e);
+            }
+            
+            // Update terminal and enable close
+            appendAiTerminalLine('Processing complete. Results are ready in the comparison panel.');
+            const closeBtnOk = document.getElementById('ai-terminal-close');
+            if (closeBtnOk) closeBtnOk.disabled = false;
+            
             setTimeout(() => {
                 stopProgressTimer();
                 document.getElementById('processing-progress').style.display = 'none';
                 document.getElementById('comparison-section').style.display = 'block';
+                // Ensure summary is visible after comparison is shown
+                const sumEl = document.getElementById('ai-change-summary');
+                if (sumEl) sumEl.style.display = 'block';
             }, 1500);
         } else {
             throw new Error(result.error || 'Processing failed');
@@ -638,6 +766,9 @@ async function processFiles() {
         stopProgressTimer();
         
         console.error('Processing error:', error);
+        appendAiTerminalLine(`Error: ${error.message || error}`);
+        const closeBtn = document.getElementById('ai-terminal-close');
+        if (closeBtn) closeBtn.disabled = false;
         
         if (!processingCancelled) {
             alert(`Error processing files: ${error.message}`);
@@ -739,26 +870,41 @@ function trackRealProgress() {
             
             const progressData = await response.json();
             
-            if (!progressData.processing) {
-                // Processing completed or not in progress
-                clearInterval(progressInterval);
-                return;
-            }
-            
-            // Update progress with real data
             const percentage = Math.round(progressData.overall_percentage || 0);
             const message = progressData.message || 'Processing...';
-            const stage = progressData.stage || `Batch ${progressData.completed_batches}/${progressData.total_batches}`;
+            const stage = progressData.stage || (progressData.completed_batches != null && progressData.total_batches != null
+                ? `Batch ${progressData.completed_batches}/${progressData.total_batches}`
+                : null);
+
+            // Append to terminal when changes detected
+            if (message && message !== aiLastMessage) {
+                appendAiTerminalLine(message);
+                aiLastMessage = message;
+            }
+            if (stage && stage !== aiLastStage) {
+                appendAiTerminalLine(`Stage: ${stage}`);
+                aiLastStage = stage;
+            }
+            if (percentage !== aiLastPercent && percentage >= 0) {
+                appendAiTerminalLine(`Progress: ${percentage}%`);
+                aiLastPercent = percentage;
+            }
             
             updateProgress(percentage, message, stage);
             
-            // If we've reached 100%, stop polling
-            if (percentage >= 100) {
+            // If processing flag false or we've reached 100%, stop polling and enable close
+            if (!progressData.processing || percentage >= 100) {
                 clearInterval(progressInterval);
+                const closeBtn = document.getElementById('ai-terminal-close');
+                if (closeBtn) closeBtn.disabled = false;
+                if (percentage >= 100) {
+                    appendAiTerminalLine('AI processing completed.');
+                }
             }
             
         } catch (error) {
             console.error('Error fetching progress:', error);
+            appendAiTerminalLine(`Error fetching progress: ${error.message}`);
             // Don't stop polling on individual errors, just log them
         }
         
@@ -785,6 +931,195 @@ function displayComparison() {
         const firstFile = Object.keys(processedResults)[0];
         showFileComparison(firstFile, 0);
     }
+}
+
+function renderChangeSummary(results){
+    try{
+        const sumEl = document.getElementById('ai-change-summary');
+        if(!sumEl){ return; }
+        if(!results || typeof results !== 'object'){ sumEl.style.display='none'; return; }
+
+        let overall = {
+            files: 0,
+            totalQuestions: 0,
+            changedQuestions: 0,
+            questionTextChanged: 0,
+            answerChanged: 0,
+            optionsChanged: 0,
+            explanationChanged: 0,
+            explanationAdded: 0,
+            pointsChanged: 0,
+            pointsIncreased: 0,
+            pointsDecreased: 0,
+            unchanged: 0
+        };
+        const perFile = [];
+
+        const compareOptions = (a, b) => {
+            const arrA = Array.isArray(a) ? a : [];
+            const arrB = Array.isArray(b) ? b : [];
+            if (arrA.length !== arrB.length) return true;
+            for (let i=0;i<arrA.length;i++){
+                if (String(arrA[i]) !== String(arrB[i])) return true;
+            }
+            return false;
+        };
+
+        const safeList = (x) => Array.isArray(x) ? x : [];
+
+        Object.keys(results).forEach(filename => {
+            const entry = results[filename] || {};
+            const original = safeList(entry.original);
+            const updated = safeList(entry.updated);
+            const count = Math.max(original.length, updated.length);
+
+            let fileStats = {
+                filename,
+                total: count,
+                changed: 0,
+                questionTextChanged: 0,
+                answerChanged: 0,
+                optionsChanged: 0,
+                explanationChanged: 0,
+                explanationAdded: 0,
+                pointsChanged: 0,
+                pointsIncreased: 0,
+                pointsDecreased: 0,
+                unchanged: 0
+            };
+
+            // Build an index by id for updated to better match
+            const updatedById = new Map();
+            for (let j=0;j<updated.length;j++){
+                const uq = updated[j] || {};
+                if (uq && uq.id != null) updatedById.set(String(uq.id), uq);
+            }
+
+            for (let i=0;i<count;i++){
+                const o = original[i] || {};
+                let u = null;
+                if (o && o.id != null && updatedById.has(String(o.id))) {
+                    u = updatedById.get(String(o.id));
+                } else {
+                    u = updated[i] || {};
+                }
+
+                const changed = {any:false};
+
+                // Question text
+                if (String(o.question || '') !== String(u.question || '')){
+                    fileStats.questionTextChanged++; changed.any = true;
+                }
+                // Correct answer
+                if (String(o.correct_answer || '') !== String(u.correct_answer || '')){
+                    fileStats.answerChanged++; changed.any = true;
+                }
+                // Options
+                if (compareOptions(o.options, u.options)){
+                    fileStats.optionsChanged++; changed.any = true;
+                }
+                // Explanation
+                const oExp = o.explanation == null ? '' : String(o.explanation);
+                const uExp = u.explanation == null ? '' : String(u.explanation);
+                if (oExp !== uExp){
+                    fileStats.explanationChanged++; changed.any = true;
+                    if (!oExp && uExp){ fileStats.explanationAdded++; }
+                }
+                // Points
+                const oPts = Number.isFinite(o.points) ? o.points : null;
+                const uPts = Number.isFinite(u.points) ? u.points : null;
+                if (oPts !== uPts){
+                    fileStats.pointsChanged++; changed.any = true;
+                    if (oPts != null && uPts != null){
+                        if (uPts > oPts) fileStats.pointsIncreased++;
+                        else if (uPts < oPts) fileStats.pointsDecreased++;
+                    }
+                }
+
+                if (changed.any) fileStats.changed++; else fileStats.unchanged++;
+            }
+
+            overall.files++;
+            overall.totalQuestions += fileStats.total;
+            overall.changedQuestions += fileStats.changed;
+            overall.questionTextChanged += fileStats.questionTextChanged;
+            overall.answerChanged += fileStats.answerChanged;
+            overall.optionsChanged += fileStats.optionsChanged;
+            overall.explanationChanged += fileStats.explanationChanged;
+            overall.explanationAdded += fileStats.explanationAdded;
+            overall.pointsChanged += fileStats.pointsChanged;
+            overall.pointsIncreased += fileStats.pointsIncreased;
+            overall.pointsDecreased += fileStats.pointsDecreased;
+            overall.unchanged += fileStats.unchanged;
+
+            perFile.push(fileStats);
+        });
+
+        // Build human-readable summary
+        const pct = (part, total) => total ? Math.round((part/total)*100) : 0;
+        const lines = [];
+        lines.push(`AI finished improving ${overall.totalQuestions} question(s) across ${overall.files} file(s).`);
+        lines.push(`Changes applied to ${overall.changedQuestions} question(s) (${pct(overall.changedQuestions, overall.totalQuestions)}%).`);
+        if (overall.questionTextChanged) lines.push(`• Text clarified/edited in ${overall.questionTextChanged} question(s).`);
+        if (overall.answerChanged) lines.push(`• Correct answers adjusted in ${overall.answerChanged} question(s).`);
+        if (overall.optionsChanged) lines.push(`• Options updated in ${overall.optionsChanged} multiple-choice question(s).`);
+        if (overall.explanationChanged) lines.push(`• Explanations added/updated in ${overall.explanationChanged} question(s) (added: ${overall.explanationAdded}).`);
+        if (overall.pointsChanged) lines.push(`• Difficulty points changed in ${overall.pointsChanged} question(s) (↑ ${overall.pointsIncreased}, ↓ ${overall.pointsDecreased}).`);
+        if (overall.unchanged) lines.push(`• ${overall.unchanged} question(s) remained unchanged.`);
+
+        // HTML rendering
+        const fileItems = perFile.map(f => {
+            const changedPct = pct(f.changed, f.total);
+            return `<li><strong>${escapeHtml(f.filename)}</strong>: ${f.changed}/${f.total} changed (${changedPct}%), text ${f.questionTextChanged}, answers ${f.answerChanged}, options ${f.optionsChanged}, explanations ${f.explanationChanged} (added ${f.explanationAdded}), points ${f.pointsChanged} (↑ ${f.pointsIncreased}, ↓ ${f.pointsDecreased}).</li>`;
+        }).join('');
+
+        const html = `
+            <h4>Summary of AI Changes</h4>
+            <div>${lines.map(escapeHtml).join('<br>')}</div>
+            <div class="summary-grid">
+                <div class="summary-item"><div class="k">Total questions</div><div class="v">${overall.totalQuestions}</div></div>
+                <div class="summary-item"><div class="k">Changed</div><div class="v">${overall.changedQuestions}</div></div>
+                <div class="summary-item"><div class="k">Text edits</div><div class="v">${overall.questionTextChanged}</div></div>
+                <div class="summary-item"><div class="k">Answers updated</div><div class="v">${overall.answerChanged}</div></div>
+                <div class="summary-item"><div class="k">Options updated</div><div class="v">${overall.optionsChanged}</div></div>
+                <div class="summary-item"><div class="k">Explanations</div><div class="v">${overall.explanationChanged} (+${overall.explanationAdded})</div></div>
+                <div class="summary-item"><div class="k">Points changed</div><div class="v">${overall.pointsChanged} (↑${overall.pointsIncreased}/↓${overall.pointsDecreased})</div></div>
+                <div class="summary-item"><div class="k">Unchanged</div><div class="v">${overall.unchanged}</div></div>
+            </div>
+            <div class="files">
+                <div style="margin:8px 0 4px; color:#9ca3af;">Per‑file breakdown:</div>
+                <ul>${fileItems}</ul>
+            </div>
+            <div class="actions">
+                <button class="button small" onclick="copyChangeSummary()">Copy summary</button>
+            </div>
+        `;
+        sumEl.innerHTML = html;
+    }catch(err){
+        console.warn('renderChangeSummary error', err);
+    }
+}
+
+function copyChangeSummary(){
+    try{
+        const el = document.getElementById('ai-change-summary');
+        if(!el) return;
+        // Build plain text version
+        const text = el.innerText || el.textContent || '';
+        navigator.clipboard.writeText(text).catch(()=>{
+            // Fallback
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const sel = window.getSelection();
+            sel.removeAllRanges(); sel.addRange(range);
+            document.execCommand('copy');
+            sel.removeAllRanges();
+        });
+    }catch(e){ console.warn('Copy summary failed', e); }
+}
+
+function escapeHtml(str){
+    return String(str).replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
 }
 
 function showFileComparison(filename, index) {

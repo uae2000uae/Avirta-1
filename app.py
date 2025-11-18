@@ -37,7 +37,25 @@ from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
 
 from jinja2 import Environment, FileSystemLoader
+
+# --- Global progress tracking for AI validation (server-side, not session-based) ---
+from threading import Lock
+PROCESSING_PROGRESS_LOCK = Lock()
+PROCESSING_PROGRESS = {
+    'processing': False,
+    'overall_percentage': 0,
+    'total_batches': 0,
+    'completed_batches': 0,
+    'current_file': '',
+    'message': 'Idle',
+    'stage': '',
+    'total_files': 0,
+}
 env = Environment(loader=FileSystemLoader("templates"))
+
+# In-memory storage for processed results of the last job
+PROCESSED_RESULTS_LOCK = Lock()
+PROCESSED_RESULTS = None
 
 # Create Flask application
 app = Flask(__name__, static_url_path='/static', template_folder="templates")
@@ -2806,21 +2824,19 @@ def process_question_files():
         if not uploaded_files:
             return jsonify({'error': 'No files uploaded'}), 400
         
-        # Initialize progress tracking immediately for frontend polling
-        initial_progress = {
-            'total_batches': 0,
-            'completed_batches': 0,
-            'current_file': '',
-            'current_batch': 0,
-            'total_files': 0,
-            'overall_percentage': 0,
-            'message': 'Preparing files for processing...',
-            'stage': 'Analyzing uploaded files...'
-        }
-        
-        # Store initial progress in session immediately
-        session['processing_progress'] = initial_progress
-        session.modified = True
+        # Initialize global progress tracking immediately for frontend polling
+        with PROCESSING_PROGRESS_LOCK:
+            PROCESSING_PROGRESS.update({
+                'processing': True,
+                'total_batches': 0,
+                'completed_batches': 0,
+                'current_file': '',
+                'current_batch': 0,
+                'total_files': 0,
+                'overall_percentage': 0,
+                'message': 'Preparing files for processing...',
+                'stage': 'Analyzing uploaded files...'
+            })
         
         processed_files = {}
         
@@ -2834,10 +2850,9 @@ def process_question_files():
         file_question_counts = {}
         
         # Update progress while counting questions
-        initial_progress['message'] = 'Counting questions in uploaded files...'
-        initial_progress['stage'] = 'Analyzing file contents...'
-        session['processing_progress'] = initial_progress
-        session.modified = True
+        with PROCESSING_PROGRESS_LOCK:
+            PROCESSING_PROGRESS['message'] = 'Counting questions in uploaded files...'
+            PROCESSING_PROGRESS['stage'] = 'Analyzing file contents...'
         
         # First pass: count questions in each file
         for file in uploaded_files:
@@ -2861,23 +2876,19 @@ def process_question_files():
         
         batch_size = 5  # Must match the batch size in AI validator
         total_batches = (total_questions + batch_size - 1) // batch_size
-        completed_batches = 0
         
-        # Progress tracking variables - shared progress tracker dictionary
-        progress_tracker = {
-            'total_batches': total_batches,
-            'completed_batches': 0,
-            'current_file': '',
-            'current_batch': 0,
-            'total_files': len(file_question_counts),
-            'overall_percentage': 0,
-            'message': 'Starting AI processing...',
-            'stage': f'Ready to process {total_questions} questions in {total_batches} batches'
-        }
-        
-        # Update session with complete progress tracker
-        session['processing_progress'] = progress_tracker
-        session.modified = True
+        # Progress tracking variables - use the global dict so updates are visible to GET endpoint
+        with PROCESSING_PROGRESS_LOCK:
+            PROCESSING_PROGRESS.update({
+                'total_batches': total_batches,
+                'completed_batches': 0,
+                'current_file': '',
+                'current_batch': 0,
+                'total_files': len(file_question_counts),
+                'overall_percentage': 0,
+                'message': 'Starting AI processing...',
+                'stage': f'Ready to process {total_questions} questions in {total_batches} batches'
+            })
         
         for file in uploaded_files:
             if not file.filename.endswith('.json'):
@@ -2893,25 +2904,18 @@ def process_question_files():
                     continue
                 
                 # Update progress for current file
-                progress_tracker['current_file'] = file.filename
-                session['processing_progress'] = progress_tracker
-                session.modified = True
+                with PROCESSING_PROGRESS_LOCK:
+                    PROCESSING_PROGRESS['current_file'] = file.filename
                 
                 # Use AI validator to improve all questions in the file at once
-                # This will provide proper batch-level progress tracking based on terminal output
+                # Pass the global dict as the tracker so the GET endpoint can read live changes
                 try:
                     improved_data = validator._improve_questions_with_openai(
                         questions=original_data,
                         category_id=file.filename.replace('.json', ''),
                         options={},
-                        progress_tracker=progress_tracker
+                        progress_tracker=PROCESSING_PROGRESS
                     )
-                    
-                    # The progress_tracker is updated by the AI validator based on actual batch processing
-                    # Update session with final progress tracker state
-                    session['processing_progress'] = progress_tracker
-                    session.modified = True
-                        
                 except Exception as e:
                     print(f"Error processing file {file.filename}: {str(e)}")
                     # If AI processing fails, just copy original data
@@ -2928,10 +2932,16 @@ def process_question_files():
                 continue
         
         if not processed_files:
+            with PROCESSING_PROGRESS_LOCK:
+                PROCESSING_PROGRESS['processing'] = False
             return jsonify({'error': 'No valid JSON files were processed'}), 400
         
         # Store processed files in session for later use
         session['processed_files'] = processed_files
+        
+        # Mark processing done
+        with PROCESSING_PROGRESS_LOCK:
+            PROCESSING_PROGRESS['processing'] = False
         
         return jsonify({
             'success': True,
@@ -2941,6 +2951,9 @@ def process_question_files():
         
     except Exception as e:
         print(f"Error processing question files: {str(e)}")
+        with PROCESSING_PROGRESS_LOCK:
+            PROCESSING_PROGRESS['processing'] = False
+            PROCESSING_PROGRESS['message'] = f'Error: {str(e)}'
         return jsonify({'error': f'Processing failed: {str(e)}'}), 500
 
 @app.route('/get_processing_progress', methods=['GET'])
@@ -2950,23 +2963,25 @@ def get_processing_progress():
     if not session.get('admin_authenticated', False):
         return jsonify({'error': 'Not authenticated'}), 401
     
-    progress_data = session.get('processing_progress', {})
+    with PROCESSING_PROGRESS_LOCK:
+        progress_snapshot = dict(PROCESSING_PROGRESS)
     
-    if not progress_data:
+    # If nothing in progress and no useful message
+    if not progress_snapshot.get('processing') and progress_snapshot.get('overall_percentage', 0) == 0 and not progress_snapshot.get('message'):
         return jsonify({
             'processing': False,
             'message': 'No processing in progress'
         })
     
     return jsonify({
-        'processing': True,
-        'overall_percentage': progress_data.get('overall_percentage', 0),
-        'total_batches': progress_data.get('total_batches', 0),
-        'completed_batches': progress_data.get('completed_batches', 0),
-        'current_file': progress_data.get('current_file', ''),
-        'message': progress_data.get('message', 'Processing...'),
-        'stage': progress_data.get('stage', ''),
-        'total_files': progress_data.get('total_files', 0)
+        'processing': progress_snapshot.get('processing', False),
+        'overall_percentage': progress_snapshot.get('overall_percentage', 0),
+        'total_batches': progress_snapshot.get('total_batches', 0),
+        'completed_batches': progress_snapshot.get('completed_batches', 0),
+        'current_file': progress_snapshot.get('current_file', ''),
+        'message': progress_snapshot.get('message', 'Processing...'),
+        'stage': progress_snapshot.get('stage', ''),
+        'total_files': progress_snapshot.get('total_files', 0)
     })
 
 @app.route('/download_processed_files', methods=['POST'])
