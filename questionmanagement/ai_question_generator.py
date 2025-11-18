@@ -28,11 +28,11 @@ class AIQuestionGenerator:
 
         Args:
             temp_storage_path (str, optional): Path to store temporarily generated questions.
-                If None, defaults to "contents/ai_generated_questions".
+                If None, defaults to "questionmanagement/ai_generated_questions".
         """
         # Set default path if none provided
         if temp_storage_path is None:
-            temp_storage_path = os.path.join("contents", "ai_generated_questions")
+            temp_storage_path = os.path.join("questionmanagement", "ai_generated_questions")
         # Convert to absolute path if it's a relative path
         if not os.path.isabs(temp_storage_path):
             # Get the absolute path relative to the current script location

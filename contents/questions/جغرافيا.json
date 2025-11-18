@@ -885,8 +885,8 @@
     "points": 300,
     "question": "أي من هذه الدول العربية ليست جزءًا من شبه الجزيرة العربية؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:07:46.245820",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:02:52.759229",
+    "use_count": 1
   },
   {
     "active": true,
@@ -974,8 +974,8 @@
     "points": 100,
     "question": "تعتبر قارة أستراليا دولةً وقارةً في نفس الوقت.",
     "type": "true_false",
-    "updated_at": "2025-09-21T16:07:54.890825",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:03:10.694609",
+    "use_count": 1
   },
   {
     "active": true,
@@ -987,8 +987,8 @@
     "points": 100,
     "question": "ما هي عاصمة اليابان؟",
     "type": "text",
-    "updated_at": "2025-09-21T16:07:54.890825",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:08:41.764659",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1013,8 +1013,8 @@
     "points": 200,
     "question": "هل تعتبر قارة إفريقيا موطنًا لأكبر عدد من الدول؟",
     "type": "true_false",
-    "updated_at": "2025-09-21T16:08:02.243417",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:03:02.332836",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1064,8 +1064,8 @@
     "points": 400,
     "question": "ما هي الدولة التي تشتهر بوجود جبل كليمنجارو؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:08:02.243417",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:02:41.973866",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1160,8 +1160,8 @@
     "points": 200,
     "question": "ما هي عاصمة أستراليا؟",
     "type": "text",
-    "updated_at": "2025-09-21T16:08:21.183652",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:07:41.865078",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1224,8 +1224,8 @@
     "points": 500,
     "question": "ما هو اسم أكبر صحراء في العالم؟",
     "type": "text",
-    "updated_at": "2025-09-21T16:08:21.183652",
-    "use_count": 0
+    "updated_at": "2025-11-19T00:02:32.381658",
+    "use_count": 1
   },
   {
     "active": true,

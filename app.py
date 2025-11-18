@@ -23,15 +23,15 @@ if current_dir not in sys.path:
 # Import modules
 from contents.admin_controls.admin_setup import AdminSetup
 from contents.admin_controls.github_integration import GitHubIntegration
-from contents.categories_questions.category_manager import CategoryManager
-from contents.categories_questions.question_uploader import QuestionUploader
+from questionmanagement.categories_questions.category_manager import CategoryManager
+from questionmanagement.categories_questions.question_uploader import QuestionUploader
 from contents.game_room.game_room import GameRoom
 from contents.game_room.game_status_manager import GameStatusManager, add_game_event, set_game_status_manager
-from contents.game_content.question_manager import QuestionManager
-from contents.bulk_upload.bulk_import import BulkImport
-from contents.reported_questions.reported_question_manager import ReportedQuestionManager
-from contents.fastest.fastest_game_room import FastestGameRoom
-from contents.hex.hex_game_room import HexGameRoom
+from questionmanagement.question_manager import QuestionManager
+from questionmanagement.bulk_upload.bulk_import import BulkImport
+from questionmanagement.reported_questions.reported_question_manager import ReportedQuestionManager
+from contents.thehive.thehive import register_hive_routes
+from contents.fastest.fastest import register_fastest_routes
 from questionmanagement.question_bank import QuestionBank, increment_use_count, set_question_bank_instance
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
@@ -99,7 +99,7 @@ bulk_import = BulkImport(question_uploader, category_manager)
 question_bank = QuestionBank(questions_dir)
 # Update the singleton instance to use the custom instance with the correct path
 set_question_bank_instance(question_bank)
-reported_questions_dir = os.path.join(os.path.dirname(__file__), "contents", "reported_questions")
+reported_questions_dir = os.path.join(os.path.dirname(__file__), "questionmanagement", "reported_questions")
 reported_question_manager = ReportedQuestionManager(reported_questions_dir)
 
 # ANSI escape codes for red text (assuming '.error' means red styling)
@@ -140,6 +140,12 @@ game_status_manager = GameStatusManager(max_events_per_room=100, persistence_dir
 
 # Set the global GameStatusManager instance
 set_game_status_manager(game_status_manager)
+
+# Register The Hive routes in a separate module to keep app.py clean
+register_hive_routes(app, game_rooms, game_status_manager, question_uploader, add_game_event)
+
+# Register Fastest game routes in a separate module to keep app.py clean
+register_fastest_routes(app, game_rooms, game_status_manager, question_uploader, add_game_event, admin_setup)
 
 @app.route('/')
 def index():
@@ -358,475 +364,9 @@ def create_room():
     max_players = admin_setup.game_settings.get('max_players_per_room', 10)
     # Get the maximum number of categories per room from admin settings
     max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
-    return render_template('create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
+    return render_template('columns/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
 
 
-@app.route('/fastest/create_room', methods=['GET', 'POST'])
-def fastest_create_room():
-    """Create a new 'Who is the fastest' game room."""
-    if request.method == 'POST':
-        room_name = request.form.get('room_name')
-        host_name = request.form.get('host_name')
-        selected_categories = request.form.getlist('categories')
-        additional_players = request.form.getlist('additional_players')
-        selected_point_values = request.form.getlist('point_values')
-        selected_question_types = request.form.getlist('question_types')
-
-        # Convert point values to integers and sort in descending order
-        point_values = sorted([int(pv) for pv in selected_point_values], reverse=True)
-
-        if not room_name or not host_name or not selected_categories or not point_values or not selected_question_types:
-            session['error_modal'] = 'Please fill in all fields, select at least one category, at least one point value, and at least one question type.'
-            return redirect(url_for('fastest_create_room'))
-
-        # Limit to max_categories_per_room (default is 7)
-        max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
-        selected_categories = selected_categories[:max_categories]
-
-        # Create a unique room ID
-        room_id = f"fastest_{uuid.uuid4().hex[:8]}"
-
-        # Create the Fastest game room with custom point values and question types
-        game_room = FastestGameRoom(room_id, room_name, host_name, selected_categories, 
-                                 max_players=admin_setup.game_settings.get('max_players_per_room', 10),
-                                 point_values=point_values,
-                                 question_types=selected_question_types)
-
-        # Get the maximum number of players per room from admin settings
-        max_players = admin_setup.game_settings.get('max_players_per_room', 10)
-
-        # Add additional players to the room, limited by max_players
-        player_count = 1  # Start with 1 for the host
-        for player_name in additional_players:
-            if player_name and player_name.strip():  # Only add non-empty player names
-                if player_count < max_players:  # Check if we've reached the maximum
-                    game_room.add_player(player_name.strip())
-                    player_count += 1
-                else:
-                    session['error_modal'] = f'Maximum number of players ({max_players}) reached. Some players were not added.'
-                    break
-
-        # Reload questions from disk to ensure we have the latest data
-        question_uploader.load_questions()
-
-        # Remove any duplicate questions
-        question_uploader.remove_duplicate_questions()
-
-        # Create the game board with custom point values and configurable number of questions per category
-        questions_per_category = admin_setup.game_settings.get('questions_per_category', 10)
-        success, enough_questions, error_details = game_room.create_board(question_uploader, questions_per_category)
-
-        # Check if there were enough questions that matched the criteria
-        if not enough_questions:
-            # Use detailed error message from the sophisticated algorithm
-            detailed_message = error_details.get('overall_message', 'Couldn\'t find enough questions of the selected criteria.')
-            # Convert newlines to HTML breaks for proper display in modal
-            detailed_message_html = detailed_message.replace('\n', '<br>')
-            session['error_modal'] = detailed_message_html
-            return redirect(url_for('fastest_create_room'))
-
-        # Store the game room
-        game_rooms[room_id] = game_room
-
-        # Persist the game room to disk
-        game_status_manager.persist_game_room(room_id, game_room)
-
-        # Store the room ID in the session
-        session['room_id'] = room_id
-        session['player_name'] = host_name
-
-        # Add a game event for the game starting
-        add_game_event(room_id, 'game_started', {
-            'player_name': host_name,
-            'message': f'Who is the fastest game started by {host_name}',
-            'categories': selected_categories,
-            'point_values': point_values,
-            'question_types': selected_question_types,
-            'players': game_room.players
-        })
-
-        # Get the first question
-        game_room.get_next_question()
-
-        return redirect(url_for('fastest_play', room_id=room_id))
-
-    # GET request
-    categories = get_categories_with_questions()
-    # Get the maximum number of players per room from admin settings
-    max_players = admin_setup.game_settings.get('max_players_per_room', 10)
-    # Get the maximum number of categories per room from admin settings
-    max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
-    return render_template('Fastest/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
-
-
-@app.route('/hex/create_room', methods=['GET', 'POST'])
-def hex_create_room():
-    """Create a new two-team hex board game room (5x5)."""
-    if request.method == 'POST':
-        room_name = request.form.get('room_name')
-        team_a = request.form.get('team_a')
-        team_b = request.form.get('team_b')
-        selected_point_values = request.form.getlist('point_values')
-
-        if not room_name or not team_a or not team_b or not selected_point_values:
-            session['error_modal'] = 'Please enter room name, both team names, and select at least one point value.'
-            return redirect(url_for('hex_create_room'))
-
-        # Convert to ints
-        try:
-            point_values = sorted([int(pv) for pv in selected_point_values])
-        except ValueError:
-            session['error_modal'] = 'Invalid point values.'
-            return redirect(url_for('hex_create_room'))
-
-        # Create a unique room ID
-        room_id = f"hex_{uuid.uuid4().hex[:8]}"
-
-        # Initialize game room
-        hex_room = HexGameRoom(room_id, room_name, team_a.strip(), team_b.strip(), point_values=point_values)
-
-        # Reload questions and prepare board (multiple-choice enforced within HexGameRoom)
-        question_uploader.load_questions()
-        question_uploader.remove_duplicate_questions()
-        success, enough_questions, error_details = hex_room.create_board(question_uploader)
-        if not enough_questions:
-            detailed_message = error_details.get('overall_message', 'Could not prepare enough questions for the board.')
-            session['error_modal'] = detailed_message.replace('\n', '<br>')
-            return redirect(url_for('hex_create_room'))
-
-        # Store
-        game_rooms[room_id] = hex_room
-        game_status_manager.persist_game_room(room_id, hex_room)
-
-        # Session store as host = team_a by default (for permissions if needed)
-        session['room_id'] = room_id
-        session['player_name'] = team_a
-
-        add_game_event(room_id, 'game_started', {
-            'message': f'The Hive game started: {team_a} vs {team_b}',
-            'teams': [team_a, team_b],
-            'point_values': point_values,
-        })
-
-        return redirect(url_for('hex_play', room_id=room_id))
-
-    # GET
-    # Provide common point choices
-    default_points = [100, 200, 300, 400, 500]
-    return render_template('Hex/create_room.html', default_points=default_points)
-
-
-@app.route('/hex/play/<room_id>')
-def hex_play(room_id):
-    if room_id not in game_rooms:
-        loaded = game_status_manager.load_game_room(room_id)
-        if not loaded:
-            flash('Room not found', 'error')
-            return redirect(url_for('index'))
-        game_rooms[room_id] = loaded
-    hex_room = game_rooms[room_id]
-    return render_template('Hex/play.html', room=hex_room.to_dict())
-
-
-@app.route('/hex/select_cell', methods=['POST'])
-def hex_select_cell():
-    room_id = request.form.get('room_id')
-    cell_index = int(request.form.get('cell_index', -1))
-    if room_id not in game_rooms:
-        return jsonify({'success': False, 'message': 'Room not found'}), 404
-    hex_room = game_rooms[room_id]
-    result = hex_room.select_cell(cell_index, question_uploader)
-    if result.get('success'):
-        add_game_event(room_id, 'question_selected', {
-            'cell_index': cell_index,
-            'points': result['cell']['points']
-        })
-    game_status_manager.persist_game_room(room_id, hex_room)
-    return jsonify(result)
-
-
-@app.route('/hex/answer', methods=['POST'])
-def hex_answer():
-    room_id = request.form.get('room_id')
-    team_name = request.form.get('team_name')
-    answer = request.form.get('answer')
-    if room_id not in game_rooms:
-        return jsonify({'success': False, 'message': 'Room not found'}), 404
-    hex_room = game_rooms[room_id]
-    res = hex_room.submit_answer(team_name, answer)
-    if res.get('success'):
-        evt = 'answer_correct' if res.get('correct') else 'answer_incorrect'
-        add_game_event(room_id, evt, {
-            'team': team_name,
-            'cell_index': res['cell']['id'] if res.get('cell') else None,
-            'points': res['cell']['points'] if res.get('cell') else None
-        })
-    game_status_manager.persist_game_room(room_id, hex_room)
-    return jsonify(res)
-
-
-@app.route('/hex/game_updates/<room_id>')
-def hex_game_updates(room_id):
-    if room_id not in game_rooms:
-        loaded = game_status_manager.load_game_room(room_id)
-        if not loaded:
-            return jsonify({'error': 'Room not found'}), 404
-        game_rooms[room_id] = loaded
-    hex_room = game_rooms[room_id]
-    events = game_status_manager.get_events(room_id)
-    data = hex_room.get_board_state()
-    data['events'] = events
-    return jsonify(data)
-
-@app.route('/fastest/play/<room_id>')
-def fastest_play(room_id):
-    """Play the 'Who is the fastest' game."""
-    # Check if the room exists
-    if room_id not in game_rooms:
-        # Try to load it from persistence
-        game_room = game_status_manager.load_game_room(room_id)
-        if game_room:
-            # Add it to the in-memory dictionary
-            game_rooms[room_id] = game_room
-        else:
-            session['error_modal'] = 'Game room not found.'
-            return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the player is in the room
-    player_name = session.get('player_name')
-    if not player_name or player_name not in game_room.players:
-        session['error_modal'] = 'You are not a player in this room.'
-        return redirect(url_for('index'))
-
-    # Check if the player is the host
-    is_host = player_name == game_room.host
-
-    # Get the current question and game stats
-    current_question = game_room.current_question
-    stats = game_room.get_game_stats()
-
-    # Render the play template
-    return render_template('Fastest/play.html', 
-                          room=game_room, 
-                          player_name=player_name, 
-                          is_host=is_host,
-                          current_question=current_question,
-                          stats=stats)
-
-@app.route('/fastest/reveal_question', methods=['POST'])
-def fastest_reveal_question():
-    """Reveal the current question and start the timer."""
-    room_id = request.form.get('room_id')
-
-    # Check if the room exists
-    if room_id not in game_rooms:
-        flash('Game room not found.')
-        return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the player is the host
-    player_name = session.get('player_name')
-    if not player_name or player_name != game_room.host:
-        flash('Only the host can reveal questions.')
-        return redirect(url_for('fastest_play', room_id=room_id))
-
-    # Reveal the question
-    game_room.reveal_question()
-
-    # Add a game event for the question being revealed
-    add_game_event(room_id, 'question_revealed', {
-        'player_name': player_name,
-        'message': f'Question revealed by {player_name}',
-        'question_number': game_room.current_question_number,
-        'total_questions': game_room.total_questions
-    })
-
-    # Persist the game room to disk
-    game_status_manager.persist_game_room(room_id, game_room)
-
-    return redirect(url_for('fastest_play', room_id=room_id))
-
-@app.route('/fastest/reveal_answer', methods=['POST'])
-def fastest_reveal_answer():
-    """Reveal the answer to the current question."""
-    room_id = request.form.get('room_id')
-
-    # Check if the room exists
-    if room_id not in game_rooms:
-        flash('Game room not found.')
-        return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the player is the host
-    player_name = session.get('player_name')
-    if not player_name or player_name != game_room.host:
-        flash('Only the host can reveal answers.')
-        return redirect(url_for('fastest_play', room_id=room_id))
-
-    # Reveal the answer
-    game_room.reveal_answer()
-
-    # Add a game event for the answer being revealed
-    add_game_event(room_id, 'answer_revealed', {
-        'player_name': player_name,
-        'message': f'Answer revealed by {player_name}',
-        'question_number': game_room.current_question_number,
-        'total_questions': game_room.total_questions
-    })
-
-    # Persist the game room to disk
-    game_status_manager.persist_game_room(room_id, game_room)
-
-    return redirect(url_for('fastest_play', room_id=room_id))
-
-@app.route('/fastest/award_points', methods=['POST'])
-def fastest_award_points():
-    """Award points to a player for answering correctly."""
-    room_id = request.form.get('room_id')
-    player_name = request.form.get('player_name')
-
-    # Check if the room exists
-    if room_id not in game_rooms:
-        flash('Game room not found.')
-        return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the current player is the host
-    current_player = session.get('player_name')
-    if not current_player or current_player != game_room.host:
-        flash('Only the host can award points.')
-        return redirect(url_for('fastest_play', room_id=room_id))
-
-    # Award points to the player
-    points = game_room.current_question.get('points', 0)
-    game_room.award_points_to_player(player_name)
-
-    # Add a game event for the points being awarded
-    add_game_event(room_id, 'points_awarded', {
-        'player_name': player_name,
-        'message': f'{player_name} answered correctly and earned {points} points',
-        'points': points,
-        'question_number': game_room.current_question_number,
-        'total_questions': game_room.total_questions
-    })
-
-    # Persist the game room to disk
-    game_status_manager.persist_game_room(room_id, game_room)
-
-    return redirect(url_for('fastest_leaderboard', room_id=room_id))
-
-@app.route('/fastest/next_question', methods=['POST'])
-def fastest_next_question():
-    """Move to the next question."""
-    room_id = request.form.get('room_id')
-
-    # Check if the room exists
-    if room_id not in game_rooms:
-        flash('Game room not found.')
-        return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the player is the host
-    player_name = session.get('player_name')
-    if not player_name or player_name != game_room.host:
-        flash('Only the host can move to the next question.')
-        return redirect(url_for('fastest_play', room_id=room_id))
-
-    # Get the next question
-    next_question = game_room.get_next_question()
-
-    # Check if there are no more questions
-    if not next_question:
-        flash('No more questions available.')
-        return redirect(url_for('fastest_leaderboard', room_id=room_id))
-
-    # Add a game event for moving to the next question
-    add_game_event(room_id, 'next_question', {
-        'player_name': player_name,
-        'message': f'Moving to question {game_room.current_question_number} of {game_room.total_questions}',
-        'question_number': game_room.current_question_number,
-        'total_questions': game_room.total_questions
-    })
-
-    # Persist the game room to disk
-    game_status_manager.persist_game_room(room_id, game_room)
-
-    return redirect(url_for('fastest_play', room_id=room_id))
-
-@app.route('/fastest/leaderboard/<room_id>')
-def fastest_leaderboard(room_id):
-    """Display the leaderboard for the 'Who is the fastest' game."""
-    # Check if the room exists
-    if room_id not in game_rooms:
-        # Try to load it from persistence
-        game_room = game_status_manager.load_game_room(room_id)
-        if game_room:
-            # Add it to the in-memory dictionary
-            game_rooms[room_id] = game_room
-        else:
-            flash('Game room not found.')
-            return redirect(url_for('index'))
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Check if the player is in the room
-    player_name = session.get('player_name')
-    if not player_name or player_name not in game_room.players:
-        flash('You are not a player in this room.')
-        return redirect(url_for('index'))
-
-    # Check if the player is the host
-    is_host = player_name == game_room.host
-
-    # Get the leaderboard
-    leaderboard = game_room.get_leaderboard()
-
-    # Render the leaderboard template
-    return render_template('Fastest/leaderboard.html', 
-                          room=game_room, 
-                          room_id=room_id,
-                          player_name=player_name, 
-                          is_host=is_host,
-                          leaderboard=leaderboard)
-
-@app.route('/api/fastest_game_updates/<room_id>')
-def fastest_game_updates(room_id):
-    """Get updates for the 'Who is the fastest' game."""
-    # Check if the room exists
-    if room_id not in game_rooms:
-        return jsonify({'error': 'Game room not found'})
-
-    # Get the game room
-    game_room = game_rooms[room_id]
-
-    # Get the game stats
-    stats = game_room.get_game_stats()
-
-    # Get the events for this room
-    events = game_status_manager.get_events(room_id)
-
-    # Return the updates
-    return jsonify({
-        'refresh': False,  # Don't refresh the page by default
-        'question_revealed': stats['question_revealed'],
-        'answer_revealed': stats['answer_revealed'],
-        'current_question_number': stats['current_question_number'],
-        'total_questions': stats['total_questions'],
-        'current_question': stats['current_question'],
-        'events': events  # Include events for status updates
-    })
 
 @app.route('/join_room', methods=['GET', 'POST'])
 def join_room():
@@ -883,7 +423,7 @@ def join_room():
         return redirect(url_for('joined_room', room_id=room_id))
 
     # GET request
-    return render_template('join_room.html')
+    return render_template('columns/join_room.html')
 
 @app.route('/joined_room/<room_id>')
 def joined_room(room_id):
@@ -931,7 +471,7 @@ def joined_room(room_id):
     session.pop('acting_player', None)
 
     return render_template(
-        'joined_room.html',
+        'columns/joined_room.html',
         room=game_room,
         player_name=player_name,
         player_tools=player_tools,
@@ -1103,7 +643,7 @@ def game_room(room_id):
     session.pop('acting_player', None)
 
     # Determine which template to use based on the room_id
-    template = 'game_room.html'
+    template = 'columns/game_room.html'
 
     return render_template(
         template,
@@ -1217,7 +757,7 @@ def question(room_id):
 
     # Create response with template
     response = make_response(render_template(
-        'question.html',
+        'columns/question.html',
         room_id=room_id,
         question=question,
         player_name=player_name,
@@ -1477,7 +1017,7 @@ def leaderboard(room_id):
         leaderboard = game_room.question_manager.get_leaderboard(all_players=game_room.players)
 
     # Determine which template to use based on the room_id
-    template = 'leaderboard.html'
+    template = 'columns/leaderboard.html'
 
     return render_template(
         template,

@@ -118,7 +118,7 @@
                         const MM = parseInt(m[5], 10);
                         const fullYear = 2000 + yy; // assume 2000-based
                         // Month in JS Date is 0-based
-                        const d = new Date(fullYear, (mm - 1), dd, HH, MM, 0, 0);
+                        const d = new Date(fullYear, (mm - 1), dd, HH, MM);
                         if (!isNaN(d)) return d;
                     }
                 } catch (_) { /* ignore */ }
@@ -130,7 +130,9 @@
                 .then(data => {
                     const ts = parseTimestamp(data && data.lastSynced);
                     if (ts) {
-                        timestampInfo.textContent = `Last synced: ${ts.toLocaleDateString()} ${ts.toLocaleTimeString()}`;
+                        const dateStr = ts.toLocaleDateString();
+                        const timeStr = ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                        timestampInfo.textContent = `Last synced: ${dateStr} ${timeStr}`;
                     } else if (data && data.lastSynced) {
                         // Fallback: show raw value if parsing fails
                         timestampInfo.textContent = `Last synced: ${data.lastSynced}`;

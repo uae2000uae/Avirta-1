@@ -2207,3 +2207,11 @@ footer {
         opacity: 1;
     }
 }
+
+
+/* Fastest create-room: make disabled categories appear 70% transparent (30% opacity) */
+/* Applies when JS adds .disabled to the label, or when the checkbox itself is disabled */
+.category-checkbox input:disabled + label,
+.category-checkbox label.disabled {
+    opacity: 0.5; /* 50% transparent */
+}

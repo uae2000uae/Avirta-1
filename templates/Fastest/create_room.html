@@ -91,4 +91,83 @@
     </form>
 </div>
 
+<script>
+(function() {
+  function getSelectedValues(name) {
+    const nodes = document.querySelectorAll('input[name="' + name + '"]:checked');
+    return Array.from(nodes).map(n => n.value);
+  }
+
+  function updateCategoryAvailability() {
+    const points = getSelectedValues('point_values');
+    const types = getSelectedValues('question_types');
+
+    const params = new URLSearchParams();
+    if (points.length) params.set('point_values', points.join(','));
+    if (types.length) params.set('question_types', types.join(','));
+
+    fetch('/api/fastest/category_availability?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        const required = data.required_per_category || 10;
+        const availability = data.categories || {};
+        document.querySelectorAll('input[name="categories"]').forEach(cb => {
+          const cid = cb.value;
+          const info = availability[cid] || {count: 0, enough: false};
+          const label = document.querySelector('label[for="' + cb.id + '"]');
+          if (!info.enough) {
+            cb.checked = false;
+            cb.disabled = true;
+            if (label) {
+              label.classList.add('disabled');
+              label.title = `Not enough questions for selected filters (has ${info.count}, needs ${required})`;
+            }
+          } else {
+            cb.disabled = false;
+            if (label) {
+              label.classList.remove('disabled');
+              label.title = '';
+            }
+          }
+        });
+      })
+      .catch(() => { /* ignore errors; keep current state */ });
+  }
+
+  function enforceMaxCategories() {
+    const form = document.querySelector('form[data-max-categories]');
+    if (!form) return;
+    const max = parseInt(form.getAttribute('data-max-categories')) || 7;
+    const selected = Array.from(document.querySelectorAll('input[name="categories"]:checked'));
+    const selectable = Array.from(document.querySelectorAll('input[name="categories"]:not(:checked):not(:disabled)'));
+    if (selected.length >= max) {
+      selectable.forEach(cb => cb.disabled = true);
+    } else {
+      selectable.forEach(cb => cb.disabled = false);
+    }
+  }
+
+  function onFiltersChanged() {
+    updateCategoryAvailability();
+    // enforce later, after availability applied
+    setTimeout(enforceMaxCategories, 0);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Bind change listeners to filters
+    document.querySelectorAll('input[name="point_values"], input[name="question_types"]').forEach(el => {
+      el.addEventListener('change', onFiltersChanged);
+    });
+
+    // Also enforce max categories on category selection
+    document.querySelectorAll('input[name="categories"]').forEach(el => {
+      el.addEventListener('change', enforceMaxCategories);
+    });
+
+    // Initial update
+    onFiltersChanged();
+  });
+})();
+</script>
+
 {% endblock %}

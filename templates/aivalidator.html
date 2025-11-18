@@ -406,8 +406,17 @@
     color: #569cd6;
 }
 
-.json-null {
+    .json-null {
     color: #569cd6;
+}
+
+/* Diff highlighting for changed lines in comparison */
+.diff-line-changed {
+    display: block;
+    background-color: rgba(255, 193, 7, 0.18); /* soft amber */
+    border-left: 3px solid #ffc107;
+    padding-left: 8px;
+    margin-left: -8px; /* visually align with padding */
 }
 
 .comparison-actions {
@@ -1122,6 +1131,110 @@ function escapeHtml(str){
     return String(str).replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
 }
 
+function computeChangedFields(originalList, updatedList) {
+    const fields = ['question','correct_answer','options','explanation','points'];
+    const safeList = (x) => Array.isArray(x) ? x : [];
+    const orig = safeList(originalList);
+    const upd = safeList(updatedList);
+
+    // Index by id
+    const byIdOrig = new Map();
+    const byIdUpd = new Map();
+    orig.forEach(o => { if (o && o.id != null) byIdOrig.set(String(o.id), o); });
+    upd.forEach(u => { if (u && u.id != null) byIdUpd.set(String(u.id), u); });
+
+    // Union of ids
+    const ids = new Set([...byIdOrig.keys(), ...byIdUpd.keys()]);
+
+    const changed = {}; // id -> Set(fields)
+    ids.forEach(id => {
+        const o = byIdOrig.get(id) || {};
+        const u = byIdUpd.get(id) || {};
+        const set = new Set();
+        fields.forEach(f => {
+            if (f === 'options') {
+                const ao = Array.isArray(o.options) ? o.options.map(String) : [];
+                const au = Array.isArray(u.options) ? u.options.map(String) : [];
+                if (ao.length !== au.length || ao.some((v,i)=>v!==au[i])) set.add('options');
+            } else {
+                const vo = o[f];
+                const vu = u[f];
+                // Treat undefined vs empty string as different to be explicit
+                if (String(vo) !== String(vu)) set.add(f);
+            }
+        });
+        if (set.size > 0) changed[id] = set;
+    });
+    return changed;
+}
+
+function findLinesToHighlight(jsonText, changedById) {
+    const lines = String(jsonText).split('\n');
+    const result = new Set();
+    let currentId = null;
+    let highlightingOptions = false;
+
+    // Regexes for id and fields
+    const idRegex = /^\s*"id"\s*:\s*("([^"]+)"|([0-9]+))\s*[,}]?/;
+    const fieldRegexes = {
+        question: /^\s*"question"\s*:/,
+        correct_answer: /^\s*"correct_answer"\s*:/,
+        options: /^\s*"options"\s*:/,
+        explanation: /^\s*"explanation"\s*:/,
+        points: /^\s*"points"\s*:/
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Check for end of object: a line that is just '}' or '},'
+        const trimmed = line.trim();
+        if (trimmed === '}' || trimmed === '},') {
+            currentId = null;
+            highlightingOptions = false;
+        }
+
+        // Capture id within object
+        const idMatch = line.match(idRegex);
+        if (idMatch) {
+            const idVal = idMatch[2] != null ? idMatch[2] : (idMatch[3] != null ? idMatch[3] : null);
+            if (idVal != null) currentId = String(idVal);
+        }
+
+        // If we are currently highlighting options array, continue until closing bracket
+        if (highlightingOptions) {
+            result.add(i);
+            if (line.includes(']')) highlightingOptions = false;
+            continue;
+        }
+
+        if (currentId && changedById && changedById[currentId] instanceof Set) {
+            const changedFields = changedById[currentId];
+            for (const f of changedFields) {
+                const rx = fieldRegexes[f];
+                if (rx && rx.test(line)) {
+                    result.add(i);
+                    if (f === 'options') {
+                        // Also highlight subsequent lines of the array until closing bracket
+                        highlightingOptions = !line.includes(']');
+                    }
+                    break; // only need to match first relevant field per line
+                }
+            }
+        }
+    }
+    return result;
+}
+
+function wrapHighlightedLines(highlightedHtml, linesToMark) {
+    const parts = String(highlightedHtml).split('\n');
+    for (let i = 0; i < parts.length; i++) {
+        if (linesToMark && linesToMark.has(i)) {
+            parts[i] = '<span class="diff-line-changed">' + parts[i] + '</span>';
+        }
+    }
+    return parts.join('\n');
+}
+
 function showFileComparison(filename, index) {
     // Update active tab
     document.querySelectorAll('.file-tab').forEach(tab => tab.classList.remove('active'));
@@ -1138,10 +1251,20 @@ function showFileComparison(filename, index) {
     // Format JSON content
     const originalJSON = JSON.stringify(fileData.original, null, 2);
     const updatedJSON = JSON.stringify(fileData.updated, null, 2);
+
+    // Compute changed fields map by ID (apply to both sides)
+    const changedById = computeChangedFields(fileData.original, fileData.updated);
+
+    // Determine which lines to highlight on each side
+    const origLinesToMark = findLinesToHighlight(originalJSON, changedById);
+    const updLinesToMark = findLinesToHighlight(updatedJSON, changedById);
     
-    // Set content with syntax highlighting
-    originalContent.innerHTML = syntaxHighlightJSON(originalJSON);
-    updatedContent.innerHTML = syntaxHighlightJSON(updatedJSON);
+    // Set content with syntax highlighting, then wrap changed lines
+    const originalHighlighted = syntaxHighlightJSON(originalJSON);
+    const updatedHighlighted = syntaxHighlightJSON(updatedJSON);
+
+    originalContent.innerHTML = wrapHighlightedLines(originalHighlighted, origLinesToMark);
+    updatedContent.innerHTML = wrapHighlightedLines(updatedHighlighted, updLinesToMark);
     
     // Generate and set line numbers
     originalLineNumbers.textContent = generateLineNumbers(originalJSON);
