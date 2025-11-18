@@ -98,14 +98,42 @@
         // Fetch and display timestamp information
         const timestampInfo = document.getElementById('timestamp-info');
         if (timestampInfo) {
+            const parseTimestamp = (value) => {
+                try {
+                    if (!value) return null;
+                    // Try native parsing first (handles ISO strings)
+                    const native = new Date(value);
+                    if (!isNaN(native)) return native;
+
+                    // Handle custom formats like YYMMDD.HHMM and YYMMDD.HH.MM and YYMMDDHHMM
+                    const s = String(value).trim();
+                    let m = s.match(/^(\d{2})(\d{2})(\d{2})\.(\d{2})(\d{2})$/); // YYMMDD.HHMM
+                    if (!m) m = s.match(/^(\d{2})(\d{2})(\d{2})\.(\d{2})\.(\d{2})$/); // YYMMDD.HH.MM
+                    if (!m) m = s.match(/^(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/); // YYMMDDHHMM
+                    if (m) {
+                        const yy = parseInt(m[1], 10);
+                        const mm = parseInt(m[2], 10); // 1-12
+                        const dd = parseInt(m[3], 10);
+                        const HH = parseInt(m[4], 10);
+                        const MM = parseInt(m[5], 10);
+                        const fullYear = 2000 + yy; // assume 2000-based
+                        // Month in JS Date is 0-based
+                        const d = new Date(fullYear, (mm - 1), dd, HH, MM, 0, 0);
+                        if (!isNaN(d)) return d;
+                    }
+                } catch (_) { /* ignore */ }
+                return null;
+            };
+
             fetch('/timestamp.json')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.lastSynced) {
-                        const timestamp = new Date(data.lastSynced);
-                        const formattedDate = timestamp.toLocaleDateString();
-                        const formattedTime = timestamp.toLocaleTimeString();
-                        timestampInfo.textContent = `Last synced: ${formattedDate} ${formattedTime}`;
+                    const ts = parseTimestamp(data && data.lastSynced);
+                    if (ts) {
+                        timestampInfo.textContent = `Last synced: ${ts.toLocaleDateString()} ${ts.toLocaleTimeString()}`;
+                    } else if (data && data.lastSynced) {
+                        // Fallback: show raw value if parsing fails
+                        timestampInfo.textContent = `Last synced: ${data.lastSynced}`;
                     } else {
                         timestampInfo.textContent = 'Last synced: Unknown';
                     }
