@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "prompt": "facts about the human body",
+    "question_type": "mixed",
+    "difficulty": "mixed",
+    "num_questions": 5,
+    "include_explanations": true,
+    "language": "arabic",
+    "seed": 100,
+    "timestamp": "2025-09-17T01:17:07.332193"
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "ما هو أكبر عضو في جسم الإنسان؟",
+      "options": [
+        "الكبد",
+        "الجلد",
+        "القلب",
+        "الدماغ"
+      ],
+      "correct_answer": "الجلد",
+      "explanation": "الجلد هو أكبر عضو في جسم الإنسان حيث يغطي الجسم بالكامل ويعمل كحاجز واقٍ.",
+      "points": 100
+    },
+    {
+      "type": "true_false",
+      "question": "القلب هو العضلة الوحيدة في جسم الإنسان التي لا تتوقف عن العمل طوال حياة الإنسان.",
+      "correct_answer": "True",
+      "explanation": "القلب يعمل باستمرار لضخ الدم في جميع أنحاء الجسم ولا يتوقف عن العمل إلا في حالات الطوارئ أو عند الموت.",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "كم عدد العظام في جسم الإنسان البالغ؟",
+      "correct_answer": "206",
+      "explanation": "يحتوي جسم الإنسان البالغ على 206 عظمة، تتوزع في جميع أنحاء الجسم لتوفير الدعم والحماية.",
+      "points": 300
+    },
+    {
+      "type": "multiple_choice",
+      "question": "ما هو العنصر الأكثر وفرة في جسم الإنسان؟",
+      "options": [
+        "الكربون",
+        "الأكسجين",
+        "الهيدروجين",
+        "النيتروجين"
+      ],
+      "correct_answer": "الأكسجين",
+      "explanation": "الأكسجين يشكل حوالي 65% من وزن جسم الإنسان، وهو العنصر الأكثر وفرة في الجسم.",
+      "points": 400
+    },
+    {
+      "type": "true_false",
+      "question": "تنمو الأظافر بشكل أسرع في الصيف مقارنة بالشتاء.",
+      "correct_answer": "True",
+      "explanation": "تنمو الأظافر بشكل أسرع في الصيف بسبب زيادة تدفق الدم إلى اليدين بسبب الحرارة.",
+      "points": 500
+    }
+  ]
+}

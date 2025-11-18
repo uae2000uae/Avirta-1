@@ -1,0 +1,176 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "ما هو الشمس؟",
+    "options": [
+      "نجم",
+      "كوكب",
+      "قمر",
+      "كويكب"
+    ],
+    "correct_answer": "نجم",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو أكبر كوكب في النظام الشمسي؟",
+    "options": [
+      "الزهرة",
+      "المريخ",
+      "الأرض",
+      "المشتري"
+    ],
+    "correct_answer": "المشتري",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو القمر؟",
+    "options": [
+      "نجم",
+      "كوكب",
+      "قمر",
+      "كويكب"
+    ],
+    "correct_answer": "قمر",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو أصغر كوكب في النظام الشمسي؟",
+    "options": [
+      "الزهرة",
+      "المريخ",
+      "الأرض",
+      "عطارد"
+    ],
+    "correct_answer": "عطارد",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو عدد الكواكب في النظام الشمسي؟",
+    "options": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "correct_answer": "8",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو الكوكب الذي يعرف بالكوكب الأحمر؟",
+    "options": [
+      "الزهرة",
+      "المريخ",
+      "الأرض",
+      "المشتري"
+    ],
+    "correct_answer": "المريخ",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو القمر الذي يدور حول كوكب المشتري؟",
+    "options": [
+      "ديموس",
+      "إيو",
+      "ستيغيا",
+      "غانيميد"
+    ],
+    "correct_answer": "غانيميد",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو أقرب كوكب إلى الشمس؟",
+    "options": [
+      "الزهرة",
+      "المريخ",
+      "الأرض",
+      "عطارد"
+    ],
+    "correct_answer": "عطارد",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "ما هو الكوكب الذي يشتهر بحلقاته؟",
+    "options": [
+      "الزهرة",
+      "المشتري",
+      "الأرض",
+      "زحل"
+    ],
+    "correct_answer": "زحل",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "الشمس هي نجم؟",
+    "correct_answer": "صحيح",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "الأرض هي قمر؟",
+    "correct_answer": "خطأ",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "المريخ هو أصغر كوكب في النظام الشمسي؟",
+    "correct_answer": "خطأ",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "القمر يدور حول الأرض؟",
+    "correct_answer": "صحيح",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "المشتري هو أكبر كوكب في النظام الشمسي؟",
+    "correct_answer": "صحيح",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "زحل يشتهر بحلقاته؟",
+    "correct_answer": "صحيح",
+    "points": 200
+  },
+  {
+    "type": "text",
+    "question": "ما هو اسم أكبر قمر لكوكب المشتري؟",
+    "correct_answer": "غانيميد",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "ما هو اسم أصغر كوكب في النظام الشمسي؟",
+    "correct_answer": "عطارد",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "ما هو القمر الذي يدور حول كوكب زحل؟",
+    "correct_answer": "تيتان",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "ما هو اسم أقرب قمر لكوكب زحل؟",
+    "correct_answer": "ميماس",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "ما هو الكوكب الذي يعرف بالعملاق الغازي؟",
+    "correct_answer": "المشتري",
+    "points": 300
+  }
+]

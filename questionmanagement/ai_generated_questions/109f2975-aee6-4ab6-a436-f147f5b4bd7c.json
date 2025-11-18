@@ -1,0 +1,188 @@
+{
+  "metadata": {
+    "prompt": "Questions in all fields of math. only simple and straightforward questions. the hardest can still be answered by 5% of educated people.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 25,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-07-16T19:02:11.372119"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "ما هو ناتج 5 + 3؟",
+      "correct_answer": "8",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "كم عدد الأضلاع في المثلث؟",
+      "correct_answer": "3",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو ناتج 9 × 6؟",
+      "correct_answer": "54",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "أوجد قيمة س في المعادلة: 2س = 10",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو حاصل جمع الزوايا في المثلث؟",
+      "correct_answer": "180 درجة",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي النسبة المئوية التي تعادل الربع؟",
+      "correct_answer": "25%",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرقم الذي يحقق مربع كامل مع الناتج 49؟",
+      "correct_answer": "7",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "حل المعادلة: 3x - 4 = 14",
+      "correct_answer": "x = 6",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "كم يساوي 15% من 200؟",
+      "correct_answer": "30",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الأولي التالي بعد 7؟",
+      "correct_answer": "11",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد 20% من 250؟",
+      "correct_answer": "50",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي جذر المربع للعدد 81؟",
+      "correct_answer": "9",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "أوجد قيمة س في المعادلة: س^2 = 64",
+      "correct_answer": "8 أو -8",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو ناتج قسمة 144 على 12؟",
+      "correct_answer": "12",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "أوجد قيمة س في المعادلة: 4(س + 3) = 20",
+      "correct_answer": "س = 2",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي يمثل المكعب الكامل للعدد 3؟",
+      "correct_answer": "27",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أوجد قيمة س في المعادلة: 5س - س^2 = 0",
+      "correct_answer": "س = 0 أو س = 5",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد العشري الذي يمثل الكسور 4/5؟",
+      "correct_answer": "0.8",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أوجد الوسط الحسابي للأعداد: 10، 15، 20، 25، 30",
+      "correct_answer": "20",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو ناتج 1/2 × 1/4؟",
+      "correct_answer": "1/8",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو الفرق بين عددين إذا كان الفرق بين مربعيهما يساوي 48 والعدد الأكبر هو 5؟",
+      "correct_answer": "3 أو -3",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أوجد قيمة س في المعادلة: 2س + 3 = 3(س - 1)",
+      "correct_answer": "س = 3",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرقم العشري الذي يمثل الكسور 1/3؟",
+      "correct_answer": "0.333...",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الأصغر الذي يقبل القسمة على الأعداد 2، 3 و 5؟",
+      "correct_answer": "30",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "أوجد الحد التالي في السلسلة التالية: 2، 6، 12، 20، ...",
+      "correct_answer": "30",
+      "explanation": "",
+      "points": 500
+    }
+  ]
+}

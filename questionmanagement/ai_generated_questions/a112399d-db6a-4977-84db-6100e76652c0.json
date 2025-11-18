@@ -1,0 +1,342 @@
+{
+  "metadata": {
+    "prompt": "questions about countries flags",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 50,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-08-02T04:21:30.157412"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "أي دولة لديها علم يحتوي على علمين متقاطعين في الجهة اليسرى العليا؟",
+      "correct_answer": "فيجي",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على علم يرمز إلى اتحاد دول أخرى فيه؟",
+      "correct_answer": "بريطانيا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتكون علمها من شريطين أفقين أسود وأبيض ونجمة حمراء خماسية؟",
+      "correct_answer": "اليمن",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على صورة للشمس والقمر معاً؟",
+      "correct_answer": "نيبال",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتضمن علمها صليباً أبيض وأربعة مربعات؟",
+      "correct_answer": "اليونان",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الذي يظهر في علم بوتان؟",
+      "correct_answer": "تنين",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العنصر الموجود في الجزء العلوي الأيسر من علم نيوزيلندا؟",
+      "correct_answer": "علم الاتحاد",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو الشيء الذي يميز علم الأرجنتين عن غيره بوجوده في الوسط؟",
+      "correct_answer": "شمس صفراء",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على شجرة أرز خضراء في وسطه؟",
+      "correct_answer": "لبنان",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "أي دولة لديها علم يحتوي على خريطة للبلاد؟",
+      "correct_answer": "قبرص",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الحيوان الذي يظهر في علم ويلز؟",
+      "correct_answer": "تنين",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على نجمة خماسية ذهبية في زاوية الشريط الأزرق؟",
+      "correct_answer": "الكاميرون",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتضمن علمها قمر الهلال ونجمة ثلاثية؟",
+      "correct_answer": "الجزائر",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي علمها يتكون من اللونين الأزرق والأحمر ونجمة؟",
+      "correct_answer": "تشيلي",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يظهر فيه سيف ونخلة؟",
+      "correct_answer": "العراق",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الشكل الذي يميز علم إسرائيل؟",
+      "correct_answer": "نجمة داود",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي علمها يحتوي على صورة لشجرة نخل؟",
+      "correct_answer": "السعودية",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على صورة لفأس ومنجل مع نجمة حمراء؟",
+      "correct_answer": "الاتحاد السوفييتي",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون الذي يرمز إلى البحر في علم اليونان؟",
+      "correct_answer": "الأزرق",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي علمها يتألف من اللونين الأبيض والأزرق وخطوط؟",
+      "correct_answer": "فنلندا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي تحمل علمها طائراً كبيراً؟",
+      "correct_answer": "المكسيك",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الموجود في علم الجزائر الذي يرمز إلى الإسلام؟",
+      "correct_answer": "هلال",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "أي دولة في جنوب شرق آسيا علمها يحتوي على شريطين أزرق وأبيض؟",
+      "correct_answer": "كمبوديا",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الموجود في علم أنغولا الذي يمثل الصناعة والعمل؟",
+      "correct_answer": "عجلة وتروس",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتضمن علمها ثور وكون شمس؟",
+      "correct_answer": "مولدوفا",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها حيوان الجمل؟",
+      "correct_answer": "تشاد",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو اللون الذي يرمز إلى الثورة في علم كوبا؟",
+      "correct_answer": "الأحمر",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على شريطين باللون الأحمر والأبيض ونجمة زرقاء؟",
+      "correct_answer": "ماليزيا",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتضمن علمها صورة لجبل؟",
+      "correct_answer": "نيبال",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العنصر الموجود في علم الأردن الذي يرمز إلى الوحدة العربية؟",
+      "correct_answer": "نجمة سباعية",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها حقل من اللون الأحمر مع نجمة خماسية؟",
+      "correct_answer": "فيتنام",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على نموذج ثمانية أعمدة مع ثمانية نجوم؟",
+      "correct_answer": "توكيلاو",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو الدولة التي يظهر في علمها شريط أزرق وأحمر ونجمة زرقاء؟",
+      "correct_answer": "هولندا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الذي يظهر في علم كازاخستان؟",
+      "correct_answer": "نسر ذهبي",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الحيوان الذي يظهر في علم كينيا؟",
+      "correct_answer": "درع ورمح",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها حيوان الفيل؟",
+      "correct_answer": "تايلاند",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على شجرة نخيل؟",
+      "correct_answer": "ساموا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يتضمن علمها ثلاث نجوم زرقاء وخطوط بيضاء؟",
+      "correct_answer": "السلفادور",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العنصر الموجود في علم صربيا الذي يرمز إلى الكنيسة الشرقية؟",
+      "correct_answer": "صليب",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها هلال ونجمة؟",
+      "correct_answer": "ماليزيا",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العنصر الموجود في منتصف علم كوريا الجنوبية؟",
+      "correct_answer": "تاء جي",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها صورة لمعبد بوذي؟",
+      "correct_answer": "كمبوديا",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرمز الموجود في علم أذربيجان الذي يمثل التراث التركي؟",
+      "correct_answer": "هلال",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "أي دولة علمها يحتوي على رمز يمثل الشعوب الأصلية؟",
+      "correct_answer": "بليز",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها عربة قديمة؟",
+      "correct_answer": "باراغواي",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العلم الذي يحتوي على صليب أبيض على خلفية زرقاء؟",
+      "correct_answer": "فنلندا",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هي الدولة التي يظهر في علمها قمر ونجمتان؟",
+      "correct_answer": "جزر القمر",
+      "explanation": "",
+      "points": 300
+    }
+  ]
+}

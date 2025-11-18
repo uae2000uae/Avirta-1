@@ -1,0 +1,66 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "base.html" %}
+
+{% block title %}Avirta - Create Room{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <h2>Create a "Knowleade Columns" Game Board</h2>
+  <form action="{{ url_for('create_room') }}" method="post" class="form-group-xx" data-max-categories="{{ max_categories }}">
+        <div class="form-group-equal-md">
+            <label for="room_name">Room Name:</label>
+            <input type="text" id="room_name" name="room_name" required placeholder="Game room title">
+        </div>
+        <div class="form-group-equal-sm">
+            <label for="host_name">Host (Player 1):</label>
+            <input type="text" id="host_name" name="host_name" required placeholder="Player 1 (the host)">
+        </div>
+        <div class="form-group-inline">
+            <label>Additional Players:</label>
+            <div class="form-group-grid">
+                {% for i in range(1, max_players) %}
+                <div class="form-group-equal-sm">
+                    <input type="text" id="player{{ i }}" name="additional_players" placeholder="Player {{ i+1 }} (optional)">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group-inline">
+            <label>Select Categories (up to {{ max_categories }}):</label>
+            <div class="categories-grid">
+                {% for category_id, category in categories.items() %}
+
+                <div class="category-checkbox">
+                    <input type="checkbox" id="category_{{ category_id }}" name="categories" value="{{ category_id }}">
+                    <label for="category_{{ category_id }}" class="text-center">{{ category.name }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group-inline">
+            <label>Select Question Types:</label>
+            <div class="form-group-equal-sm">
+                <div class=category-checkbox>
+                    <input type="checkbox" id="type_text" name="question_types" value="text" checked>
+                    <label for="type_text">Text</label>
+                </div>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
+                    <label for="type_multiple_choice">Multiple Choice</label>
+                </div>
+                <div class=category-checkbox>
+                    <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
+                    <label for="type_true_false">True/False</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Create Room</button>
+            <button class="button secondary"><a class="text-clear" href="{{ url_for('index') }}">Cancel</a></button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

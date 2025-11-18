@@ -1,0 +1,202 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "What is the Arabic word for 'space'?",
+    "options": [
+      "مجرة",
+      "فضاء",
+      "كوكب",
+      "نجم"
+    ],
+    "correct_answer": "فضاء",
+    "explanation": "The Arabic word 'فضاء' translates to 'space' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: The Arabic word for 'galaxy' is 'كوكب'",
+    "correct_answer": "False",
+    "explanation": "The Arabic word for 'galaxy' is 'مجرة' ('Majra').",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "What is the Arabic term for 'astronaut'?",
+    "options": [
+      "رائد الفضاء",
+      "مريخ",
+      "القمر",
+      "المريخي"
+    ],
+    "correct_answer": "رائد الفضاء",
+    "explanation": "The term 'رائد الفضاء' in Arabic refers to an 'astronaut'.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'الكواكب' in Arabic means 'the stars'",
+    "correct_answer": "False",
+    "explanation": "'الكواكب' in Arabic means 'the planets', not 'the stars'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arabic word means 'moon'?",
+    "options": [
+      "جمال",
+      "شمس",
+      "القمر",
+      "كوكب"
+    ],
+    "correct_answer": "القمر",
+    "explanation": "The Arabic word 'القمر' translates to 'moon' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: The Arabic word for 'comet' is 'شهاب'",
+    "correct_answer": "True",
+    "explanation": "'شهاب' in Arabic refers to a 'comet'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "What does 'المجرة' mean in English?",
+    "options": [
+      "Galaxy",
+      "Sun",
+      "Asteroid",
+      "Black Hole"
+    ],
+    "correct_answer": "Galaxy",
+    "explanation": "The Arabic term 'المجرة' translates to 'Galaxy' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'النجم الساطع' in Arabic means 'the bright star'",
+    "correct_answer": "True",
+    "explanation": "'النجم الساطع' translates to 'the bright star' in English.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arabic term means 'asteroid'?",
+    "options": [
+      "كويكب",
+      "سديم",
+      "نيزك",
+      "كوكب"
+    ],
+    "correct_answer": "كويكب",
+    "explanation": "The Arabic term 'كويكب' refers to an 'asteroid'.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'المريخ' in Arabic means 'the Earth'",
+    "correct_answer": "False",
+    "explanation": "'المريخ' in Arabic refers to 'Mars', not 'the Earth'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "What is the Arabic word for 'nebula'?",
+    "options": [
+      "سديم",
+      "بلاك هول",
+      "كويكب",
+      "نيزك"
+    ],
+    "correct_answer": "سديم",
+    "explanation": "The Arabic word 'سديم' translates to 'nebula' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'المجرات' in Arabic means 'the moons'",
+    "correct_answer": "False",
+    "explanation": "'المجرات' in Arabic means 'the galaxies', not 'the moons'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arabic term means 'black hole'?",
+    "options": [
+      "ثقب أسود",
+      "نيزك",
+      "شمس",
+      "جمال"
+    ],
+    "correct_answer": "ثقب أسود",
+    "explanation": "The Arabic term 'ثقب أسود' refers to a 'black hole'.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'الشمس' in Arabic means 'the Moon'",
+    "correct_answer": "False",
+    "explanation": "'الشمس' in Arabic translates to 'the Sun', not 'the Moon'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "What does 'الكون' mean in English?",
+    "options": [
+      "Universe",
+      "Star",
+      "Meteor",
+      "Galaxy"
+    ],
+    "correct_answer": "Universe",
+    "explanation": "The Arabic term 'الكون' translates to 'Universe' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'المشتري' in Arabic means 'Jupiter'",
+    "correct_answer": "True",
+    "explanation": "'المشتري' in Arabic refers to 'Jupiter'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arabic word means 'satellite'?",
+    "options": [
+      "قمر صناعي",
+      "زحل",
+      "كوكب",
+      "نيزك"
+    ],
+    "correct_answer": "قمر صناعي",
+    "explanation": "The Arabic word 'قمر صناعي' translates to 'satellite' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'الزهرة' in Arabic means 'Mars'",
+    "correct_answer": "False",
+    "explanation": "'الزهرة' in Arabic refers to 'Venus', not 'Mars'.",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "What is the Arabic term for 'cosmos'?",
+    "options": [
+      "كون",
+      "بلاك هول",
+      "كويكب",
+      "شمس"
+    ],
+    "correct_answer": "كون",
+    "explanation": "The Arabic term 'كون' translates to 'cosmos' in English.",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "True or False: 'الأرض' in Arabic means 'the Earth'",
+    "correct_answer": "True",
+    "explanation": "'الأرض' in Arabic translates to 'the Earth' in English.",
+    "points": 100
+  }
+]

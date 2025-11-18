@@ -1,0 +1,182 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "Which country is the largest by land area among the Arab countries?",
+    "options": [
+      "Saudi Arabia",
+      "Algeria",
+      "Sudan",
+      "Libya"
+    ],
+    "correct_answer": "Algeria",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is known as the 'Cradle of Civilization'?",
+    "options": [
+      "Egypt",
+      "Iraq",
+      "Syria",
+      "Jordan"
+    ],
+    "correct_answer": "Iraq",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is located on two continents?",
+    "options": [
+      "Egypt",
+      "Turkey",
+      "Saudi Arabia",
+      "Iraq"
+    ],
+    "correct_answer": "Turkey",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is the smallest by land area?",
+    "options": [
+      "Lebanon",
+      "Bahrain",
+      "Qatar",
+      "Kuwait"
+    ],
+    "correct_answer": "Bahrain",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is known as the 'Land of the Pharaohs'?",
+    "options": [
+      "Iraq",
+      "Jordan",
+      "Egypt",
+      "Morocco"
+    ],
+    "correct_answer": "Egypt",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is home to the tallest building in the world, the Burj Khalifa?",
+    "options": [
+      "Saudi Arabia",
+      "Qatar",
+      "UAE",
+      "Kuwait"
+    ],
+    "correct_answer": "UAE",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is known for its ancient city of Petra?",
+    "options": [
+      "Syria",
+      "Jordan",
+      "Lebanon",
+      "Oman"
+    ],
+    "correct_answer": "Jordan",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is located on the Horn of Africa?",
+    "options": [
+      "Yemen",
+      "Djibouti",
+      "Somalia",
+      "Sudan"
+    ],
+    "correct_answer": "Djibouti",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is known as the 'Pearl of the Gulf'?",
+    "options": [
+      "Kuwait",
+      "Bahrain",
+      "Oman",
+      "Qatar"
+    ],
+    "correct_answer": "Bahrain",
+    "points": 100
+  },
+  {
+    "type": "multiple_choice",
+    "question": "Which Arab country is the largest producer of oil in the world?",
+    "options": [
+      "Saudi Arabia",
+      "UAE",
+      "Kuwait",
+      "Iraq"
+    ],
+    "correct_answer": "Saudi Arabia",
+    "points": 100
+  },
+  {
+    "type": "true_false",
+    "question": "Egypt is the most populous Arab country.",
+    "correct_answer": "True",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "Jordan is a landlocked Arab country.",
+    "correct_answer": "False",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "Lebanon is the only Arab country without a desert.",
+    "correct_answer": "True",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "Qatar is a peninsula jutting into the Persian Gulf.",
+    "correct_answer": "True",
+    "points": 200
+  },
+  {
+    "type": "true_false",
+    "question": "Morocco is an Arab country in North Africa.",
+    "correct_answer": "True",
+    "points": 200
+  },
+  {
+    "type": "text",
+    "question": "Which Arab country is known as the 'Land of the Two Holy Mosques'?",
+    "correct_answer": "Saudi Arabia",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "Which Arab country is located on the Arabian Peninsula?",
+    "correct_answer": "Yemen",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "Which Arab country is famous for its ancient city of Tyre?",
+    "correct_answer": "Lebanon",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "Which Arab country is home to the famous archaeological site of Carthage?",
+    "correct_answer": "Tunisia",
+    "points": 300
+  },
+  {
+    "type": "text",
+    "question": "Which Arab country is known for its production of dates and date palms?",
+    "correct_answer": "Iraq",
+    "points": 300
+  }
+]

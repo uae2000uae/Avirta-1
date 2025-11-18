@@ -1,0 +1,377 @@
+{
+  "metadata": {
+    "prompt": "math puzzles that can be solved without pin or a calculator",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 50,
+    "include_explanations": false,
+    "language": "arabic",
+    "timestamp": "2025-05-27T19:19:14.838664"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا أضفت إليه 5 وضربته في 2 يصبح الناتج 20؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "أوجد عددين مجموعهما 10 وحاصل ضربهما 24.",
+      "correct_answer": "6 و4",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك ثلاثة أعداد متتالية مجموعها 18، فما هي؟",
+      "correct_answer": "5، 6، 7",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا قسمته على 2 وضربته في 3 تحصل على 12؟",
+      "correct_answer": "8",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لدي 7 تفاحات وأعطيت أخي نصفها، كم تفاحة بقيت لدي؟",
+      "correct_answer": "3.5",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في نفسه تحصل على نفس العدد؟",
+      "correct_answer": "1",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "كم يكون مجموع زوايا مثلث؟",
+      "correct_answer": "180 درجة",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "إذا كان أحمد يكبر منى بسنتين، ومنى تبلغ 10 سنوات، فما عمر أحمد؟",
+      "correct_answer": "12 سنة",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا أضفت إليه 9 يصبح 15؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "كم عدد الأضلاع في المضلع السداسي؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في 4 يصبح 32؟",
+      "correct_answer": "8",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 20 قطعة نقدية من فئة 1 ريال، كم ريال لديك؟",
+      "correct_answer": "20",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "إذا اشتريت 3 أقلام وسعر كل قلم 4 ريالات، فما هو المجموع؟",
+      "correct_answer": "12",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا قسمته على 3 تحصل على 5؟",
+      "correct_answer": "15",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا طرحت منه 7 يصبح 0؟",
+      "correct_answer": "7",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 9 كرات وأخذ صديقك 4 منها، كم بقي لديك؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في 0 يكون الناتج صفرًا؟",
+      "correct_answer": "أي عدد",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "كم عدد الدقائق في ساعتين؟",
+      "correct_answer": "120",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "إذا كان هناك 8 طلاب في الفصل وكل طالب لديه 2 كتاب، كم عدد الكتب الكلي؟",
+      "correct_answer": "16",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في نفسه ثم جمعت إليه نفسه تحصل على 12؟",
+      "correct_answer": "3",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 3 صناديق وكل صندوق يحتوي على 5 كرات، كم مجموع الكرات؟",
+      "correct_answer": "15",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا كان مجموع عددين متتاليين 21، فما هما؟",
+      "correct_answer": "10 و11",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "كم عدد الزوايا في المضلع الخماسي؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو أصغر عدد يقبل القسمة على 2 و3 و6؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 24 تفاحة ووضعتها في صناديق بحيث كل صندوق يحتوي على 4 تفاحات، كم عدد الصناديق؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا كان الساعة الآن 3:00 وبعد 7 ساعات، كم ستكون الساعة؟",
+      "correct_answer": "10:00",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "ما هو الرقم الذي إذا ضربته في 5 ثم طرحت 2 تحصل على 13؟",
+      "correct_answer": "3",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "كم عدد الأصفار في المليون؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 10 دراهم وأعطيت نصفها لصديقك، كم بقي لديك؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا ضاعفت عدد معين ثلاث مرات يساوي 24، ما هو العدد؟",
+      "correct_answer": "8",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "إذا كان مجموع ثلاثة أعداد فردية متتالية هو 27، فما هي؟",
+      "correct_answer": "7، 9، 11",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في نفسه ثم جمعت إليه 4 يكون الناتج 13؟",
+      "correct_answer": "3",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 6 صناديق وكل صندوق يحتوي على 7 كرات، كم عدد الكرات الكلي؟",
+      "correct_answer": "42",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا قسمته على 4 يكون الناتج 5.5؟",
+      "correct_answer": "22",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 50 ريالًا، اشتريت كتابًا بـ 30 ريالًا، كم بقي معك؟",
+      "correct_answer": "20",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا قسمته على نفسه يكون الناتج دائماً؟",
+      "correct_answer": "1 (عدا الصفر)",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 12 كرة وزعت على 4 أصدقاء بالتساوي، كم كرة يحصل عليها كل واحد؟",
+      "correct_answer": "3",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان مجموع عددين 17 وحاصل طرحهما 3، فما هما؟",
+      "correct_answer": "10 و7",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "كم ثانية في 5 دقائق؟",
+      "correct_answer": "300",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 30 كتابًا ووضعتها في رفوف بحيث كل رف يحتوي على 6 كتب، كم عدد الرفوف؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "إذا كان حاصل ضرب 3 أعداد هو 60 وأحدها 5 والآخر 2، ما هو العدد الثالث؟",
+      "correct_answer": "6",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 4 أضعاف عدد معين يساوي 36، فما هو العدد؟",
+      "correct_answer": "9",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في 7 ثم طرحت منه 14 تحصل على 35؟",
+      "correct_answer": "7",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك نصف عدد زائد 6 يساوي 10، فما هو العدد؟",
+      "correct_answer": "8",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا جمعت إليه 3 أضعافه تحصل على 28؟",
+      "correct_answer": "7",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك مثلث متساوي الأضلاع، كم قياس كل زاوية فيه؟",
+      "correct_answer": "60 درجة",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا قسمته على 5 وضربته في 3 يصبح الناتج 9؟",
+      "correct_answer": "15",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك 3 صناديق، في كل صندوق 8 أقلام، وأعطيت صديقك 10 أقلام، كم بقي لديك؟",
+      "correct_answer": "14",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الذي إذا ضربته في 2 ثم طرحت منه 5 يصبح الناتج 15؟",
+      "correct_answer": "10",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا جمعت مربع عدد مع العدد نفسه تحصل على 30، ما هو العدد؟",
+      "correct_answer": "5",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "إذا كان لديك عددان مجموعهما 17 وحاصل ضربهما 72، ما هما العددان؟",
+      "correct_answer": "9 و8",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "ما هو العدد الأولي الأصغر من 10 والأكبر من 5؟",
+      "correct_answer": "7",
+      "explanation": "",
+      "points": 500
+    }
+  ]
+}

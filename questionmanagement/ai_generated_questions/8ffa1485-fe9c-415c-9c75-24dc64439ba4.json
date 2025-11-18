@@ -1,0 +1,363 @@
+{
+  "metadata": {
+    "prompt": "questions about characters in DC, Marvel, and other similar producers of such movie genres. Provide the movie name or character names in the questions or answers, don't mention the producers or the cast or crew.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 50,
+    "include_explanations": false,
+    "language": "english",
+    "timestamp": "2025-08-02T01:02:06.238652"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "What is the real name of the superhero known as Batman?",
+      "correct_answer": "Bruce Wayne",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In the movie 'Avengers: Endgame', who wields Thor's hammer, Mjolnir, besides Thor?",
+      "correct_answer": "Captain America",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What powerful stone does Vision have embedded in his forehead?",
+      "correct_answer": "Mind Stone",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the superhero alias of T'Challa, the king of Wakanda?",
+      "correct_answer": "Black Panther",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'Justice League', what is the name of the artifact that Cyborg is linked to?",
+      "correct_answer": "Mother Box",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Who is the main antagonist in the movie 'Spider-Man: Homecoming'?",
+      "correct_answer": "Vulture",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which superhero is known as the 'Man of Steel'?",
+      "correct_answer": "Superman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who is the alter ego of the superhero Wonder Woman?",
+      "correct_answer": "Diana Prince",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Guardians of the Galaxy', what is the real name of the character Star-Lord?",
+      "correct_answer": "Peter Quill",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the secret agency headed by Nick Fury?",
+      "correct_answer": "S.H.I.E.L.D.",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'Aquaman', what is the name of Aquaman's mother?",
+      "correct_answer": "Atlanna",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the real name of the superhero known as Iron Man?",
+      "correct_answer": "Tony Stark",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'Thor: Ragnarok', who is Thor's sister and the Goddess of Death?",
+      "correct_answer": "Hela",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the superhero alias of the character Barbara Gordon?",
+      "correct_answer": "Batgirl",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the real name of the superhero Doctor Strange?",
+      "correct_answer": "Stephen Strange",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which character in the X-Men is known for their regenerative healing factor?",
+      "correct_answer": "Wolverine",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'Black Panther', what is the name of T'Challa's sister who is a genius inventor?",
+      "correct_answer": "Shuri",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the artificial intelligence created by Tony Stark that later becomes Vision?",
+      "correct_answer": "J.A.R.V.I.S.",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In 'The Dark Knight Rises', what is the real identity of the villain Bane?",
+      "correct_answer": "Bane's real identity is never revealed in the movie.",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the prison where the Guardians of the Galaxy are initially held?",
+      "correct_answer": "Kyln",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In 'Man of Steel', who is Superman's biological father?",
+      "correct_answer": "Jor-El",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who is known as the 'Scarlet Speedster' in the DC universe?",
+      "correct_answer": "The Flash",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the superhero alias of Sam Wilson?",
+      "correct_answer": "Falcon",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Doctor Strange', which ancient relic chooses Stephen Strange as its new master?",
+      "correct_answer": "The Cloak of Levitation",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the alias of the character Selina Kyle?",
+      "correct_answer": "Catwoman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'X-Men: Days of Future Past', who is the character that can manipulate magnetic fields?",
+      "correct_answer": "Magneto",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of Tony Stark's personal AI assistant?",
+      "correct_answer": "Friday",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which hero's real name is Arthur Curry?",
+      "correct_answer": "Aquaman",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "In 'Thor', who is Thor's brother and often considered the God of Mischief?",
+      "correct_answer": "Loki",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What superhero is known by the alter ego of Carol Danvers?",
+      "correct_answer": "Captain Marvel",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "In 'Avengers: Infinity War', which character uses the Infinity Gauntlet to wipe out half of all life?",
+      "correct_answer": "Thanos",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who is the superhero with the real name Barry Allen?",
+      "correct_answer": "The Flash",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Wonder Woman', what is the name of the island where Diana grows up?",
+      "correct_answer": "Themyscira",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the superhero alias of the character named Scott Lang?",
+      "correct_answer": "Ant-Man",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Batman Begins', who is the head of the League of Shadows?",
+      "correct_answer": "Ra's al Ghul",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the fictional metal that is the primary component of Captain America's shield?",
+      "correct_answer": "Vibranium",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "In 'Spider-Man: Into the Spider-Verse', who is the primary antagonist?",
+      "correct_answer": "Kingpin",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the real name of the superhero Green Lantern in the Justice League?",
+      "correct_answer": "Hal Jordan",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Who is the alter ego of the superhero known as Cyborg?",
+      "correct_answer": "Victor Stone",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In the movie 'The Avengers', who is the director of the secret agency that brings the team together?",
+      "correct_answer": "Nick Fury",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the dimension accessed by Doctor Strange for its mystical properties?",
+      "correct_answer": "The Mirror Dimension",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In 'Suicide Squad', which character can manipulate fire?",
+      "correct_answer": "El Diablo",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the place where Superman's Fortress of Solitude is located?",
+      "correct_answer": "The Arctic",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "In 'Black Panther', what is the name of the rare metal found in Wakanda?",
+      "correct_answer": "Vibranium",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who is the superhero with an alias of Natasha Romanoff?",
+      "correct_answer": "Black Widow",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Batman v Superman: Dawn of Justice', who manipulates Batman to fight Superman?",
+      "correct_answer": "Lex Luthor",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the superhero alias of the character Dick Grayson?",
+      "correct_answer": "Robin",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "In 'Thor: The Dark World', who is the ruler of the Dark Elves?",
+      "correct_answer": "Malekith",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "In 'Deadpool', who is Deadpool's girlfriend?",
+      "correct_answer": "Vanessa Carlysle",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "In 'Justice League', who is the superhero known as the King of Atlantis?",
+      "correct_answer": "Aquaman",
+      "explanation": "",
+      "points": 200
+    }
+  ]
+}

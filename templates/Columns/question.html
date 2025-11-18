@@ -1,0 +1,136 @@
+<link href="../static/css/style.css" rel="stylesheet" type="text/css">
+{% extends "gamebase.html" %}
+
+{% block title %}Avirta - Question{% endblock %}
+
+{% block extra_head %}
+<style>
+{% if acting_player %}
+    .host-acting-info {
+        margin: 10px 0;
+        padding: 10px;
+        color: var(--primary-color);
+        border-radius: 5px;
+		border: solid;
+		border-color: var(--primary-color);
+        text-align: center;
+    }
+
+    .host-acting-info p {
+        margin: 0;
+        font-weight: bold;
+    }
+
+    .host-acting-info strong {
+        text-decoration: underline;
+    }
+{% endif %}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-section">
+    <div class="question-header">
+        <h2>Question</h2>
+        <p>Category: <span class="category-badge">{{ question.category_id|capitalize }}</span> | Points: <span class="points-badge">{{ question.points }}</span>{% if question.doubled %} (Doubled!){% endif %}</p>
+        {% if acting_player %}
+            <div> 
+                <p class="green-box">You are answering on behalf of: <strong>{{ acting_player }}</strong></p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="question-display">
+        <div class="question-text" dir="{% if question.question|is_arabic %}rtl{% else %}ltr{% endif %}">{{ question.question }}</div>
+
+        {% if question.type == 'text' %}
+            <div class=form-container>
+                <button type="button" id="show-answer-btn" onclick="showAnswer()">Show Answer إظهار الجواب</button>
+                <div id="answer-section" style="display: none; width: 100%;">
+                    <div class="form-group">
+                        <div class="answer-text" dir="{% if question.correct_answer|is_arabic %}rtl{% else %}ltr{% endif %}"><h2 class="text-center">{{ question.correct_answer }}</h2></div>
+                    </div>
+                    <div>
+						<form action="{{ url_for('evaluate_answer') }}" method="post" class="form-actions clear">
+							<input type="hidden" name="acting_player" value="{{ acting_player }}">
+							<button type="submit" name="evaluation" value="correct" class="success-button">Right answer إجابة صحيحة</button>
+							<button type="submit" name="evaluation" value="incorrect" class="delete-button">Wrong answer إجابـة خطـأ</button>
+						</form>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <form action="{{ url_for('answer_question') }}" method="post" class="answer-form">
+                {% if question.type == 'multiple_choice' %}
+                    <div class="form-group-grid3">
+                        {% for option in question.options %}
+                            <button type="button" class="option-button" onclick="submitAnswer('{{ option }}')">
+                                <span dir="{% if option|is_arabic %}rtl{% else %}ltr{% endif %}">{{ option }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% elif question.type == 'true_false' %}
+                    <div class="form-group-grid3">
+                        <button type="button" class="option-button" onclick="submitAnswer('true')">True | صحيح</button>
+                        <button type="button" class="option-button" onclick="submitAnswer('false')">False | خطــأ</button>
+                    </div>
+                {% endif %}
+            </form>
+            <div class="form-actions" style="display: none;">
+                <button type="submit">Submit Answer تسجيل الإجابة</button>
+            </div>
+	{% endif %}
+			<br>
+            <form id= "change-question-form" action="{{ url_for('use_tool') }}" method="post" class="form-actions clear">
+                <input type="hidden" name="tool_name" value="change_question">
+                <input type="hidden" name="acting_player" value="{{ current_player }}">
+				<button type="submit" id="change-question-btn" class="button" {% if not player_tools or not player_tools.change_question %}disabled="disabled" style="opacity: 0.5; cursor: not-allowed;" title="This tool has already been used"{% endif %}>Change Question | غيــّـــر الســـــؤال</button>
+            </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showAnswer() {
+        document.getElementById('show-answer-btn').style.display = 'none';
+        document.getElementById('answer-section').style.display = 'block';
+        document.getElementById('change-question-form').style.display = 'none';
+    }
+</script>
+
+<script>
+    function submitAnswer(answer) {
+        // Create a hidden input for the answer
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'answer';
+        hiddenInput.value = answer;
+
+        // Add the hidden input to the form
+        const form = document.querySelector('.answer-form');
+        form.appendChild(hiddenInput);
+
+        // Submit the form
+        form.submit();
+    }
+</script>
+
+<!-- Include the gametools.js script -->
+<script src="{{ url_for('static', filename='js/gametools.js') }}"></script>
+
+<!-- Add data attributes for the gametools.js script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add data attributes to the page-section element
+    const pageSection = document.querySelector('.page-section');
+    if (pageSection) {
+        pageSection.dataset.roomId = '{{ room_id }}';
+        pageSection.dataset.playerName = '{{ player_name }}';
+        pageSection.dataset.currentPlayer = '{{ current_player }}';
+    }
+});
+</script>
+{% endblock %}

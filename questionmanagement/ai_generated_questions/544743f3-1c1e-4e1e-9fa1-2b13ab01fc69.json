@@ -1,0 +1,188 @@
+{
+  "metadata": {
+    "prompt": "Questions about Jurassic Park movies and shows. the more known the easier the question.",
+    "question_type": "text",
+    "difficulty": "mixed",
+    "num_questions": 25,
+    "include_explanations": false,
+    "language": "english",
+    "timestamp": "2025-05-29T19:32:30.764223"
+  },
+  "questions": [
+    {
+      "type": "text",
+      "question": "Who is the creator of Jurassic Park in the original 1993 film?",
+      "correct_answer": "John Hammond",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What type of dinosaur is featured in the famous kitchen scene with the children in Jurassic Park?",
+      "correct_answer": "Velociraptor",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the island where Jurassic Park is located?",
+      "correct_answer": "Isla Nublar",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which actor played Dr. Alan Grant in Jurassic Park?",
+      "correct_answer": "Sam Neill",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What color is the iconic Jurassic Park logo?",
+      "correct_answer": "Red and yellow",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the corporation that owns Jurassic Park?",
+      "correct_answer": "InGen",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Which dinosaur escapes and causes chaos in the original Jurassic Park movie?",
+      "correct_answer": "Tyrannosaurus rex",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Who plays Dr. Ian Malcolm in the Jurassic Park series?",
+      "correct_answer": "Jeff Goldblum",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the Jurassic Park sequel released in 1997?",
+      "correct_answer": "The Lost World: Jurassic Park",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What does Dr. Ellie Sattler specialize in?",
+      "correct_answer": "Paleobotany",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Who directed the original Jurassic Park film?",
+      "correct_answer": "Steven Spielberg",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "Which movie introduced the genetically-engineered dinosaur Indominus rex?",
+      "correct_answer": "Jurassic World",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the raptor handler played by Chris Pratt in Jurassic World?",
+      "correct_answer": "Owen Grady",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the full name of the scientist who cloned the dinosaurs in Jurassic Park?",
+      "correct_answer": "Dr. Henry Wu",
+      "explanation": "",
+      "points": 200
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the animated Jurassic World TV show on Netflix?",
+      "correct_answer": "Jurassic World: Camp Cretaceous",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "Which actor reprised his role as Dr. Alan Grant in Jurassic Park III?",
+      "correct_answer": "Sam Neill",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the volcano that erupts in Jurassic World: Fallen Kingdom?",
+      "correct_answer": "Mount Sibo",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What rare dinosaur is discovered alive in Jurassic Park III?",
+      "correct_answer": "Spinosaurus",
+      "explanation": "",
+      "points": 300
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the company that tries to auction dinosaurs in Fallen Kingdom?",
+      "correct_answer": "Lockwood Estate",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the cloned girl introduced in Jurassic World: Fallen Kingdom?",
+      "correct_answer": "Maisie Lockwood",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Which dinosaur is known for its ability to spit venom in Jurassic Park?",
+      "correct_answer": "Dilophosaurus",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "Who is the main antagonist in Jurassic World: Dominion?",
+      "correct_answer": "Lewis Dodgson",
+      "explanation": "",
+      "points": 400
+    },
+    {
+      "type": "text",
+      "question": "What is the name of the hybrid dinosaur in Jurassic World: Fallen Kingdom?",
+      "correct_answer": "Indoraptor",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "In which Jurassic movie does a T. rex get transported to San Diego?",
+      "correct_answer": "The Lost World: Jurassic Park",
+      "explanation": "",
+      "points": 500
+    },
+    {
+      "type": "text",
+      "question": "Which character in the original film says the line, 'Life finds a way'?",
+      "correct_answer": "Dr. Ian Malcolm",
+      "explanation": "",
+      "points": 500
+    }
+  ]
+}
