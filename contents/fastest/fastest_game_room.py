@@ -201,6 +201,19 @@ class FastestGameRoom(GameRoom):
         if not self.current_question or self.question_revealed:
             return False
 
+        # Randomize the order of options for multiple-choice questions at reveal time
+        try:
+            q = self.current_question
+            if isinstance(q, dict) and (q.get('type') == 'multiple_choice' or ('options' in q and q.get('correct_answer'))):
+                opts = list(q.get('options') or [])
+                if len(opts) > 1:
+                    random.shuffle(opts)
+                    # Assign shuffled options back for display without altering source ordering globally
+                    q['options'] = opts
+        except Exception:
+            # Fail-safe: do not block reveal if shuffling fails
+            pass
+
         self.question_revealed = True
         self.timer_active = True
         return True

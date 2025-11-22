@@ -166,6 +166,17 @@ class HexGameRoom:
         question = self._pick_random_question_for_points(question_uploader, cell['points'])
         if not question:
             return {'success': False, 'message': 'No available question for this point value'}
+        # Randomize options order for multiple-choice questions before sending to client
+        try:
+            if isinstance(question, dict) and (question.get('type') == 'multiple_choice' or ('options' in question and question.get('correct_answer'))):
+                opts = list(question.get('options') or [])
+                if len(opts) > 1:
+                    random.shuffle(opts)
+                    question['options'] = opts
+        except Exception:
+            # Do not fail selection if shuffling fails
+            pass
+
         cell['question'] = question
         cell['asked'] = True
         self.current_cell_index = cell_index
