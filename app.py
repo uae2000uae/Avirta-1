@@ -364,7 +364,7 @@ def create_room():
     max_players = admin_setup.game_settings.get('max_players_per_room', 10)
     # Get the maximum number of categories per room from admin settings
     max_categories = admin_setup.game_settings.get('max_categories_per_room', 7)
-    return render_template('columns/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
+    return render_template('Columns/create_room.html', categories=categories, max_players=max_players, max_categories=max_categories)
 
 
 
@@ -423,7 +423,7 @@ def join_room():
         return redirect(url_for('joined_room', room_id=room_id))
 
     # GET request
-    return render_template('columns/join_room.html')
+    return render_template('Columns/join_room.html')
 
 @app.route('/joined_room/<room_id>')
 def joined_room(room_id):
@@ -471,7 +471,7 @@ def joined_room(room_id):
     session.pop('acting_player', None)
 
     return render_template(
-        'columns/joined_room.html',
+        'Columns/joined_room.html',
         room=game_room,
         player_name=player_name,
         player_tools=player_tools,
@@ -643,7 +643,7 @@ def game_room(room_id):
     session.pop('acting_player', None)
 
     # Determine which template to use based on the room_id
-    template = 'columns/game_room.html'
+    template = 'Columns/game_room.html'
 
     return render_template(
         template,
@@ -673,7 +673,13 @@ def select_question():
     game_room = game_rooms[room_id]
 
     category_id = request.form.get('category_id')
-    points = int(request.form.get('points'))
+    # Safely parse points to avoid server errors when missing/invalid
+    points_raw = request.form.get('points')
+    try:
+        points = int(points_raw)
+    except (TypeError, ValueError):
+        flash('Invalid point value selected.', 'error')
+        return redirect(url_for('game_room', room_id=room_id))
 
     # Check if the host is acting on behalf of another player
     acting_player = request.form.get('acting_player')
@@ -757,7 +763,7 @@ def question(room_id):
 
     # Create response with template
     response = make_response(render_template(
-        'columns/question.html',
+        'Columns/question.html',
         room_id=room_id,
         question=question,
         player_name=player_name,
@@ -1017,7 +1023,7 @@ def leaderboard(room_id):
         leaderboard = game_room.question_manager.get_leaderboard(all_players=game_room.players)
 
     # Determine which template to use based on the room_id
-    template = 'columns/leaderboard.html'
+    template = 'Columns/leaderboard.html'
 
     return render_template(
         template,
