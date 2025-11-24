@@ -29,27 +29,38 @@ def register_hive_routes(app, game_rooms, game_status_manager, question_uploader
         if request.method == 'POST':
             # Extract form data
             room_id = request.form.get('room_id', '').strip() or None
+            room_name = request.form.get('room_name', '').strip()
             team_a = request.form.get('team_a', 'Team A').strip() or 'Team A'
             team_b = request.form.get('team_b', 'Team B').strip() or 'Team B'
-            categories = request.form.getlist('categories') or []
-            # Point values: parse comma/space separated or multi-select
-            point_values_raw = request.form.get('point_values', '')
+
+            # Point values: from multi-select checkboxes or comma-separated input
             point_values = []
-            if point_values_raw:
+            pv_list = request.form.getlist('point_values')
+            if pv_list:
                 try:
-                    # Accept formats like "100,200,300" or "100 200 300"
-                    cleaned = point_values_raw.replace(' ', ',')
-                    point_values = [int(x) for x in cleaned.split(',') if x.strip()]
+                    point_values = [int(x) for x in pv_list if str(x).strip()]
                 except Exception:
                     point_values = []
+            else:
+                # Fallback to a single text field with comma/space separated values
+                point_values_raw = request.form.get('point_values', '')
+                if point_values_raw:
+                    try:
+                        cleaned = point_values_raw.replace(' ', ',')
+                        point_values = [int(x) for x in cleaned.split(',') if x.strip()]
+                    except Exception:
+                        point_values = []
 
             # Create a new room id if not supplied
             import uuid
             if not room_id:
                 room_id = str(uuid.uuid4())[:8]
 
-            # Create the Hex game room
-            hex_room = HexGameRoom(room_id, f"{team_a} vs {team_b}", team_a, categories=categories, point_values=point_values)
+            # Determine room display name
+            display_name = room_name or f"{team_a} vs {team_b}"
+
+            # Create the Hex game room (expects team_b and no unsupported kwargs)
+            hex_room = HexGameRoom(room_id, display_name, team_a, team_b, point_values=point_values)
 
             # Create the board; if not enough questions, show details
             success, enough_questions, error_details = hex_room.create_board(question_uploader)
