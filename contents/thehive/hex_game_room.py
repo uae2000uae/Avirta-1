@@ -319,3 +319,15 @@ class HexGameRoom:
             'team_a': self.team_a,
             'team_b': self.team_b,
         }
+
+    # Lifecycle compatibility with app.py end_game route
+    def end_game(self) -> bool:
+        """Finalize the Hive game session.
+
+        Provided to satisfy the generic end_game() call in app.py. The Hive game
+        does not require special teardown; app.py handles snapshotting and
+        cleanup of in-memory/persisted room data. This method is a safe no-op.
+        Returns True for compatibility.
+        """
+        # No internal resources to release for Hive at this time.
+        return True

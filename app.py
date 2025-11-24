@@ -483,7 +483,11 @@ def joined_room(room_id):
 
 @app.route('/end_game/<room_id>')
 def end_game(room_id):
-    """End a game and return to the home page."""
+    """End a game and return to the home page.
+
+    Also attempts to push a snapshot of the used questions to GitHub (if configured).
+    This is best-effort and will never block ending the game.
+    """
     # Check if the room exists
     if room_id not in game_rooms:
         flash('Game room not found.')
@@ -492,21 +496,63 @@ def end_game(room_id):
     # Check if the player is in the session
     if 'player_name' not in session:
         flash('Please join the game first.')
-        return redirect(url_for('join_room'))
+        return redirect(url_for('index'))
 
     # Get the game room and player name
     game_room = game_rooms[room_id]
     player_name = session['player_name']
 
-    # Check if the player is in the room
-    if player_name not in game_room.players:
-        flash('You are not in this game room.')
-        return redirect(url_for('join_room'))
+    # Determine participants list generically (supports modes without .players)
+    participants = []
+    try:
+        participants = list(getattr(game_room, 'players')) if hasattr(game_room, 'players') else []
+    except Exception:
+        participants = []
+    if not participants:
+        # Fallback to teams (Hive)
+        participants = list(getattr(game_room, 'teams', []))
 
-    # Check if the player is the host
-    if not game_room.is_host(player_name):
+    # If we have a participants list, validate membership
+    if participants and player_name not in participants:
+        flash('You are not in this game room.')
+        return redirect(url_for('index'))
+
+    # Determine host permission in a mode-agnostic way
+    is_host_ok = False
+    if hasattr(game_room, 'is_host'):
+        try:
+            is_host_ok = bool(game_room.is_host(player_name))
+        except Exception:
+            is_host_ok = False
+    elif hasattr(game_room, 'host'):
+        is_host_ok = (player_name == getattr(game_room, 'host', None))
+    else:
+        # Hive: allow only team_a (creator) to end the game
+        team_a = getattr(game_room, 'team_a', None)
+        is_host_ok = (team_a is None) or (player_name == team_a)
+
+    if not is_host_ok:
         flash('Only the host can end the game.')
-        return redirect(url_for('game_room', room_id=room_id))
+        return redirect(url_for('index'))
+
+    # Try to push a snapshot of used questions to GitHub (fail-soft)
+    try:
+        from contents.game_events.push_used_questions import push_used_questions_snapshot
+        mode = type(game_room).__name__.lower().replace('gameroom', '')
+        success, msg = push_used_questions_snapshot(game_room, admin_setup, mode or 'game')
+        # Log to admin events for traceability
+        admin_setup.log_event(f"GitHub snapshot push on end_game (room {room_id}): {'success' if success else 'failed'} - {msg}")
+        if success:
+            flash('Pushed used-questions snapshot to GitHub.', 'success')
+        else:
+            # Only show an info-level note to avoid alarming the host
+            flash('Ended game. (GitHub snapshot not pushed: check settings)', 'info')
+    except Exception as e:
+        try:
+            admin_setup.log_event(f"GitHub snapshot push error on end_game (room {room_id}): {e}")
+        except Exception:
+            pass
+        # Do not block end_game
 
     # End the game
     game_room.end_game()

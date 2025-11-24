@@ -139,11 +139,17 @@
     if (!form) return;
     const max = parseInt(form.getAttribute('data-max-categories')) || 7;
     const selected = Array.from(document.querySelectorAll('input[name="categories"]:checked'));
-    const selectable = Array.from(document.querySelectorAll('input[name="categories"]:not(:checked):not(:disabled)'));
+    const unchecked = Array.from(document.querySelectorAll('input[name="categories"]:not(:checked)'));
     if (selected.length >= max) {
-      selectable.forEach(cb => cb.disabled = true);
+      unchecked.forEach(cb => { cb.disabled = true; });
     } else {
-      selectable.forEach(cb => cb.disabled = false);
+      unchecked.forEach(cb => {
+        const label = document.querySelector('label[for="' + cb.id + '"]');
+        const unavailable = label && label.classList.contains('disabled');
+        if (!unavailable) {
+          cb.disabled = false;
+        }
+      });
     }
   }
 

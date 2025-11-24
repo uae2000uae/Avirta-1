@@ -479,7 +479,7 @@ clip-path: polygon(100% 0.5%, 100% 0%, 100% 100%, 100% 99.5%, 0% 93%, 0% 7%);
   function handleEndGameClick() {
     const confirmMessage = 'Are you sure you want to end this game? This action cannot be undone.\n\nهل أنت متأكد من إنهاء هذه اللعبة؟ لا يمكن التراجع عن هذا الإجراء.';
     if (confirm(confirmMessage)) {
-      window.location.href = "{{ url_for('hex_create_room') }}";
+      window.location.href = `{{ url_for('end_game', room_id='__RID__') }}`.replace('__RID__', roomId);
     }
   }
 

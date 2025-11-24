@@ -315,9 +315,9 @@
     "id": "Q0001660",
     "category_id": "دول_العالم",
     "created_at": "2025-08-02T00:38:03.900870",
-    "updated_at": "2025-09-19T22:05:02.732022",
+    "updated_at": "2025-11-24T20:35:06.965253",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -710,9 +710,9 @@
     "id": "Q0001683",
     "category_id": "دول_العالم",
     "created_at": "2025-08-02T00:41:16.453954",
-    "updated_at": "2025-09-19T22:47:15.543757",
+    "updated_at": "2025-11-24T20:43:44.883640",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "true_false",
@@ -928,9 +928,9 @@
     "id": "Q0001697",
     "category_id": "دول_العالم",
     "created_at": "2025-08-02T00:41:17.213805",
-    "updated_at": "2025-08-02T00:41:17.213805",
+    "updated_at": "2025-11-24T20:27:54.004019",
     "active": true,
-    "use_count": 0
+    "use_count": 2
   },
   {
     "type": "true_false",

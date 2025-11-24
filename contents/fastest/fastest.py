@@ -320,12 +320,17 @@ def register_fastest_routes(app, game_rooms, game_status_manager, question_uploa
             flash('Only the host can move to the next question.')
             return redirect(url_for('fastest_play', room_id=room_id))
 
+        # Prevent advancing if the board is already completed (server-side safety)
+        if game_room.is_board_completed():
+            flash('Game Over! All questions have been answered.')
+            return redirect(url_for('fastest_leaderboard', room_id=room_id))
+
         # Get the next question
         next_question = game_room.get_next_question()
 
         # Check if there are no more questions
         if not next_question:
-            flash('No more questions available.')
+            flash('Game Over! All questions have been answered.')
             return redirect(url_for('fastest_leaderboard', room_id=room_id))
 
         # Add a game event for moving to the next question

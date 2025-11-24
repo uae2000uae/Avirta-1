@@ -37,7 +37,7 @@
         {% endif %}
     </div>
     
-    {% if is_host %}
+    {% if is_host and not room.is_board_completed() %}
         <div class="form-actions">
             <form action="{{ url_for('fastest_next_question') }}" method="post">
                 <input type="hidden" name="room_id" value="{{ room.room_id }}">
@@ -48,10 +48,10 @@
     
     {% if room.is_board_completed() %}
         <div>
-            <form class="form-actions clear center">
-                <input type="hidden" name="room_id" value="{{ room.room_id }}">
+            <div class="form-actions clear center">
+                <p class="text-center"><strong>Game Over! All questions have been answered.<br>انتهت اللعبة! تمت الإجابة على جميع الأسئلة.</strong></p>
                 <a href="{{ url_for('end_game', room_id=room.room_id) }}" class="button large">End Game</a>
-            </form>
+            </div>
         </div>
     {% endif %}
     

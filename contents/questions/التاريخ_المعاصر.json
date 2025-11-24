@@ -47,8 +47,8 @@
     "points": 100,
     "question": "في أي عام تم هدم جدار برلين؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:56:31.925502",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:43:32.909595",
+    "use_count": 2
   },
   {
     "active": true,
@@ -609,8 +609,8 @@
     "points": 200,
     "question": "من هو القائد الذي أعلن تأسيس جمهورية الصين الشعبية عام 1949؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:57:38.921509",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:44:04.824876",
+    "use_count": 1
   },
   {
     "active": true,
@@ -755,8 +755,8 @@
     "points": 200,
     "question": "ما اسم العالم الذي اخترع المصباح الكهربائي؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:58:00.399776",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:38:29.608570",
+    "use_count": 1
   },
   {
     "active": true,
@@ -958,8 +958,8 @@
     "points": 300,
     "question": "ما اسم الفتاة الباكستانية التي نجت من محاولة اغتيال بسبب دفاعها عن تعليم الفتيات؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:58:24.716370",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:39:26.771127",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1256,7 +1256,7 @@
     "points": 400,
     "question": "ما اسم الاتفاقية التي تم توقيعها في ديتون وأدت إلى إنهاء حرب البوسنة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:58:53.661356",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:37:59.249780",
+    "use_count": 1
   }
 ]

@@ -48,8 +48,8 @@
     "points": 100,
     "question": "What is the full name of the car company commonly known as VW?",
     "type": "text",
-    "updated_at": "2025-09-21T16:17:36.994074",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:25:22.682411",
+    "use_count": 2
   },
   {
     "active": true,
@@ -61,8 +61,8 @@
     "points": 100,
     "question": "Which American company manufactures the Mustang?",
     "type": "text",
-    "updated_at": "2025-09-21T16:17:36.994074",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:26:36.726917",
+    "use_count": 2
   },
   {
     "active": true,
@@ -74,8 +74,8 @@
     "points": 100,
     "question": "What country is Toyota from?",
     "type": "text",
-    "updated_at": "2025-09-21T16:17:42.933268",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:26:40.701750",
+    "use_count": 2
   },
   {
     "active": true,
@@ -87,8 +87,8 @@
     "points": 200,
     "question": "Name the British luxury car brand with a winged 'B' logo.",
     "type": "text",
-    "updated_at": "2025-09-21T16:17:42.933268",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:25:17.342806",
+    "use_count": 2
   },
   {
     "active": true,
@@ -152,8 +152,8 @@
     "points": 200,
     "question": "What is the luxury division of Toyota?",
     "type": "text",
-    "updated_at": "2025-09-21T16:17:50.714898",
-    "use_count": 1
+    "updated_at": "2025-11-24T20:26:32.944531",
+    "use_count": 2
   },
   {
     "active": true,
@@ -478,8 +478,8 @@
     "points": 300,
     "question": "Which German car manufacturer produces the Panamera luxury sedan?",
     "type": "text",
-    "updated_at": "2025-09-21T16:18:39.662807",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:25:13.065807",
+    "use_count": 1
   },
   {
     "active": true,
@@ -504,8 +504,8 @@
     "points": 300,
     "question": "Which company manufactures the i3 electric city car?",
     "type": "text",
-    "updated_at": "2025-09-21T16:18:39.662807",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:26:28.049834",
+    "use_count": 1
   },
   {
     "active": true,
@@ -556,8 +556,8 @@
     "points": 400,
     "question": "Which French car company merged with Peugeot to form the PSA Group?",
     "type": "text",
-    "updated_at": "2025-09-21T16:18:47.854807",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:25:08.643719",
+    "use_count": 1
   },
   {
     "active": true,
@@ -595,8 +595,8 @@
     "points": 400,
     "question": "Which British automaker is known for producing the Vantage model?",
     "type": "text",
-    "updated_at": "2025-09-21T16:18:56.456970",
-    "use_count": 0
+    "updated_at": "2025-11-24T20:26:23.357946",
+    "use_count": 1
   },
   {
     "active": true,
