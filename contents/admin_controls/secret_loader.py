@@ -103,13 +103,16 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
         if os.environ.get(override_env_name) in (None, ""):
             # Add a few sensible variants
             alt_names = list({
-                key,  # original (e.g., GITHUB_TOKEN)
+                key,  # original (e.g., GITHUB_TOKEN or OPENAI_API_KEY)
                 key.upper(),
                 key.lower(),
             })
-            # Special-case: many users create GitHub token as 'GitHub_Token'
+            # Special-cases: common mixed-case secret names used by operators
             if key.upper() == "GITHUB_TOKEN":
                 alt_names.append("GitHub_Token")
+            if key.upper() == "OPENAI_API_KEY":
+                # Support secret named 'AI_Token' in GSM
+                alt_names.append("AI_Token")
 
         for alt in alt_names:
             if not alt or alt == secret_name:
