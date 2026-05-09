@@ -1,0 +1,21 @@
+# Gitleaks configuration for Avirta
+# - We keep default rules from Gitleaks, and add a small allowlist to avoid false positives
+# - Placeholders and redacted tokens are allowed
+# - We also ignore some paths that are not part of the runtime and may contain examples/placeholder strings
+
+[allowlist]
+# Common placeholder values permitted in repo
+regexes = [
+  "SET_IN_ENV",
+  "sk-\*\*\*REDACTED\*\*\*",
+  "ghp_\*\*\*REDACTED\*\*\*",
+]
+# Ignore files that are already excluded from the container/runtime or contain docs
+paths = [
+  "^docs/",
+  "^tests/",
+  "^\.idea/",
+  "^\.junie/",
+  "^contents/admin_controls/game_settings\.json$",
+  "^contents/admin_controls/saved_api_settings\.json$",
+]
