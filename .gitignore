@@ -8,3 +8,4 @@ contents/admin_controls/saved_api_settings.json
 .env.*
 # IDE files (may contain cached secrets)
 .idea/
+/.junie/
