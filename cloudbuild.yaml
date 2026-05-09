@@ -3,6 +3,6 @@ steps:
   args: ['app', 'deploy']
 timeout: '1600s'
 
-logsBucket: 'gs://avirta_bucket'
+logsBucket: 'gs://gcf-v2-sources-778480433593-us-central1'
 options:
   logging: GCS_ONLY
