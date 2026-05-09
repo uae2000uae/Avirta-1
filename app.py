@@ -36,6 +36,7 @@ from questionmanagement.question_bank import QuestionBank, increment_use_count, 
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
 from contents.admin_controls.ai_settings import load_ai_settings
+from contents.admin_controls.secret_loader import get_secret
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -2810,15 +2811,15 @@ def push_questions_to_github():
         action = request.form.get('action')
 
         if action == 'push_all':
-            # Get GitHub settings from admin_setup
-            github_token = admin_setup.game_settings.get('github_token', '')
+            # Get GitHub settings; prefer Secret Manager/env for token
+            github_token = get_secret('GITHUB_TOKEN') or admin_setup.game_settings.get('github_token', '')
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
             github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
             github_branch = admin_setup.game_settings.get('github_branch', 'main')
 
             # Validate GitHub settings
-            if not github_token or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please configure them in the API Settings tab.', 'error')
+            if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
+                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
                 return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
 
             # Initialize GitHub integration

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from typing import Dict, Any, Optional
+from contents.admin_controls.secret_loader import get_secret
 
 
 PLACEHOLDER_VALUES = {"SET_IN_ENV", "", None}
@@ -69,9 +70,10 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
     gs = getattr(admin_setup, "game_settings", {}) or {}
 
     # Secrets: prefer env var and ignore placeholders from file
-    api_key = os.environ.get("OPENAI_API_KEY") or gs.get("openai_api_key")
-    if api_key and str(api_key).strip().upper() in PLACEHOLDER_VALUES:
-        api_key = os.environ.get("OPENAI_API_KEY")
+    # Prefer env/Secret Manager; ignore placeholders in file
+    api_key = get_secret("OPENAI_API_KEY") or gs.get("openai_api_key")
+    if api_key and str(api_key).strip() in PLACEHOLDER_VALUES:
+        api_key = get_secret("OPENAI_API_KEY")
 
     model = str(gs.get("openai_model", "gpt-4o-mini")).strip() or "gpt-4o-mini"
     temperature = float(gs.get("openai_temperature", 0.55))

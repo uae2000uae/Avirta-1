@@ -26,7 +26,8 @@ steps:
         "--region=${_REGION}",
         "--platform=managed",
         "--allow-unauthenticated",
-        "--port=8080"
+        "--port=8080",
+        "--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
       ]
 
 images:
