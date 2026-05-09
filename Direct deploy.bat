@@ -55,7 +55,9 @@ gcloud run deploy %SERVICE_NAME% ^
   --platform managed ^
   --allow-unauthenticated ^
   --port 8080 ^
-  --set-secrets OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
+  --remove-secrets OPENAI_API_KEY,GITHUB_TOKEN ^
+  --set-secrets OPENAI_API_KEY=AI_Token:latest ^
+  --set-secrets GITHUB_TOKEN=GitHub_Token:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy failed.
   echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated --set-secrets OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
