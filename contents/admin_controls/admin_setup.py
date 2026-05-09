@@ -50,8 +50,16 @@ class AdminSetup:
             'openai_top_p': 1.0,
             'openai_frequency_penalty': 0.3,
             'openai_presence_penalty': 0.2,
-            'openai_max_tokens': 20000,
+            'openai_max_tokens': 16384,
             'openai_seed': 0,
+            # Modern OpenAI settings (future-proof)
+            'openai_response_format': 'json_object',
+            'openai_json_mode': True,
+            'openai_stop': '',
+            'openai_request_timeout': 60,
+            'openai_base_url': 'https://api.openai.com/v1',
+            'openai_organization': '',
+            'openai_user': '',
 
             # GitHub settings
             'github_token': '',

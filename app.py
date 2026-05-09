@@ -35,6 +35,7 @@ from contents.fastest.fastest import register_fastest_routes
 from questionmanagement.question_bank import QuestionBank, increment_use_count, set_question_bank_instance
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
+from contents.admin_controls.ai_settings import load_ai_settings
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -1946,6 +1947,9 @@ def ai_question_generator():
         # Get selected reference categories
         reference_categories = request.form.getlist('reference_categories[]')
 
+        # Load centralized AI settings (env overrides file values)
+        ai_opts = load_ai_settings(admin_setup)
+
         # Generate questions
         options = {
             'question_type': question_type,
@@ -1954,10 +1958,21 @@ def ai_question_generator():
             'include_explanations': include_explanations,
             'language': language,
             'reference_categories': reference_categories,
-            'api_key': admin_setup.game_settings.get('openai_api_key', ''),
-            'model': admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo'),
-            'temperature': admin_setup.game_settings.get('openai_temperature', 0.7),
-            'max_output_tokens': admin_setup.game_settings.get('openai_max_tokens', 20000)
+            # Centralized AI options
+            'api_key': ai_opts.get('api_key'),
+            'model': ai_opts.get('model'),
+            'temperature': ai_opts.get('temperature'),
+            'max_output_tokens': ai_opts.get('max_output_tokens'),
+            'top_p': ai_opts.get('top_p'),
+            'frequency_penalty': ai_opts.get('frequency_penalty'),
+            'presence_penalty': ai_opts.get('presence_penalty'),
+            'stop': ai_opts.get('stop'),
+            'response_format': ai_opts.get('response_format'),
+            'request_timeout': ai_opts.get('request_timeout'),
+            'base_url': ai_opts.get('base_url'),
+            'organization': ai_opts.get('organization'),
+            'user': ai_opts.get('user'),
+            'seed': ai_opts.get('seed'),
         }
 
         try:

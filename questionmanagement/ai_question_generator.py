@@ -49,12 +49,36 @@ class AIQuestionGenerator:
 
         # OpenAI API settings (will be set by the web app)
         self.api_key = None
-        self.model = "gpt-3.5-turbo"
-        self.temperature = 0.7
+        self.model = "gpt-4o-mini"
+        self.temperature = 0.55
+        self.top_p = 1.0
+        self.frequency_penalty = 0.0
+        self.presence_penalty = 0.0
         self.max_output_tokens = 2000
+        self.seed = 0
+        self.stop = None
+        self.response_format = None  # e.g., {"type": "json_object"}
+        self.request_timeout = 60.0
+        self.base_url = "https://api.openai.com/v1"
+        self.organization = None
+        self.user = None
 
         # API connection status
         self.api_connected = False
+
+    def _get_model_max_completion_tokens(self, model_name: str) -> int:
+        """Return max supported completion tokens for known models; safe fallback otherwise."""
+        caps = {
+            'gpt-4o': 16384,
+            'gpt-4o-mini': 16384,
+            'o4-mini': 16384,
+            'gpt-4.1': 16384,
+            'gpt-4.1-mini': 16384,
+        }
+        for key, val in caps.items():
+            if str(model_name or '').startswith(key):
+                return val
+        return 4096
 
     def generate_questions(self, prompt, options=None):
         """
@@ -93,11 +117,29 @@ class AIQuestionGenerator:
         language = options.get('language', 'arabic')
         reference_categories = options.get('reference_categories', [])
 
-        # Get API settings from options if provided
+        # Get API settings from options if provided (centralized loader feeds these)
         self.api_key = options.get('api_key', self.api_key)
         self.model = options.get('model', self.model)
         self.temperature = float(options.get('temperature', self.temperature))
+        self.top_p = float(options.get('top_p', self.top_p))
+        self.frequency_penalty = float(options.get('frequency_penalty', self.frequency_penalty))
+        self.presence_penalty = float(options.get('presence_penalty', self.presence_penalty))
         self.max_output_tokens = int(options.get('max_output_tokens', self.max_output_tokens))
+        self.seed = int(options.get('seed', self.seed) or 0)
+        self.stop = options.get('stop', self.stop)
+        self.response_format = options.get('response_format', self.response_format)
+        self.request_timeout = float(options.get('request_timeout', self.request_timeout) or 60)
+        self.base_url = options.get('base_url', self.base_url) or self.base_url
+        self.organization = options.get('organization', self.organization)
+        self.user = options.get('user', self.user)
+
+        # Clamp max tokens based on model capability
+        try:
+            cap = self._get_model_max_completion_tokens(self.model)
+            self.max_output_tokens = max(1, min(int(self.max_output_tokens), cap))
+        except Exception:
+            # Fallback safe bound
+            self.max_output_tokens = max(1, min(int(self.max_output_tokens), 4096))
 
         # Check if API key is provided and not empty
         if not self.api_key or not self.api_key.strip():
@@ -296,6 +338,8 @@ class AIQuestionGenerator:
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key.strip()}"  # Ensure no whitespace in the API key
             }
+            if self.organization:
+                headers["OpenAI-Organization"] = str(self.organization)
 
             data = {
                 "model": self.model,
@@ -303,15 +347,32 @@ class AIQuestionGenerator:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello, are you connected?"}
                 ],
-                "temperature": 0.7,
-                "max_tokens": 50
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "max_tokens": 50,
             }
+            if self.response_format:
+                data["response_format"] = self.response_format
+            if self.user:
+                data["user"] = self.user
+            if self.seed:
+                # Only include if non-zero for determinism, some models support it
+                try:
+                    if int(self.seed) > 0:
+                        data["seed"] = int(self.seed)
+                except Exception:
+                    pass
+
+            # Build endpoint from base_url
+            base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+            url = f"{base}/chat/completions"
 
             print(f"Verifying OpenAI API connection with key: '{self.api_key[:5]}...'")
             response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
+                url,
                 headers=headers,
-                json=data
+                json=data,
+                timeout=self.request_timeout or 60
             )
 
             if response.status_code == 200:
@@ -465,6 +526,8 @@ class AIQuestionGenerator:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"  # Use the stripped API key
         }
+        if self.organization:
+            headers["OpenAI-Organization"] = str(self.organization)
 
         data = {
             "model": self.model,
@@ -473,16 +536,36 @@ class AIQuestionGenerator:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": self.temperature,
-            "max_tokens": self.max_output_tokens
+            "top_p": self.top_p,
+            "frequency_penalty": self.frequency_penalty,
+            "presence_penalty": self.presence_penalty,
+            "max_tokens": self.max_output_tokens,
         }
+        if self.stop:
+            data["stop"] = self.stop
+        if self.response_format:
+            data["response_format"] = self.response_format
+        if self.user:
+            data["user"] = self.user
+        if self.seed:
+            try:
+                if int(self.seed) > 0:
+                    data["seed"] = int(self.seed)
+            except Exception:
+                pass
+
+        # Build endpoint from base_url
+        base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+        url = f"{base}/chat/completions"
 
         print("Making API request to OpenAI...")
         try:
             # Make the API request
             response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
+                url,
                 headers=headers,
-                json=data
+                json=data,
+                timeout=self.request_timeout or 60
             )
 
             # Check for errors
