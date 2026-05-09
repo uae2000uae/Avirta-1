@@ -59,7 +59,7 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
     """Return a normalized dict of OpenAI settings for the app to use.
 
     Resolution order for API key:
-    - Environment variable OPENAI_API_KEY
+    - Environment variable AI_Token
     - admin_setup.game_settings['openai_api_key'] if not a placeholder
 
     Returns a dict with keys:
@@ -71,9 +71,9 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
 
     # Secrets: prefer env var and ignore placeholders from file
     # Prefer env/Secret Manager; ignore placeholders in file
-    api_key = get_secret("OPENAI_API_KEY") or gs.get("openai_api_key")
+    api_key = get_secret("AI_Token") or gs.get("openai_api_key")
     if api_key and str(api_key).strip() in PLACEHOLDER_VALUES:
-        api_key = get_secret("OPENAI_API_KEY")
+        api_key = get_secret("AI_Token")
 
     model = str(gs.get("openai_model", "gpt-4o-mini")).strip() or "gpt-4o-mini"
     temperature = float(gs.get("openai_temperature", 0.55))

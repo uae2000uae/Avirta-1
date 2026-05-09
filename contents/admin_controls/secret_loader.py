@@ -7,11 +7,11 @@ Resolves secrets from (in order):
 
 Usage:
     from contents.admin_controls.secret_loader import get_secret
-    api_key = get_secret("OPENAI_API_KEY")
+    api_key = get_secret("AI_Token")
 
 Notes:
 - To override the secret name in GSM, set an env var named
-  SECRET_<SECRETNAME>_NAME. Example: SECRET_OPENAI_API_KEY_NAME=MyOpenAIKey
+  SECRET_<SECRETNAME>_NAME. Example: SECRET_AI_Token_NAME=MyOpenAIKey
 - Requires google-cloud-secret-manager at runtime on GCP. Falls back gracefully
   if not installed or if permissions are missing.
 """
@@ -57,7 +57,7 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
       1) Environment variable with exact name `key`
       2) Google Secret Manager: uses GOOGLE_CLOUD_PROJECT and secret name
          derived from `key`, but can be overridden by env var
-         SECRET_<key>_NAME (e.g., SECRET_OPENAI_API_KEY_NAME)
+         SECRET_<key>_NAME (e.g., SECRET_AI_Token_NAME)
 
     The returned value is stripped of whitespace and common prefixes like
     "Bearer ". If nothing can be resolved, returns `default`.
@@ -83,7 +83,7 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
     # 2) Google Secret Manager (only if project id is available)
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
     if project_id:
-        # Allow custom secret resource name via SECRET_<KEY>_NAME
+        # Allow custom secret resource name via SECRET_<KEY>_NAME (no legacy name fallbacks)
         override_env_name = f"SECRET_{key}_NAME"
         secret_name = os.environ.get(override_env_name, key)
 
@@ -95,36 +95,5 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
         if gsm_val:
             _SECRET_CACHE[cache_key] = gsm_val
             return gsm_val
-
-        # If not found, attempt common case/name variants (helps when GSM secret is mixed-case)
-        # Keep minimal and targeted to avoid surprising cross-lookups.
-        alt_names = []
-        # If no explicit override given, consider typical variants
-        if os.environ.get(override_env_name) in (None, ""):
-            # Add a few sensible variants
-            alt_names = list({
-                key,  # original (e.g., GITHUB_TOKEN or OPENAI_API_KEY)
-                key.upper(),
-                key.lower(),
-            })
-            # Special-cases: common mixed-case secret names used by operators
-            if key.upper() == "GITHUB_TOKEN":
-                alt_names.append("GitHub_Token")
-            if key.upper() == "OPENAI_API_KEY":
-                # Support secret named 'AI_Token' in GSM
-                alt_names.append("AI_Token")
-
-        for alt in alt_names:
-            if not alt or alt == secret_name:
-                continue
-            ck = (project_id, alt)
-            if ck in _SECRET_CACHE:
-                v = _clean(_SECRET_CACHE[ck])
-                if v:
-                    return v
-            v = _clean(_gsm_access_secret(project_id, alt))
-            if v:
-                _SECRET_CACHE[ck] = v
-                return v
 
     return default

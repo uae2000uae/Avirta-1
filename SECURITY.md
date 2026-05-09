@@ -17,7 +17,7 @@ How to report a vulnerability
 
 Developer guidance (avoid leaks)
 - Never commit plaintext secrets (API keys, tokens, passwords) to the repo.
-- Use environment variables locally (e.g., OPENAI_API_KEY, GITHUB_TOKEN) and Google Secret Manager in production.
+- Use environment variables locally (e.g., AI_Token, GitHub_Token) and Google Secret Manager in production.
 - Files likely to hold local secrets are git-ignored (.env, contents/admin_controls/*settings.json, IDE folders). Do not force-add them.
 - If you accidentally commit a secret:
   1) Revoke/rotate it immediately at the provider.
@@ -30,7 +30,7 @@ Local scanning (optional)
   - Or install gitleaks and run: gitleaks detect --source . --no-banner --redact --config .gitleaks.toml
 
 Cloud Run/Google Cloud notes
-- Provide OPENAI_API_KEY and GITHUB_TOKEN via Google Secret Manager and map them to environment variables during deployment (Cloud Build or gcloud run --set-secrets ...).
+- Provide AI_Token and GitHub_Token via Google Secret Manager and map them to environment variables during deployment (Cloud Build or gcloud run --set-secrets ...).
 - Ensure the Cloud Run service account has roles/secretmanager.secretAccessor.
 
 Questions

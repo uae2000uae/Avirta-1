@@ -27,11 +27,7 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
-        "--remove-secrets=OPENAI_API_KEY,GITHUB_TOKEN",
-        "--set-secrets",
-        "OPENAI_API_KEY=AI_Token:latest",
-        "--set-secrets",
-        "GITHUB_TOKEN=GitHub_Token:latest"
+        "--set-secrets=AI_Token=AI_Token:latest,GitHub_Token=GitHub_Token:latest"
       ]
 
   # 4) Ensure public (unauthenticated) access (roles/run.invoker)

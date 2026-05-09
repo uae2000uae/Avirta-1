@@ -2281,7 +2281,7 @@ def admin_controls():
                         # If value is blank or placeholder, prefer runtime secret and skip validation
                         if not value or not value.strip() or value.strip() == 'SET_IN_ENV':
                             value = 'SET_IN_ENV'
-                            flash('Using OPENAI_API_KEY from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
+                            flash('Using AI_Token from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
                         else:
                             # Verify only when a non-placeholder key is provided
                             from questionmanagement.ai_question_generator import verify_api_connection
@@ -2812,14 +2812,14 @@ def push_questions_to_github():
 
         if action == 'push_all':
             # Get GitHub settings; prefer Secret Manager/env for token
-            github_token = get_secret('GITHUB_TOKEN') or admin_setup.game_settings.get('github_token', '')
+            github_token = get_secret('GitHub_Token') or admin_setup.game_settings.get('github_token', '')
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
             github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
             github_branch = admin_setup.game_settings.get('github_branch', 'main')
 
             # Validate GitHub settings
             if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
+                flash('GitHub settings are incomplete. Please set GitHub_Token via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
                 return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
 
             # Initialize GitHub integration

@@ -3,8 +3,8 @@ import json
 from openai import OpenAI
 
 settings = {
-    # API key (or set OPENAI_API_KEY in your environment)
-    'openai_api_key': os.getenv('OPENAI_API_KEY', ''),
+    # API key (or set AI_Token in your environment or Secret Manager)
+    'openai_api_key': os.getenv('AI_Token', ''),
 
     # Models
     'generator_model': 'gpt-4o-mini',  # fastest good-quality multilingual generator
