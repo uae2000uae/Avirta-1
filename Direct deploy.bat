@@ -54,11 +54,25 @@ gcloud run deploy %SERVICE_NAME% ^
   --region %REGION% ^
   --platform managed ^
   --allow-unauthenticated ^
-  --port 8080
+  --port 8080 ^
+  --set-secrets OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy failed.
-  echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated
+  echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated --set-secrets OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
   exit /b 1
+)
+
+echo.
+echo Ensuring public (unauthenticated) access to the service...
+gcloud beta run services add-iam-policy-binding %SERVICE_NAME% ^
+  --region=%REGION% ^
+  --member=allUsers ^
+  --role=roles/run.invoker >NUL 2>&1
+
+if errorlevel 1 (
+  echo Warning: failed to set IAM policy binding for public access (you may need additional permissions).
+) else (
+  echo Public access (roles/run.invoker) ensured.
 )
 
 echo.

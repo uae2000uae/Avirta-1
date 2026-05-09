@@ -30,6 +30,20 @@ steps:
         "--set-secrets=OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest"
       ]
 
+  # 4) Ensure public (unauthenticated) access (roles/run.invoker)
+  - name: "gcr.io/cloud-builders/gcloud"
+    args:
+      [
+        "beta",
+        "run",
+        "services",
+        "add-iam-policy-binding",
+        "${_SERVICE_NAME}",
+        "--region=${_REGION}",
+        "--member=allUsers",
+        "--role=roles/run.invoker"
+      ]
+
 images:
   - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
 
