@@ -1,53 +1,46 @@
-# Git
-.git
+# Exclude files and folders not needed in the Cloud Run container image
+
+# VCS and local env
+.git/
 .gitignore
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
 .venv/
-venv/
-ENV/
-.junie/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
 
-# Docker
-.dockerignore
-Dockerfile
-
-# Editor directories and files
+# IDE/editor
 .idea/
 .vscode/
-*.swp
-*.swo
 
-# OS generated files
+# Local environment and secrets
+.env
+.env.*
+.junie/
+remove_shelf.bat
+
+# OS generated
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Application specific
-*.log
-.coverage
-htmlcov/
+# Tests and docs (not needed at runtime)
+tests/
+docs/
+
+# Deployment configs not used in Cloud Run image
+app.yaml
+cloudbuild.yaml
+docker-compose.yml
+avirta.service
+app_engine_nginx.conf
+nginx_avirta.conf
+Direct deploy.bat
+
+# Misc large or dev-only assets
+scratches/
+*.md
+*.MD
+
+# Optional: exclude local run data/output not required for serving
+.game_runs/
