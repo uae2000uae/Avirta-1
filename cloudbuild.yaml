@@ -27,7 +27,7 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
-        "--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,GITHUB_TOKEN=GitHub_Token:latest"
+        "--set-secrets=OPENAI_API_KEY=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest"
       ]
 
 images:
