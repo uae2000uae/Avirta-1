@@ -86,6 +86,8 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
         # Allow custom secret resource name via SECRET_<KEY>_NAME
         override_env_name = f"SECRET_{key}_NAME"
         secret_name = os.environ.get(override_env_name, key)
+
+        # Try primary name first, with simple cache
         cache_key = (project_id, secret_name)
         if cache_key in _SECRET_CACHE:
             return _clean(_SECRET_CACHE[cache_key]) or default
@@ -93,5 +95,33 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
         if gsm_val:
             _SECRET_CACHE[cache_key] = gsm_val
             return gsm_val
+
+        # If not found, attempt common case/name variants (helps when GSM secret is mixed-case)
+        # Keep minimal and targeted to avoid surprising cross-lookups.
+        alt_names = []
+        # If no explicit override given, consider typical variants
+        if os.environ.get(override_env_name) in (None, ""):
+            # Add a few sensible variants
+            alt_names = list({
+                key,  # original (e.g., GITHUB_TOKEN)
+                key.upper(),
+                key.lower(),
+            })
+            # Special-case: many users create GitHub token as 'GitHub_Token'
+            if key.upper() == "GITHUB_TOKEN":
+                alt_names.append("GitHub_Token")
+
+        for alt in alt_names:
+            if not alt or alt == secret_name:
+                continue
+            ck = (project_id, alt)
+            if ck in _SECRET_CACHE:
+                v = _clean(_SECRET_CACHE[ck])
+                if v:
+                    return v
+            v = _clean(_gsm_access_secret(project_id, alt))
+            if v:
+                _SECRET_CACHE[ck] = v
+                return v
 
     return default
