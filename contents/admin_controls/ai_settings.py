@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional
 from contents.admin_controls.secret_loader import get_secret
 
 
-PLACEHOLDER_VALUES = {"SET_IN_ENV", "", None}
+PLACEHOLDER_VALUES = {"SET_IN_ENV", "set_in_env", "", None}
 
 
 def _coerce_bool(val: Any, default: bool = False) -> bool:

@@ -22,6 +22,20 @@ class AIQuestionGenerator:
     with customizable options for question type, difficulty, etc.
     """
 
+    @staticmethod
+    def _redact_secrets(text: str) -> str:
+        """Redact API key-like substrings in error messages to avoid leaking secrets."""
+        try:
+            import re as _re
+            if not isinstance(text, str):
+                return text
+            # Mask common patterns like sk-... and ghp_...
+            text = _re.sub(r"sk-[A-Za-z0-9_\-]{5,}", "sk-***REDACTED***", text)
+            text = _re.sub(r"ghp_[A-Za-z0-9]{5,}", "ghp_***REDACTED***", text)
+            return text
+        except Exception:
+            return text
+
     def __init__(self, temp_storage_path=None):
         """
         Initialize a new AI question generator.
@@ -381,7 +395,8 @@ class AIQuestionGenerator:
                 return True, "OpenAI API connection successful"
             else:
                 self.api_connected = False
-                error_message = f"OpenAI API error: {response.status_code} - {response.text}"
+                raw_error = f"OpenAI API error: {response.status_code} - {response.text}"
+                error_message = self._redact_secrets(raw_error)
                 print(error_message)
                 return False, error_message
 
@@ -570,7 +585,8 @@ class AIQuestionGenerator:
 
             # Check for errors
             if response.status_code != 200:
-                error_message = f"OpenAI API error: {response.status_code} - {response.text}"
+                raw_error = f"OpenAI API error: {response.status_code} - {response.text}"
+                error_message = self._redact_secrets(raw_error)
                 print(error_message)
                 raise Exception(error_message)
 
@@ -770,3 +786,51 @@ def get_all_batches():
     batches.sort(key=lambda x: x['metadata'].get('timestamp', ''), reverse=True)
 
     return batches
+
+
+
+def verify_api_connection(api_key: str,
+                          model: str = "gpt-4o-mini",
+                          temperature: float = 0.55,
+                          top_p: float = 1.0,
+                          frequency_penalty: float = 0.0,
+                          presence_penalty: float = 0.0,
+                          response_format=None,
+                          base_url: str = "https://api.openai.com/v1",
+                          organization: str = None,
+                          user: str = None,
+                          request_timeout: float = 60.0,
+                          seed: int = 0):
+    """Standalone helper to verify OpenAI connectivity with the provided key.
+
+    Returns:
+        tuple(bool, str): success flag and diagnostic message.
+    """
+    try:
+        gen = AIQuestionGenerator()
+        gen.api_key = (api_key or "").strip()
+        # Clean potential accidental prefix
+        if gen.api_key.lower().startswith("bearer "):
+            gen.api_key = gen.api_key[7:].strip()
+        gen.model = model or gen.model
+        gen.temperature = float(temperature)
+        gen.top_p = float(top_p)
+        gen.frequency_penalty = float(frequency_penalty)
+        gen.presence_penalty = float(presence_penalty)
+        gen.response_format = response_format
+        gen.base_url = base_url or gen.base_url
+        gen.organization = organization
+        gen.user = user
+        gen.request_timeout = float(request_timeout or 60)
+        try:
+            gen.seed = int(seed or 0)
+        except Exception:
+            gen.seed = 0
+        return gen.verify_api_connection()
+    except Exception as e:
+        # Use the class redactor to avoid leaking keys
+        try:
+            msg = AIQuestionGenerator._redact_secrets(str(e))
+        except Exception:
+            msg = str(e)
+        return False, msg

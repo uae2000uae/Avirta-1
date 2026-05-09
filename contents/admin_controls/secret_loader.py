@@ -59,14 +59,25 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
          derived from `key`, but can be overridden by env var
          SECRET_<key>_NAME (e.g., SECRET_OPENAI_API_KEY_NAME)
 
-    If nothing can be resolved, returns `default`.
+    The returned value is stripped of whitespace and common prefixes like
+    "Bearer ". If nothing can be resolved, returns `default`.
     """
     if not key:
         return default
 
+    def _clean(val: Optional[str]) -> Optional[str]:
+        if val is None:
+            return None
+        v = str(val).strip()
+        if not v or v in essential_placeholders or v.lower() in {"none", "null"}:
+            return None
+        if v.lower().startswith("bearer "):
+            v = v[7:].strip()
+        return v
+
     # 1) Environment variable first
-    val = os.environ.get(key)
-    if val and val not in essential_placeholders:
+    val = _clean(os.environ.get(key))
+    if val:
         return val
 
     # 2) Google Secret Manager (only if project id is available)
@@ -77,9 +88,9 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
         secret_name = os.environ.get(override_env_name, key)
         cache_key = (project_id, secret_name)
         if cache_key in _SECRET_CACHE:
-            return _SECRET_CACHE[cache_key]
-        gsm_val = _gsm_access_secret(project_id, secret_name)
-        if gsm_val and gsm_val not in essential_placeholders:
+            return _clean(_SECRET_CACHE[cache_key]) or default
+        gsm_val = _clean(_gsm_access_secret(project_id, secret_name))
+        if gsm_val:
             _SECRET_CACHE[cache_key] = gsm_val
             return gsm_val
 
