@@ -44,3 +44,4 @@ scratches/
 
 # Optional: exclude local run data/output not required for serving
 .game_runs/
+/Direct deploy.bat
