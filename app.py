@@ -2277,18 +2277,20 @@ def admin_controls():
 
                     # If updating the OpenAI API key, verify the connection
                     if setting_name == 'openai_api_key':
-                        # Ensure the API key is not just whitespace
-                        if value and value.strip():
+                        # If value is blank or placeholder, prefer runtime secret and skip validation
+                        if not value or not value.strip() or value.strip() == 'SET_IN_ENV':
+                            value = 'SET_IN_ENV'
+                            flash('Using OPENAI_API_KEY from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
+                        else:
+                            # Verify only when a non-placeholder key is provided
                             from questionmanagement.ai_question_generator import verify_api_connection
-                            success, message = verify_api_connection(value.strip())  # Strip whitespace
+                            cleaned = value.strip()
+                            success, message = verify_api_connection(cleaned)
                             if success:
                                 flash(f'OpenAI API connection successful: {message}')
-                                # Store the stripped value to avoid whitespace issues
-                                value = value.strip()
+                                value = cleaned  # store trimmed value
                             else:
                                 flash(f'OpenAI API connection failed: {message}', 'error')
-                        else:
-                            flash('OpenAI API key cannot be empty or whitespace only', 'error')
 
                     admin_setup.update_game_setting(setting_name, value)
 

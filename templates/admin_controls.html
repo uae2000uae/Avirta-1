@@ -143,7 +143,8 @@
                             <h4 class="fill">OpenAI API Settings</h4>
                             <div>
                                 <label for="openai_api_key">Openai Api Key:</label>
-                                <input type="text" id="openai_api_key" name="openai_api_key" value="{{ admin_setup.game_settings.get('openai_api_key','') }}" placeholder="Enter your OpenAI API key">
+                                <input type="text" id="openai_api_key" name="openai_api_key" value="" placeholder="Set via OPENAI_API_KEY env/Secret Manager, or paste a key to verify and save locally">
+                                <small style="display:block;color:#666;margin-top:4px;">Tip: In Cloud Run, set OPENAI_API_KEY as an environment variable or via Secret Manager. Leave this blank to use the runtime secret.</small>
                             </div>
                             <div>
                                 <label for="openai_model">Openai Model:</label>
