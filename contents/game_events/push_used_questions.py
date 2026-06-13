@@ -17,6 +17,7 @@ from typing import Dict, Any, List, Set
 
 from contents.admin_controls.github_integration import GitHubIntegration
 from questionmanagement.question_bank import question_bank
+from contents.admin_controls.secret_loader import get_secret, essential_placeholders
 
 
 def _collect_used_question_ids(game_room) -> Set[str]:
@@ -158,14 +159,19 @@ def push_used_questions_snapshot(game_room, admin_setup, mode: str = "fastest") 
 
         content = json.dumps(snapshot, ensure_ascii=False, indent=2)
 
-        # GitHub settings
-        github_token = admin_setup.game_settings.get("github_token", "")
+        # GitHub settings: prefer Secret Manager/env for token, then fallback to saved setting
+        github_token = get_secret("GitHub_Token") or admin_setup.game_settings.get("github_token", "")
+        if github_token in essential_placeholders:
+            github_token = ""
         github_repo_owner = admin_setup.game_settings.get("github_repo_owner", "")
         github_repo_name = admin_setup.game_settings.get("github_repo_name", "")
         github_branch = admin_setup.game_settings.get("github_branch", "main")
 
-        if not github_token or not github_repo_owner or not github_repo_name:
-            return False, "GitHub settings are incomplete; skipping push of used questions."
+        if (not github_token) or (not github_repo_owner) or (not github_repo_name):
+            return False, (
+                "GitHub settings are incomplete. Ensure the GitHub_Token secret is set in Google "
+                "Secret Manager or environment, and repo owner/name are configured in Admin > API Settings."
+            )
 
         github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
 
