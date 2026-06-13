@@ -2305,8 +2305,7 @@ def admin_controls():
                 'openai_presence_penalty': admin_setup.game_settings.get('openai_presence_penalty', 0.2),
                 'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 20000),
                 'openai_seed': admin_setup.game_settings.get('openai_seed', 0),
-                # GitHub settings from form
-                'github_token': request.form.get('github_token', ''),
+                # GitHub settings from form (token is no longer stored, use Secret Manager/env)
                 'github_repo_owner': request.form.get('github_repo_owner', ''),
                 'github_repo_name': request.form.get('github_repo_name', ''),
                 'github_branch': request.form.get('github_branch', '')
@@ -2806,21 +2805,30 @@ def push_questions_to_github():
         flash('You must be logged in to access this page.', 'error')
         return redirect(url_for('admin_controls'))
 
+    # Determine if a token is present via Secret Manager/env (for display only)
+    token_present = bool(
+        get_secret('GITHUB_TOKEN') or get_secret('GitHub_Token') or os.environ.get('GITHUB_TOKEN')
+    )
+
     # If it's a POST request, push the files to GitHub
     if request.method == 'POST':
         action = request.form.get('action')
 
         if action == 'push_all':
-            # Get GitHub settings; prefer Secret Manager/env for token
-            github_token = get_secret('GitHub_Token') or admin_setup.game_settings.get('github_token', '')
+            # Get GitHub settings; resolve token exclusively from Secret Manager/env
+            github_token = (
+                get_secret('GITHUB_TOKEN')
+                or get_secret('GitHub_Token')
+                or os.environ.get('GITHUB_TOKEN')
+            )
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
             github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
             github_branch = admin_setup.game_settings.get('github_branch', 'main')
 
             # Validate GitHub settings
             if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please set GitHub_Token via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=bool(github_token))
 
             # Initialize GitHub integration
             github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
@@ -2852,16 +2860,20 @@ def push_questions_to_github():
                                   admin_setup=admin_setup)
 
         elif action == 'sync':
-            # Get GitHub settings from admin_setup
-            github_token = admin_setup.game_settings.get('github_token', '')
+            # Get GitHub settings; resolve token exclusively from Secret Manager/env
+            github_token = (
+                get_secret('GITHUB_TOKEN')
+                or get_secret('GitHub_Token')
+                or os.environ.get('GITHUB_TOKEN')
+            )
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
             github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
             github_branch = admin_setup.game_settings.get('github_branch', 'main')
 
             # Validate GitHub settings
-            if not github_token or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please configure them in the API Settings tab.', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+            if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
+                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
+                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=bool(github_token))
 
             # Initialize GitHub integration
             github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
@@ -2893,7 +2905,7 @@ def push_questions_to_github():
                                   admin_setup=admin_setup)
 
     # If it's a GET request, just render the template
-    return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
+    return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=token_present)
 
 if __name__ == '__main__':
     import os

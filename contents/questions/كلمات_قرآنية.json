@@ -274,9 +274,9 @@
     "id": "Q0000408",
     "category_id": "كلمات_قرآنية",
     "created_at": "2025-05-20T02:38:24.551213",
-    "updated_at": "2025-05-31T22:21:07.575876",
+    "updated_at": "2026-06-13T17:15:20.335024",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -293,9 +293,9 @@
     "id": "Q0000409",
     "category_id": "كلمات_قرآنية",
     "created_at": "2025-05-20T02:38:24.556726",
-    "updated_at": "2025-07-17T05:16:45.482905",
+    "updated_at": "2026-06-13T17:15:02.519007",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -331,9 +331,9 @@
     "id": "Q0000411",
     "category_id": "كلمات_قرآنية",
     "created_at": "2025-05-20T02:38:24.563728",
-    "updated_at": "2025-07-17T05:16:18.489586",
+    "updated_at": "2026-06-13T17:15:09.622392",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",
@@ -350,9 +350,9 @@
     "id": "Q0000412",
     "category_id": "كلمات_قرآنية",
     "created_at": "2025-05-20T02:38:24.567727",
-    "updated_at": "2025-07-17T04:14:34.095235",
+    "updated_at": "2026-06-13T17:15:15.573293",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "true_false",
@@ -415,9 +415,9 @@
     "id": "Q0000417",
     "category_id": "كلمات_قرآنية",
     "created_at": "2025-05-20T02:38:24.585730",
-    "updated_at": "2025-07-17T05:13:28.964418",
+    "updated_at": "2026-06-13T17:14:58.616217",
     "active": true,
-    "use_count": 1
+    "use_count": 2
   },
   {
     "type": "multiple_choice",

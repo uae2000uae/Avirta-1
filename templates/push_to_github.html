@@ -72,7 +72,7 @@
                 </tr>
                 <tr>
                     <td>GitHub Token</td>
-                    <td>{% if admin_setup.game_settings.get('github_token') %}Set{% else %}Not set{% endif %}</td>
+                    <td>{% if token_present %}Set (via Secret/env){% else %}Not set{% endif %}</td>
                 </tr>
             </table>
 			<div class="form-actions">

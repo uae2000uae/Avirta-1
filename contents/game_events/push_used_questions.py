@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Set
+import os
 
 from contents.admin_controls.github_integration import GitHubIntegration
 from questionmanagement.question_bank import question_bank
@@ -160,17 +161,38 @@ def push_used_questions_snapshot(game_room, admin_setup, mode: str = "fastest") 
         content = json.dumps(snapshot, ensure_ascii=False, indent=2)
 
         # GitHub settings: prefer Secret Manager/env for token, then fallback to saved setting
-        github_token = get_secret("GitHub_Token") or admin_setup.game_settings.get("github_token", "")
-        if github_token in essential_placeholders:
+        github_token = (
+            get_secret("GITHUB_TOKEN")
+            or get_secret("GitHub_Token")
+            or os.environ.get("GITHUB_TOKEN")
+        )
+        if github_token in essential_placeholders or str(github_token).strip() in {"", "SET_IN_ENV"}:
             github_token = ""
-        github_repo_owner = admin_setup.game_settings.get("github_repo_owner", "")
-        github_repo_name = admin_setup.game_settings.get("github_repo_name", "")
-        github_branch = admin_setup.game_settings.get("github_branch", "main")
+        github_repo_owner = (admin_setup.game_settings.get("github_repo_owner", "") or "").strip()
+        github_repo_name = (admin_setup.game_settings.get("github_repo_name", "") or "").strip()
+        github_branch = (admin_setup.game_settings.get("github_branch", "main") or "main").strip()
 
         if (not github_token) or (not github_repo_owner) or (not github_repo_name):
+            # Log granular diagnostics for admins (no secrets leaked)
+            try:
+                missing = []
+                if not github_token:
+                    missing.append("token")
+                if not github_repo_owner:
+                    missing.append("repo_owner")
+                if not github_repo_name:
+                    missing.append("repo_name")
+                admin_setup.log_event(
+                    f"Snapshot push blocked: missing GitHub settings -> {', '.join(missing)}. "
+                    f"Token from Secret? {'yes' if get_secret('GitHub_Token') else 'no'}; "
+                    f"GITHUB_TOKEN env present? {'yes' if os.environ.get('GITHUB_TOKEN') else 'no'}; "
+                    f"owner='{github_repo_owner or '-'}', repo='{github_repo_name or '-'}', branch='{github_branch}'."
+                )
+            except Exception:
+                pass
             return False, (
-                "GitHub settings are incomplete. Ensure the GitHub_Token secret is set in Google "
-                "Secret Manager or environment, and repo owner/name are configured in Admin > API Settings."
+                "GitHub settings are incomplete. Ensure the GitHub_Token secret or GITHUB_TOKEN env is set, "
+                "and repo owner/name are configured in Admin > API Settings."
             )
 
         github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)

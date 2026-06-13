@@ -62,7 +62,6 @@ class AdminSetup:
             'openai_user': '',
 
             # GitHub settings
-            'github_token': '',
             'github_repo_owner': '',
             'github_repo_name': '',
             'github_branch': '',
@@ -622,12 +621,11 @@ class AdminSetup:
         if not name or not name.strip():
             return False, "Settings name cannot be empty"
 
-        # Get GitHub settings from the first saved settings if available
+        # Get GitHub settings from the first saved settings if available (token is no longer stored)
         github_settings = {}
         if self.saved_api_settings:
             first_setting = list(self.saved_api_settings.values())[0]
             github_settings = {
-                'github_token': first_setting.get('github_token', ''),
                 'github_repo_owner': first_setting.get('github_repo_owner', ''),
                 'github_repo_name': first_setting.get('github_repo_name', ''),
                 'github_branch': first_setting.get('github_branch', '')
@@ -643,8 +641,7 @@ class AdminSetup:
             'openai_presence_penalty': self.game_settings.get('openai_presence_penalty', 0.2),
             'openai_max_tokens': self.game_settings.get('openai_max_tokens', 20000),
             'openai_seed': self.game_settings.get('openai_seed', 0),
-            # GitHub settings from saved settings
-            'github_token': github_settings.get('github_token', ''),
+            # GitHub settings from saved settings (token is managed via Secret Manager/env)
             'github_repo_owner': github_settings.get('github_repo_owner', ''),
             'github_repo_name': github_settings.get('github_repo_name', ''),
             'github_branch': github_settings.get('github_branch', '')

@@ -192,8 +192,8 @@
 
                             <h4 class="fill">GitHub API Settings</h4>
                             <div>
-                                <label for="github_token">GitHub Token:</label>
-                                <input type="text" id="github_token" name="github_token" value="{{ admin_setup.saved_api_settings.get(admin_setup.get_saved_api_settings().keys()|list|first, {}).get('github_token', '') }}" placeholder="Enter your GitHub personal access token">
+                                <label>GitHub Token:</label>
+                                <span>Managed via Secret Manager/env (`GITHUB_TOKEN`). Not stored in settings.</span>
                             </div>
                             <div>
                                 <label for="github_repo_owner">Repository Owner:</label>
