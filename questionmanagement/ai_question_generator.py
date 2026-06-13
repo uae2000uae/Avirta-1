@@ -14,6 +14,54 @@ from datetime import datetime
 import requests
 from questionmanagement.question_bank import question_bank
 
+
+def _post_with_retries(url: str, headers: dict, json_data: dict, timeout: float, max_retries: int = 2, backoff: float = 1.5):
+    """POST with limited retries for transient network errors/timeouts.
+
+    Retries on:
+    - requests.exceptions.Timeout / RequestException with timeout in message
+    - HTTP 502/503/504 from server
+
+    Increases timeout each retry up to 300s and applies exponential backoff between attempts.
+    Returns the final requests.Response on success; raises RequestException on failure.
+    """
+    import time as _time
+    last_err = None
+    t = float(timeout or 60)
+    attempts = max(1, int(max_retries) + 1)
+    for attempt in range(1, attempts + 1):
+        try:
+            resp = requests.post(url, headers=headers, json=json_data, timeout=t)
+            # Retry on transient 5xx
+            if resp.status_code in (502, 503, 504):
+                last_err = requests.exceptions.RequestException(
+                    f"Transient server error {resp.status_code}: {resp.text[:200]}"
+                )
+                print(f"OpenAI request attempt {attempt}/{attempts} got {resp.status_code}; retrying...")
+            else:
+                return resp
+        except requests.exceptions.Timeout as e:
+            last_err = e
+            print(f"OpenAI request timed out after {t}s on attempt {attempt}/{attempts}; retrying...")
+        except requests.exceptions.RequestException as e:
+            # Network hiccup: retry; otherwise break if last attempt
+            last_err = e
+            msg = str(e).lower()
+            if "timeout" in msg or "temporarily" in msg or "connection aborted" in msg:
+                print(f"OpenAI request network error on attempt {attempt}/{attempts}; retrying...")
+            else:
+                # Non-retriable client-side error; raise immediately
+                raise
+        # If we will retry
+        if attempt < attempts:
+            _time.sleep(min(2.0 * (backoff ** (attempt - 1)), 8.0))
+            t = min(300.0, t * backoff)
+        else:
+            break
+    # Exhausted retries
+    hint = " Consider increasing the Openai Request Timeout in Admin settings and try again."
+    raise requests.exceptions.RequestException(f"OpenAI request failed after retries: {last_err}{hint}")
+
 class AIQuestionGenerator:
     """
     A class to generate questions using AI services.
@@ -355,15 +403,36 @@ class AIQuestionGenerator:
             if self.organization:
                 headers["OpenAI-Organization"] = str(self.organization)
 
-            data = {
-                "model": self.model,
-                "messages": [
+            # Build minimal messages; if json_object is requested, explicitly mention JSON per provider rules
+            wants_json = False
+            try:
+                rf = self.response_format
+                if isinstance(rf, dict) and rf.get("type") == "json_object":
+                    wants_json = True
+                elif isinstance(rf, str) and rf.lower() == "json_object":
+                    wants_json = True
+            except Exception:
+                wants_json = False
+
+            if wants_json:
+                messages = [
+                    {"role": "system", "content": "You are a connectivity tester. Reply only with a small valid JSON object and nothing else."},
+                    {"role": "user", "content": "Please respond with a JSON object: {\"ok\": true}"}
+                ]
+                test_max_tokens = 20
+            else:
+                messages = [
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello, are you connected?"}
-                ],
+                ]
+                test_max_tokens = 50
+
+            data = {
+                "model": self.model,
+                "messages": messages,
                 "temperature": self.temperature,
                 "top_p": self.top_p,
-                "max_tokens": 50,
+                "max_tokens": test_max_tokens,
             }
             if self.response_format:
                 data["response_format"] = self.response_format
@@ -382,11 +451,13 @@ class AIQuestionGenerator:
             url = f"{base}/chat/completions"
 
             print(f"Verifying OpenAI API connection with key: '{self.api_key[:5]}...'")
-            response = requests.post(
+            response = _post_with_retries(
                 url,
-                headers=headers,
-                json=data,
-                timeout=self.request_timeout or 60
+                headers,
+                data,
+                timeout=self.request_timeout or 60,
+                max_retries=2,
+                backoff=1.5
             )
 
             if response.status_code == 200:
@@ -536,6 +607,24 @@ class AIQuestionGenerator:
         # Create the user prompt
         user_prompt = f"Generate {num_questions} questions about: {prompt}"
 
+        # If JSON response_format is requested, explicitly instruct JSON output in both messages
+        wants_json = False
+        try:
+            rf = self.response_format
+            if isinstance(rf, dict) and rf.get("type") == "json_object":
+                wants_json = True
+            elif isinstance(rf, str) and rf.lower() == "json_object":
+                wants_json = True
+        except Exception:
+            wants_json = False
+
+        if wants_json:
+            system_prompt += "\nReturn only JSON. Respond with a single valid JSON object or array adhering to the expected schema. Do not include any non-JSON text."
+            user_prompt = (
+                f"Produce JSON only. Generate {num_questions} questions about: {prompt}. "
+                "Respond strictly in JSON."
+            )
+
         # Prepare the API request
         headers = {
             "Content-Type": "application/json",
@@ -576,19 +665,38 @@ class AIQuestionGenerator:
         print("Making API request to OpenAI...")
         try:
             # Make the API request
-            response = requests.post(
+            response = _post_with_retries(
                 url,
-                headers=headers,
-                json=data,
-                timeout=self.request_timeout or 60
+                headers,
+                data,
+                timeout=self.request_timeout or 60,
+                max_retries=2,
+                backoff=1.5
             )
 
-            # Check for errors
+            # Check for errors; handle provider constraint on json_object requiring 'json' in messages
             if response.status_code != 200:
-                raw_error = f"OpenAI API error: {response.status_code} - {response.text}"
-                error_message = self._redact_secrets(raw_error)
-                print(error_message)
-                raise Exception(error_message)
+                txt = response.text
+                # Specific fallback for: messages must contain the word 'json'
+                if response.status_code == 400 and "must contain the word 'json'" in txt.lower():
+                    print("OpenAI 400 due to json_object constraint; retrying without response_format (text-mode fallback) ...")
+                    data_no_rf = dict(data)
+                    if "response_format" in data_no_rf:
+                        del data_no_rf["response_format"]
+                    response = _post_with_retries(
+                        url,
+                        headers,
+                        data_no_rf,
+                        timeout=self.request_timeout or 60,
+                        max_retries=2,
+                        backoff=1.5
+                    )
+                # If still not OK, raise
+                if response.status_code != 200:
+                    raw_error = f"OpenAI API error: {response.status_code} - {response.text}"
+                    error_message = self._redact_secrets(raw_error)
+                    print(error_message)
+                    raise Exception(error_message)
 
             print("Received successful response from OpenAI API")
             # Parse the response
@@ -598,17 +706,20 @@ class AIQuestionGenerator:
 
             # Try to extract JSON from the response
             try:
-                # Find JSON array in the response using regex
-                json_match = re.search(r'\[.*\]', content, re.DOTALL)
-                if json_match:
-                    content = json_match.group(0)
-                    print("Found JSON array in response")
-                else:
-                    print("No JSON array found in response, attempting to parse full content")
-
-                # Parse the JSON
-                questions = json.loads(content)
-                print(f"Successfully parsed JSON with {len(questions)} questions")
+                # First, try direct JSON parse
+                try:
+                    parsed = json.loads(content)
+                except Exception:
+                    # Fallback: extract JSON array/object substring
+                    json_match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                    if json_match:
+                        content = json_match.group(0)
+                        parsed = json.loads(content)
+                        print("Extracted JSON segment from response")
+                    else:
+                        raise
+                questions = parsed
+                print(f"Successfully parsed JSON with {len(questions)} items")
 
                 # Validate the questions
                 validated_questions = []
