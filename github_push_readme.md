@@ -7,13 +7,14 @@ What exists:
 - Auto snapshot on End Game: Uploads a JSON file summarizing the game run (players, leaderboard, used questions)
 
 Configuration
-1) Open Admin Controls → API Settings and fill in:
-   - github_token: a Personal Access Token with repo scope
+1) Secrets (no token stored in settings):
+   - Create a GitHub Personal Access Token (classic with `repo` scope, or fine‑grained with Contents: Read & write for your repo).
+   - In Google Secret Manager, store the token under secret name `GitHub_Token` (or any name you prefer) and map it to environment variable `GITHUB_TOKEN` during deploy (see `cloudbuild.yaml`/`Direct deploy.bat`).
+2) Open Admin Controls → API Settings and fill in only:
    - github_repo_owner: e.g., uae2000uae
    - github_repo_name: e.g., Avirta-WebApp
-   - github_branch: e.g., Avirta-1 (defaults to main)
-
-2) Save settings.
+   - github_branch: e.g., main (defaults to main)
+3) Save settings.
 
 Admin Push (manual)
 - Navigate to /push_questions_to_github (Admin only)

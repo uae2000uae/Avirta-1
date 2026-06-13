@@ -93,7 +93,7 @@ gcloud run deploy %SERVICE_NAME% ^
   --platform managed ^
   --allow-unauthenticated ^
   --port 8080 ^
-  --set-secrets AI_Token=AI_Token:latest,GitHub_Token=GitHub_Token:latest
+  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy (source) failed.
   exit /b 1

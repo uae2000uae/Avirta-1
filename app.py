@@ -2807,7 +2807,7 @@ def push_questions_to_github():
 
     # Determine if a token is present via Secret Manager/env (for display only)
     token_present = bool(
-        get_secret('GITHUB_TOKEN') or get_secret('GitHub_Token') or os.environ.get('GITHUB_TOKEN')
+        get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
     )
 
     # If it's a POST request, push the files to GitHub
@@ -2818,7 +2818,6 @@ def push_questions_to_github():
             # Get GitHub settings; resolve token exclusively from Secret Manager/env
             github_token = (
                 get_secret('GITHUB_TOKEN')
-                or get_secret('GitHub_Token')
                 or os.environ.get('GITHUB_TOKEN')
             )
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
@@ -2863,7 +2862,6 @@ def push_questions_to_github():
             # Get GitHub settings; resolve token exclusively from Secret Manager/env
             github_token = (
                 get_secret('GITHUB_TOKEN')
-                or get_secret('GitHub_Token')
                 or os.environ.get('GITHUB_TOKEN')
             )
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')

@@ -163,7 +163,6 @@ def push_used_questions_snapshot(game_room, admin_setup, mode: str = "fastest") 
         # GitHub settings: prefer Secret Manager/env for token, then fallback to saved setting
         github_token = (
             get_secret("GITHUB_TOKEN")
-            or get_secret("GitHub_Token")
             or os.environ.get("GITHUB_TOKEN")
         )
         if github_token in essential_placeholders or str(github_token).strip() in {"", "SET_IN_ENV"}:
@@ -184,14 +183,14 @@ def push_used_questions_snapshot(game_room, admin_setup, mode: str = "fastest") 
                     missing.append("repo_name")
                 admin_setup.log_event(
                     f"Snapshot push blocked: missing GitHub settings -> {', '.join(missing)}. "
-                    f"Token from Secret? {'yes' if get_secret('GitHub_Token') else 'no'}; "
+                    f"Token from Secret? {'yes' if get_secret('GITHUB_TOKEN') else 'no'}; "
                     f"GITHUB_TOKEN env present? {'yes' if os.environ.get('GITHUB_TOKEN') else 'no'}; "
                     f"owner='{github_repo_owner or '-'}', repo='{github_repo_name or '-'}', branch='{github_branch}'."
                 )
             except Exception:
                 pass
             return False, (
-                "GitHub settings are incomplete. Ensure the GitHub_Token secret or GITHUB_TOKEN env is set, "
+                "GitHub settings are incomplete. Ensure GITHUB_TOKEN is set via Secret Manager/environment, "
                 "and repo owner/name are configured in Admin > API Settings."
             )
 
