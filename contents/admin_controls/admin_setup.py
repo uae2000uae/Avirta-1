@@ -56,7 +56,7 @@ class AdminSetup:
             'openai_response_format': 'json_object',
             'openai_json_mode': True,
             'openai_stop': '',
-            'openai_request_timeout': 120,
+            'openai_request_timeout': 60,
             'openai_base_url': 'https://api.openai.com/v1',
             'openai_organization': '',
             'openai_user': '',
