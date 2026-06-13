@@ -718,13 +718,44 @@ class AIQuestionGenerator:
                         print("Extracted JSON segment from response")
                     else:
                         raise
-                questions = parsed
-                print(f"Successfully parsed JSON with {len(questions)} items")
+
+                # Normalize parsed JSON into a list of question dicts
+                questions = None
+                if isinstance(parsed, list):
+                    questions = parsed
+                elif isinstance(parsed, dict):
+                    # Common patterns: {"questions": [...]} or a single question object
+                    if isinstance(parsed.get('questions'), list):
+                        questions = parsed['questions']
+                    else:
+                        # Search for the first list of dicts within the object
+                        list_candidate = None
+                        for v in parsed.values():
+                            if isinstance(v, list) and v and isinstance(v[0], dict):
+                                list_candidate = v
+                                break
+                        if list_candidate is not None:
+                            questions = list_candidate
+                        else:
+                            # Treat entire object as a single question if it looks like one
+                            keyset = set(k.lower() for k in parsed.keys())
+                            required_keys = {'type', 'question', 'correct_answer'}
+                            if required_keys.issubset(keyset):
+                                questions = [parsed]
+                            else:
+                                questions = []
+                else:
+                    questions = []
+
+                print(f"Successfully parsed JSON; normalized to list with {len(questions)} items")
 
                 # Validate the questions
                 validated_questions = []
                 for i, question in enumerate(questions):
                     print(f"Validating question {i+1}...")
+                    if not isinstance(question, dict):
+                        print(f"Item {i+1} is not an object, skipping")
+                        continue
                     # Ensure required fields are present
                     if 'type' not in question or 'question' not in question or 'correct_answer' not in question:
                         print(f"Question {i+1} missing required fields, skipping")
@@ -734,7 +765,6 @@ class AIQuestionGenerator:
                     if question['type'] == 'multiple_choice' and ('options' not in question or not question['options']):
                         print(f"Multiple choice question {i+1} missing options, skipping")
                         continue
-
 
                     # Ensure points are set correctly based on difficulty
                     # Map difficulty to points
