@@ -2274,26 +2274,27 @@ def admin_controls():
         # Handle API settings update
         elif action == 'update_api_settings' and is_authenticated:
             # Update OpenAI settings in game_settings
-            for setting_name in admin_setup.game_settings.keys():
+            for setting_name in list(admin_setup.game_settings.keys()):
                 if setting_name.startswith('openai_') and setting_name in request.form:
                     value = request.form.get(setting_name)
 
                     # Convert string values to appropriate types
-                    if value.isdigit():
-                        value = int(value)
-                    elif value.replace('.', '', 1).isdigit():
-                        value = float(value)
+                    if isinstance(value, str) and value.lower() in ('true','false'):
+                        value = True if value.lower() == 'true' else False
+                    elif isinstance(value, str) and value.replace('.', '', 1).isdigit():
+                        # int if no dot, else float
+                        value = int(value) if value.isdigit() else float(value)
 
                     # If updating the OpenAI API key, verify the connection
                     if setting_name == 'openai_api_key':
                         # If value is blank or placeholder, prefer runtime secret and skip validation
-                        if not value or not value.strip() or value.strip() == 'SET_IN_ENV':
+                        if not value or not str(value).strip() or str(value).strip() == 'SET_IN_ENV':
                             value = 'SET_IN_ENV'
                             flash('Using AI_Token from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
                         else:
                             # Verify only when a non-placeholder key is provided
                             from questionmanagement.ai_question_generator import verify_api_connection
-                            cleaned = value.strip()
+                            cleaned = str(value).strip()
                             success, message = verify_api_connection(cleaned)
                             if success:
                                 flash(f'OpenAI API connection successful: {message}')
@@ -2303,6 +2304,27 @@ def admin_controls():
 
                     admin_setup.update_game_setting(setting_name, value)
 
+            # Handle additional OpenAI fields that might not yet exist in game_settings.json
+            extra_openai_fields = [
+                'openai_base_url', 'openai_request_timeout', 'openai_response_format',
+                'openai_json_mode', 'openai_organization', 'openai_user', 'openai_stop'
+            ]
+            for fld in extra_openai_fields:
+                if fld in request.form:
+                    raw = request.form.get(fld)
+                    # Coerce types
+                    if fld == 'openai_request_timeout':
+                        try:
+                            val = float(raw)
+                        except Exception:
+                            val = 60.0
+                    elif fld == 'openai_json_mode':
+                        # Checkbox: present means true
+                        val = True if request.form.get('openai_json_mode') else False
+                    else:
+                        val = raw.strip() if isinstance(raw, str) else raw
+                    admin_setup.update_game_setting(fld, val)
+
             # Create a temporary API settings object to save
             api_settings = {
                 'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
@@ -2311,8 +2333,15 @@ def admin_controls():
                 'openai_top_p': admin_setup.game_settings.get('openai_top_p', 1.0),
                 'openai_frequency_penalty': admin_setup.game_settings.get('openai_frequency_penalty', 0.3),
                 'openai_presence_penalty': admin_setup.game_settings.get('openai_presence_penalty', 0.2),
-                'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 20000),
+                'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 16384),
                 'openai_seed': admin_setup.game_settings.get('openai_seed', 0),
+                'openai_base_url': admin_setup.game_settings.get('openai_base_url', 'https://api.openai.com/v1'),
+                'openai_request_timeout': admin_setup.game_settings.get('openai_request_timeout', 60),
+                'openai_response_format': admin_setup.game_settings.get('openai_response_format', ''),
+                'openai_json_mode': admin_setup.game_settings.get('openai_json_mode', True),
+                'openai_organization': admin_setup.game_settings.get('openai_organization', ''),
+                'openai_user': admin_setup.game_settings.get('openai_user', ''),
+                'openai_stop': admin_setup.game_settings.get('openai_stop', ''),
                 # GitHub settings from form (token is no longer stored, use Secret Manager/env)
                 'github_repo_owner': request.form.get('github_repo_owner', ''),
                 'github_repo_name': request.form.get('github_repo_name', ''),

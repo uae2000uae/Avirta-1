@@ -168,15 +168,51 @@
                             </div>
                             <div>
                                 <label for="openai_max_tokens">Openai Max Tokens:</label>
-                                <input type="number" id="openai_max_tokens" name="openai_max_tokens" value="{{ admin_setup.game_settings.get('openai_max_tokens',20000) }}" min="1">
+                                <input type="number" id="openai_max_tokens" name="openai_max_tokens" value="{{ admin_setup.game_settings.get('openai_max_tokens',16384) }}" min="1">
                             </div>
                             <div>
                                 <label for="openai_seed">Openai Seed:</label>
                                 <input type="number" id="openai_seed" name="openai_seed" value="{{ admin_setup.game_settings.get('openai_seed',0) }}" min="0">
                             </div>
+                            <div>
+                                <label for="openai_base_url">OpenAI Base URL:</label>
+                                <input type="text" id="openai_base_url" name="openai_base_url" value="{{ admin_setup.game_settings.get('openai_base_url','https://api.openai.com/v1') }}" placeholder="https://api.openai.com/v1">
+                            </div>
+                            <div>
+                                <label for="openai_request_timeout">OpenAI Request Timeout (sec):</label>
+                                <input type="number" id="openai_request_timeout" name="openai_request_timeout" value="{{ admin_setup.game_settings.get('openai_request_timeout',60) }}" step="1" min="1">
+                            </div>
+                            <div>
+                                <label for="openai_response_format">OpenAI Response Format:</label>
+                                <select id="openai_response_format" name="openai_response_format">
+                                    {% set rf = admin_setup.game_settings.get('openai_response_format','') %}
+                                    <option value="" {% if not rf %}selected{% endif %}>None (text)</option>
+                                    <option value="json_object" {% if rf=='json_object' %}selected{% endif %}>json_object (JSON mode)</option>
+                                </select>
+                                <div class="form-group-grid1" style="margin-top:6px;">
+                                    {% if admin_setup.game_settings.get('openai_json_mode', True) %}
+                                    <input type="checkbox" id="openai_json_mode" name="openai_json_mode" checked="checked">
+                                    {% else %}
+                                    <input type="checkbox" id="openai_json_mode" name="openai_json_mode">
+                                    {% endif %}
+                                    <label for="openai_json_mode">Force JSON mode if response_format not set</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="openai_organization">OpenAI Organization (optional):</label>
+                                <input type="text" id="openai_organization" name="openai_organization" value="{{ admin_setup.game_settings.get('openai_organization','') }}">
+                            </div>
+                            <div>
+                                <label for="openai_user">OpenAI User (optional):</label>
+                                <input type="text" id="openai_user" name="openai_user" value="{{ admin_setup.game_settings.get('openai_user','') }}">
+                            </div>
+                            <div>
+                                <label for="openai_stop">OpenAI Stop Tokens (comma-separated):</label>
+                                <input type="text" id="openai_stop" name="openai_stop" value="{{ admin_setup.game_settings.get('openai_stop','') }}" placeholder=",\n,\n\n">
+                            </div>
 
                             {# Render any other openai_* settings that are not explicitly handled above #}
-                            {% set explicit_openai = ['openai_api_key','openai_model','openai_temperature','openai_top_p','openai_frequency_penalty','openai_presence_penalty','openai_max_tokens','openai_seed'] %}
+                            {% set explicit_openai = ['openai_api_key','openai_model','openai_temperature','openai_top_p','openai_frequency_penalty','openai_presence_penalty','openai_max_tokens','openai_seed','openai_base_url','openai_request_timeout','openai_response_format','openai_json_mode','openai_organization','openai_user','openai_stop'] %}
                             {% for setting_name, setting_value in admin_setup.game_settings.items() %}
                                 {% if setting_name.startswith('openai_') and setting_name not in explicit_openai %}
                                 <div>

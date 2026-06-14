@@ -26,7 +26,6 @@
             <textarea id="prompt" name="prompt" rows="4" required placeholder="Enter a topic, subject, or specific instructions for generating questions..."></textarea>
             <div><small>Be specific about the type of questions you want. For example: "Generate questions about ancient Egyptian history."</small>
         </div></div>
-		<div class="form-group">
 		<div class="fill-stack"><h3>Generation Options:</h3>
         <div class="form-group equal-md">
                 <label for="question_type">Type:</label>
@@ -48,14 +47,14 @@
                     <option value="hardest">Hardest (500)</option>
                 </select>
         </div>
-        <div class="form-group equal-md">
+        <div class="form-group equal-sm">
                 <label for="language">Language:</label>
                 <select id="language" name="language">
                     <option value="english">English</option>
                     <option value="arabic" selected>Arabic</option>
                 </select>
         </div>
-        <div class="form-group equal-md">
+        <div class="form-group equal-sm">
                 <label for="num_questions">Count:</label>
                 <select id="num_questions" name="num_questions">
                     <option value="3">3</option>
@@ -66,10 +65,9 @@
 					<option value="50">50</option>
                 </select>
         </div>
-        <div class="form-group equal-md">
-                <label for="start_index">Offset / Start Index:</label>
+        <div class="form-group equal-sm">
+                <label for="start_index">Offset</label>
                 <input type="number" id="start_index" name="start_index" value="0" min="0" step="1" />
-                <small>Skip this many initial candidate results when generating. 0 = no skip.</small>
         </div>
         <div class="form-group">
                 <label>Select categories if you want AI to avoid repeating questions already in them:</label>
@@ -89,7 +87,6 @@
           		<input type="checkbox" id="include_explanations" name="include_explanations" checked>
                 <label for="include_explanations">Include explanations for correct answers</label>
             </div></div>
-		</div>
 		<div class="form-actions clear">
 		    <div class="form-actions">
               <button type="submit" class="button" id="generateButton">Generate Questions</button>
