@@ -102,6 +102,29 @@ jobs:
           safety-report.json
           semgrep-report.json
 
+  secrets-scan:
+    name: Secrets Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s v8.18.4
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks (filesystem)
+        run: |
+          gitleaks detect --no-git --report-path gitleaks.json --report-format json --redact --exit-code 0
+
+      - name: Upload Gitleaks report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitleaks-report
+          path: gitleaks.json
+
   # Dependency Vulnerability Check
   dependency-check:
     name: Dependency Vulnerability Check
@@ -225,7 +248,7 @@ jobs:
   docker-build:
     name: Docker Build Test
     runs-on: ubuntu-latest
-    needs: [code-quality, security-scan]
+    needs: [code-quality, security-scan, secrets-scan]
     
     steps:
     - name: Checkout code
@@ -247,7 +270,7 @@ jobs:
   deployment-check:
     name: Deployment Readiness
     runs-on: ubuntu-latest
-    needs: [test, integration-test, security-scan, code-quality]
+    needs: [test, integration-test, security-scan, code-quality, secrets-scan]
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -274,7 +297,7 @@ jobs:
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [test, integration-test, security-scan, code-quality]
+    needs: [test, integration-test, security-scan, code-quality, secrets-scan]
     if: failure()
     
     steps:
