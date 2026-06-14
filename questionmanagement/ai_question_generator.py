@@ -124,6 +124,8 @@ class AIQuestionGenerator:
         self.base_url = "https://api.openai.com/v1"
         self.organization = None
         self.user = None
+        # Generation controls
+        self.start_index = 0  # Offset to skip earlier candidate results
 
         # API connection status
         self.api_connected = False
@@ -181,15 +183,41 @@ class AIQuestionGenerator:
 
         # Get API settings from options if provided (centralized loader feeds these)
         self.api_key = options.get('api_key', self.api_key)
+        # Normalize API key: strip whitespace and remove accidental 'Bearer ' prefix
+        if self.api_key:
+            self.api_key = str(self.api_key).strip()
+            if self.api_key.lower().startswith('bearer '):
+                self.api_key = self.api_key[7:].strip()
         self.model = options.get('model', self.model)
+        # Bound temperature to provider-allowed range [0.0, 2.0]
         self.temperature = float(options.get('temperature', self.temperature))
+        if self.temperature < 0.0:
+            self.temperature = 0.0
+        elif self.temperature > 2.0:
+            self.temperature = 2.0
+        # Top-p and penalties
         self.top_p = float(options.get('top_p', self.top_p))
         self.frequency_penalty = float(options.get('frequency_penalty', self.frequency_penalty))
         self.presence_penalty = float(options.get('presence_penalty', self.presence_penalty))
+        # Tokens / seed / stops
         self.max_output_tokens = int(options.get('max_output_tokens', self.max_output_tokens))
         self.seed = int(options.get('seed', self.seed) or 0)
         self.stop = options.get('stop', self.stop)
+        # Response formatting: accept dict, string name, or legacy boolean flags
         self.response_format = options.get('response_format', self.response_format)
+        # If response_format is provided as a string 'json_object', normalize to dict
+        if isinstance(self.response_format, str) and self.response_format.lower() == 'json_object':
+            self.response_format = {"type": "json_object"}
+        # Support legacy json mode flags from callers/admin
+        legacy_json_mode = options.get('json_mode') or options.get('openai_json_mode')
+        if legacy_json_mode and not self.response_format:
+            self.response_format = {"type": "json_object"}
+        # Generation controls
+        try:
+            self.start_index = max(0, int(options.get('start_index', self.start_index) or 0))
+        except Exception:
+            self.start_index = 0
+        # Timeouts and routing
         self.request_timeout = float(options.get('request_timeout', self.request_timeout) or 60)
         self.base_url = options.get('base_url', self.base_url) or self.base_url
         self.organization = options.get('organization', self.organization)
@@ -243,6 +271,7 @@ class AIQuestionGenerator:
                     'num_questions': num_questions,
                     'include_explanations': include_explanations,
                     'language': language,
+                    'start_index': getattr(self, 'start_index', 0),
                     'timestamp': datetime.now().isoformat()
                 }
 
@@ -430,7 +459,7 @@ class AIQuestionGenerator:
             data = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": self.temperature,
+                "temperature": min(max(self.temperature, 0.0), 2.0),
                 "top_p": self.top_p,
                 "max_tokens": test_max_tokens,
             }
@@ -606,6 +635,10 @@ class AIQuestionGenerator:
 
         # Create the user prompt
         user_prompt = f"Generate {num_questions} questions about: {prompt}"
+        # If start_index > 0, instruct the model to conceptually skip earlier results
+        if isinstance(self.start_index, int) and self.start_index > 0:
+            system_prompt += f"\nWhen listing or selecting candidate questions, start at index {self.start_index} (skip the first {self.start_index} possible results)."
+            user_prompt += f" Also, skip the first {self.start_index} possible results when selecting which questions to output."
 
         # If JSON response_format is requested, explicitly instruct JSON output in both messages
         wants_json = False
@@ -639,7 +672,7 @@ class AIQuestionGenerator:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": self.temperature,
+            "temperature": min(max(self.temperature, 0.0), 2.0),
             "top_p": self.top_p,
             "frequency_penalty": self.frequency_penalty,
             "presence_penalty": self.presence_penalty,

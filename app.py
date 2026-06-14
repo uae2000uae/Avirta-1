@@ -1948,6 +1948,13 @@ def ai_question_generator():
         # Get selected reference categories
         reference_categories = request.form.getlist('reference_categories[]')
 
+        # Offset / Start Index for skipping earlier results
+        start_index_raw = request.form.get('start_index', '0')
+        try:
+            start_index = max(0, int(start_index_raw))
+        except ValueError:
+            start_index = 0
+
         # Load centralized AI settings (env overrides file values)
         ai_opts = load_ai_settings(admin_setup)
 
@@ -1974,6 +1981,7 @@ def ai_question_generator():
             'organization': ai_opts.get('organization'),
             'user': ai_opts.get('user'),
             'seed': ai_opts.get('seed'),
+            'start_index': start_index,
         }
 
         try:

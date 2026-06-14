@@ -52,21 +52,51 @@ class AIQuestionValidator:
 
         # OpenAI API settings - will be retrieved from admin_setup if available
         if admin_setup and hasattr(admin_setup, 'game_settings'):
-            self.api_key = admin_setup.game_settings.get('openai_api_key', '')
-            self.model = admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
-            self.temperature = admin_setup.game_settings.get('openai_temperature', 0.3)
+            gs = admin_setup.game_settings
+            self.api_key = gs.get('openai_api_key', '')
+            # Modern default model
+            self.model = gs.get('openai_model', 'gpt-4o-mini')
+            # Lower temperature for more consistent validation
+            self.temperature = gs.get('openai_temperature', 0.3)
+            self.top_p = gs.get('openai_top_p', 1.0)
+            self.frequency_penalty = gs.get('openai_frequency_penalty', 0.0)
+            self.presence_penalty = gs.get('openai_presence_penalty', 0.0)
+            self.response_format = gs.get('openai_response_format', None)
+            # Support legacy boolean json mode flag
+            if not self.response_format and gs.get('openai_json_mode', False):
+                self.response_format = {"type": "json_object"}
+            elif isinstance(self.response_format, str) and self.response_format.lower() == 'json_object':
+                self.response_format = {"type": "json_object"}
+            self.base_url = gs.get('openai_base_url', 'https://api.openai.com/v1')
+            self.organization = gs.get('openai_organization', None)
+            self.user = gs.get('openai_user', None)
+            self.request_timeout = gs.get('openai_request_timeout', 60)
             # Limit max_output_tokens to 16384 to avoid API errors
-            configured_tokens = admin_setup.game_settings.get('openai_max_tokens', admin_setup.game_settings.get('openai_max_output_tokens', 3000))
+            configured_tokens = gs.get('openai_max_tokens', gs.get('openai_max_output_tokens', 3000))
             self.max_output_tokens = min(configured_tokens, 16384)
+            # Seed (optional determinism)
+            self.seed = gs.get('openai_seed', 0)
         else:
             # Fallback to default settings if no admin_setup provided
             self.api_key = None
-            self.model = "gpt-3.5-turbo"
+            self.model = 'gpt-4o-mini'
             self.temperature = 0.3  # Lower temperature for more consistent validation
+            self.top_p = 1.0
+            self.frequency_penalty = 0.0
+            self.presence_penalty = 0.0
+            self.response_format = None
+            self.base_url = 'https://api.openai.com/v1'
+            self.organization = None
+            self.user = None
+            self.request_timeout = 60
             self.max_output_tokens = 3000
+            self.seed = 0
 
         # API connection status
         self.api_connected = False
+
+        # Internal helper: redact secrets in logs
+        self._secret_prefix = (self.api_key or '').strip()[:5]
 
     def validate_category_questions(self, category_id, api_key=None, options=None):
         """
@@ -90,12 +120,26 @@ class AIQuestionValidator:
             self.api_key = api_key
         elif not self.api_key and self.admin_setup:
             # Refresh API settings from admin_setup in case they were updated
-            self.api_key = self.admin_setup.game_settings.get('openai_api_key', '')
-            self.model = self.admin_setup.game_settings.get('openai_model', 'gpt-3.5-turbo')
-            self.temperature = self.admin_setup.game_settings.get('openai_temperature', 0.3)
+            gs = self.admin_setup.game_settings
+            self.api_key = gs.get('openai_api_key', '')
+            self.model = gs.get('openai_model', 'gpt-4o-mini')
+            self.temperature = gs.get('openai_temperature', 0.3)
+            self.top_p = gs.get('openai_top_p', 1.0)
+            self.frequency_penalty = gs.get('openai_frequency_penalty', 0.0)
+            self.presence_penalty = gs.get('openai_presence_penalty', 0.0)
+            self.response_format = gs.get('openai_response_format', self.response_format)
+            if not self.response_format and gs.get('openai_json_mode', False):
+                self.response_format = {"type": "json_object"}
+            elif isinstance(self.response_format, str) and self.response_format.lower() == 'json_object':
+                self.response_format = {"type": "json_object"}
+            self.base_url = gs.get('openai_base_url', self.base_url)
+            self.organization = gs.get('openai_organization', self.organization)
+            self.user = gs.get('openai_user', self.user)
+            self.request_timeout = gs.get('openai_request_timeout', self.request_timeout)
             # Limit max_output_tokens to 16384 to avoid API errors
-            configured_tokens = self.admin_setup.game_settings.get('openai_max_tokens', self.admin_setup.game_settings.get('openai_max_output_tokens', 3000))
+            configured_tokens = gs.get('openai_max_tokens', gs.get('openai_max_output_tokens', 3000))
             self.max_output_tokens = min(configured_tokens, 16384)
+            self.seed = gs.get('openai_seed', self.seed)
 
         # Check if we have a valid API key
         if not self.api_key or not self.api_key.strip():
@@ -146,22 +190,52 @@ class AIQuestionValidator:
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key.strip()}"
             }
+            if self.organization:
+                headers["OpenAI-Organization"] = str(self.organization)
+
+            # Respect JSON mode if configured
+            wants_json = False
+            rf = self.response_format
+            if isinstance(rf, dict) and rf.get("type") == "json_object":
+                wants_json = True
+
+            messages = (
+                [
+                    {"role": "system", "content": "You are a connectivity tester. Reply only with a small valid JSON object and nothing else."},
+                    {"role": "user", "content": "Please respond with a JSON object: {\"ok\": true}"}
+                ]
+                if wants_json
+                else [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "Hello, test connection."}
+                ]
+            )
 
             data = {
                 "model": self.model,
-                "messages": [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": "Hello, test connection."}
-                ],
-                "temperature": 0.7,
-                "max_tokens": 10
+                "messages": messages,
+                "temperature": min(max(self.temperature, 0.0), 2.0),
+                "top_p": self.top_p,
+                "max_tokens": 20 if wants_json else 50,
             }
+            if self.response_format:
+                data["response_format"] = self.response_format
+            if self.user:
+                data["user"] = self.user
+            try:
+                if int(self.seed) > 0:
+                    data["seed"] = int(self.seed)
+            except Exception:
+                pass
+
+            base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+            url = f"{base}/chat/completions"
 
             response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
+                url,
                 headers=headers,
                 json=data,
-                timeout=30
+                timeout=self.request_timeout or 60
             )
 
             return response.status_code == 200
@@ -253,6 +327,8 @@ Original Question {question.get('id', 'unknown')}:
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {self.api_key.strip()}"
                 }
+                if self.organization:
+                    headers["OpenAI-Organization"] = str(self.organization)
 
                 data = {
                     "model": self.model,
@@ -260,16 +336,30 @@ Original Question {question.get('id', 'unknown')}:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": self.temperature,
+                    "temperature": min(max(self.temperature, 0.0), 2.0),
+                    "top_p": self.top_p,
+                    "frequency_penalty": self.frequency_penalty,
+                    "presence_penalty": self.presence_penalty,
                     "max_tokens": self.max_output_tokens
                 }
+                if self.response_format:
+                    data["response_format"] = self.response_format
+                if self.user:
+                    data["user"] = self.user
+                try:
+                    if int(self.seed) > 0:
+                        data["seed"] = int(self.seed)
+                except Exception:
+                    pass
 
                 print(f"Improving batch {i//batch_size + 1} ({len(batch)} questions)...")
+                base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+                url = f"{base}/chat/completions"
                 response = requests.post(
-                    "https://api.openai.com/v1/chat/completions",
+                    url,
                     headers=headers,
                     json=data,
-                    timeout=90
+                    timeout=self.request_timeout or 90
                 )
 
                 if response.status_code == 200:
@@ -447,16 +537,30 @@ Explanation: {question.get('explanation', '')}
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": self.temperature,
+                    "temperature": min(max(self.temperature, 0.0), 2.0),
+                    "top_p": self.top_p,
+                    "frequency_penalty": self.frequency_penalty,
+                    "presence_penalty": self.presence_penalty,
                     "max_tokens": self.max_output_tokens
                 }
+                if self.response_format:
+                    data["response_format"] = self.response_format
+                if self.user:
+                    data["user"] = self.user
+                try:
+                    if int(self.seed) > 0:
+                        data["seed"] = int(self.seed)
+                except Exception:
+                    pass
 
                 print(f"Validating batch {i//batch_size + 1} ({len(batch)} questions)...")
+                base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+                url = f"{base}/chat/completions"
                 response = requests.post(
-                    "https://api.openai.com/v1/chat/completions",
+                    url,
                     headers=headers,
                     json=data,
-                    timeout=60
+                    timeout=self.request_timeout or 60
                 )
 
                 if response.status_code == 200:
