@@ -2325,7 +2325,16 @@ def admin_controls():
                         val = raw.strip() if isinstance(raw, str) else raw
                     admin_setup.update_game_setting(fld, val)
 
-            # Create a temporary API settings object to save
+            # Optionally accept a manual GitHub token (not persisted) and keep in session
+            if 'github_token_manual' in request.form:
+                manual_token = (request.form.get('github_token_manual') or '').strip()
+                if manual_token:
+                    session['github_token_manual'] = manual_token
+                    flash('A manual GitHub token has been stored for this session. It will override Secret Manager/env for GitHub operations.', 'info')
+                else:
+                    session.pop('github_token_manual', None)
+
+            # Create a temporary API settings object to save (excluding any tokens/secrets)
             api_settings = {
                 'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
                 'openai_model': admin_setup.game_settings.get('openai_model', 'gpt-4o-mini'),
@@ -2842,9 +2851,9 @@ def push_questions_to_github():
         flash('You must be logged in to access this page.', 'error')
         return redirect(url_for('admin_controls'))
 
-    # Determine if a token is present via Secret Manager/env (for display only)
+    # Determine if a token is present via Session or Secret Manager/env (for display only)
     token_present = bool(
-        get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
+        session.get('github_token_manual') or get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
     )
 
     # If it's a POST request, push the files to GitHub
@@ -2852,11 +2861,10 @@ def push_questions_to_github():
         action = request.form.get('action')
 
         if action == 'push_all':
-            # Get GitHub settings; resolve token exclusively from Secret Manager/env
-            github_token = (
-                get_secret('GITHUB_TOKEN')
-                or os.environ.get('GITHUB_TOKEN')
-            )
+            # Resolve GitHub token: prefer manual (form/session), else Secret Manager/env
+            form_token = (request.form.get('github_token_manual') or '').strip()
+            session_token = session.get('github_token_manual')
+            github_token = form_token or session_token or get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
             github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
             github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
             github_branch = admin_setup.game_settings.get('github_branch', 'main')

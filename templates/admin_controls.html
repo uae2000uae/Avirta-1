@@ -228,8 +228,9 @@
 
                             <h4 class="fill">GitHub API Settings</h4>
                             <div>
-                                <label>GitHub Token:</label>
-                                <span>Managed via Secret Manager/env (`GITHUB_TOKEN`). Not stored in settings.</span>
+                                <label for="github_token_manual">GitHub Token (optional, not saved):</label>
+                                <input type="password" id="github_token_manual" name="github_token_manual" value="" placeholder="Paste a token to use now; otherwise Secret Manager/env (GITHUB_TOKEN) will be used">
+                                <small style="display:block;color:#666;margin-top:4px;">Security note: This token will not be written to disk. If provided, it will be kept in your session for this browser only until you clear it or log out.</small>
                             </div>
                             <div>
                                 <label for="github_repo_owner">Repository Owner:</label>

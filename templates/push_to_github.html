@@ -24,6 +24,8 @@
                 <p>Push all question files from the content/questions folder to GitHub. This will create or update files in the repository.</p>
                 <form action="{{ url_for('push_questions_to_github') }}" method="POST" class="form-actions">
                     <input type="hidden" name="action" value="push_all">
+                    <label for="github_token_manual_pushall">GitHub Token (optional, not saved):</label>
+                    <input type="password" id="github_token_manual_pushall" name="github_token_manual" placeholder="Paste token to use for this push (overrides Secret/env/session)">
                     <button type="submit" class="button">Push All Files</button>
                 </form>
             </div>
@@ -33,6 +35,8 @@
                 <p>Synchronize question files between the local directory and GitHub repository. This will create, update, or delete files as necessary.</p>
                 <form action="{{ url_for('push_questions_to_github') }}" method="POST" class="form-actions">
                     <input type="hidden" name="action" value="sync">
+                    <label for="github_token_manual_sync">GitHub Token (optional, not saved):</label>
+                    <input type="password" id="github_token_manual_sync" name="github_token_manual" placeholder="Paste token to use for this sync (overrides Secret/env/session)">
                     <button type="submit" class="button">Synchronize Files</button>
                 </form>
             </div>
