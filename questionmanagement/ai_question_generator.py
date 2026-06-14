@@ -245,18 +245,73 @@ class AIQuestionGenerator:
 
         print(f"OpenAI API connection successful. Attempting to generate questions.")
         try:
-            questions = self._generate_questions_with_openai(
-                prompt, 
-                question_type, 
-                difficulty, 
-                num_questions, 
-                include_explanations,
-                language,
-                reference_categories
-            )
+            # Token-aware, chunked generation to reliably reach requested count
+            total_questions = []
+            batch_sizes = []
+            seen_texts = set()
+
+            # Preserve original start index and adjust per batch to conceptually skip earlier candidates
+            original_start = int(getattr(self, 'start_index', 0) or 0)
+
+            # Heuristic per-call size: Arabic tends to be longer; keep smaller batch
+            default_chunk = 10 if str(language).lower() == 'english' else 7
+            remaining = int(num_questions)
+            max_batches = max(10, (remaining + default_chunk - 1) // default_chunk + 4)
+            batches_done = 0
+
+            while remaining > 0 and batches_done < max_batches:
+                per_call = min(default_chunk, remaining)
+                # Nudge per_call up if admin configured very high max tokens
+                try:
+                    if self.max_output_tokens >= 8000 and per_call < 15 and str(language).lower() == 'english':
+                        per_call = min(15, remaining)
+                except Exception:
+                    pass
+
+                # Adjust start_index for this batch to avoid earlier candidates
+                setattr(self, 'start_index', original_start + len(total_questions))
+
+                batch = self._generate_questions_with_openai(
+                    prompt,
+                    question_type,
+                    difficulty,
+                    per_call,
+                    include_explanations,
+                    language,
+                    reference_categories
+                ) or []
+
+                # De-duplicate by normalized question text
+                added = 0
+                for q in batch:
+                    try:
+                        qtext = str(q.get('question', '')).strip().lower()
+                    except Exception:
+                        qtext = ''
+                    if not qtext or qtext in seen_texts:
+                        continue
+                    seen_texts.add(qtext)
+                    total_questions.append(q)
+                    added += 1
+                    if len(total_questions) >= num_questions:
+                        break
+
+                batch_sizes.append({'requested': per_call, 'received': len(batch), 'added_unique': added})
+                remaining = max(0, num_questions - len(total_questions))
+                batches_done += 1
+
+                # If provider keeps returning too few (e.g., 4-5), try one more slightly smaller batch
+                if remaining > 0 and added == 0 and per_call > 1:
+                    default_chunk = max(1, default_chunk - 1)
+
+            questions = total_questions
+
+            # Restore original start index
+            setattr(self, 'start_index', original_start)
+
             # If successful, return the questions
             if questions:
-                print(f"Successfully generated {len(questions)} questions with OpenAI API.")
+                print(f"Successfully generated {len(questions)} questions with OpenAI API (requested {num_questions}).")
                 # Generate a unique batch ID
                 batch_id = str(uuid.uuid4())
 
@@ -268,10 +323,12 @@ class AIQuestionGenerator:
                     'prompt': prompt,
                     'question_type': question_type,
                     'difficulty': difficulty,
-                    'num_questions': num_questions,
+                    'num_requested': num_questions,
+                    'num_returned': len(questions),
                     'include_explanations': include_explanations,
                     'language': language,
-                    'start_index': getattr(self, 'start_index', 0),
+                    'start_index': original_start,
+                    'batches': batch_sizes,
                     'timestamp': datetime.now().isoformat()
                 }
 
