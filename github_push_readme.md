@@ -9,7 +9,7 @@ What exists:
 Configuration
 1) Secrets (no token stored in settings):
    - Create a GitHub Personal Access Token (classic with `repo` scope, or fine‑grained with Contents: Read & write for your repo).
-   - In Google Secret Manager, store the token under secret name `GitHub_Token` (or any name you prefer) and map it to environment variable `GITHUB_TOKEN` during deploy (see `cloudbuild.yaml`/`Direct deploy.bat`).
+   - In Google Secret Manager, store the token under secret name `GITHUB_TOKEN` and map it to the environment variable `GITHUB_TOKEN` during deploy (see `cloudbuild.yaml`/`Direct deploy.bat`).
 2) Open Admin Controls → API Settings and fill in only:
    - github_repo_owner: e.g., uae2000uae
    - github_repo_name: e.g., Avirta-WebApp

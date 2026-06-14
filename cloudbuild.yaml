@@ -27,7 +27,7 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
-        "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest"
+        "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
       ]
 
   # 4) Ensure public (unauthenticated) access (roles/run.invoker)

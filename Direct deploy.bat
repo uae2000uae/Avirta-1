@@ -74,10 +74,10 @@ gcloud run deploy %SERVICE_NAME% ^
   --platform managed ^
   --allow-unauthenticated ^
   --port 8080 ^
-  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
+  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy failed.
-  echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
+  echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest
   exit /b 1
 )
 
@@ -93,7 +93,7 @@ gcloud run deploy %SERVICE_NAME% ^
   --platform managed ^
   --allow-unauthenticated ^
   --port 8080 ^
-  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GitHub_Token:latest
+  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy (source) failed.
   exit /b 1
