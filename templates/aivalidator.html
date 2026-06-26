@@ -10,10 +10,33 @@
 </div>
     <h1>AI Question Validator</h1>
 <div class="content-section">
-    <p>Upload question files for AI validation and download improved versions.</p>
+    <p>Select question files for AI validation and download improved versions.</p>
+
+    <!-- Selection Mode Tabs -->
+    <div class="tab-container">
+        <div class="tab-headers">
+            <button class="tab-button active" id="tab-server" onclick="switchMode('server')">Select From Server</button>
+            <button class="tab-button" id="tab-upload" onclick="switchMode('upload')">Upload From Computer</button>
+        </div>
+    </div>
     
-    <!-- File Upload Section -->
-    <div id="upload-section" class="upload-section">
+    <!-- Server File Selection Section -->
+    <div id="server-section" class="upload-section">
+        <h3>Server Question Files</h3>
+        <div id="server-files-loading" class="info">Loading available question files...</div>
+        <div id="server-files-error" class="error" style="display:none;"></div>
+        <div id="server-files-list" class="file-list" style="display:none; max-height:300px; overflow:auto;">
+            <h4>Available Files:</h4>
+            <ul id="server-files-ul"></ul>
+            <div class="form-actions">
+                <button id="process-server-files" class="button" onclick="processServerFiles()">Process Selected With AI</button>
+                <button class="button secondary" onclick="clearServerSelection()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Section (optional, kept for compatibility) -->
+    <div id="upload-section" class="upload-section" style="display:none;">
         <h3>Upload Question Files</h3>
         <div class="file-upload-area" id="file-upload-area">
             <div class="upload-content">
@@ -483,6 +506,8 @@ let progressStartTime = null;
 let progressTimer = null;
 let processingCancelled = false;
 let progressTimeout = null;
+let serverFilesCache = [];
+let serverSelected = new Set();
 
 // AI Terminal helpers
 let aiTerminalLogs = [];
@@ -555,6 +580,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupTerminalSync();
     setupProgressCancelButton();
+    initServerSelection();
+    switchMode('server');
 });
 
 function setupProgressCancelButton() {
@@ -565,6 +592,8 @@ function setupProgressCancelButton() {
 }
 
 function setupTerminalSync() {
+    // No change to existing implementation
+}
     const originalTerminal = document.getElementById('original-terminal');
     const updatedTerminal = document.getElementById('updated-terminal');
     
@@ -683,6 +712,129 @@ function clearFiles() {
     selectedFiles = [];
     document.getElementById('file-list').style.display = 'none';
     document.getElementById('file-input').value = '';
+}
+
+function switchMode(mode){
+    const serverTab = document.getElementById('tab-server');
+    const uploadTab = document.getElementById('tab-upload');
+    const serverSection = document.getElementById('server-section');
+    const uploadSection = document.getElementById('upload-section');
+    if (mode === 'server'){
+        serverTab.classList.add('active');
+        uploadTab.classList.remove('active');
+        serverSection.style.display = 'block';
+        uploadSection.style.display = 'none';
+    } else {
+        uploadTab.classList.add('active');
+        serverTab.classList.remove('active');
+        uploadSection.style.display = 'block';
+        serverSection.style.display = 'none';
+    }
+}
+
+async function initServerSelection(){
+    try{
+        const res = await fetch('/list_question_files');
+        if (!res.ok){
+            throw new Error('Failed to load files');
+        }
+        const data = await res.json();
+        serverFilesCache = Array.isArray(data.files) ? data.files : [];
+        renderServerFiles();
+        document.getElementById('server-files-loading').style.display = 'none';
+        document.getElementById('server-files-list').style.display = 'block';
+    }catch(e){
+        const err = document.getElementById('server-files-error');
+        err.textContent = 'Error loading files: ' + e.message;
+        err.style.display = 'block';
+        document.getElementById('server-files-loading').style.display = 'none';
+    }
+}
+
+function renderServerFiles(){
+    const ul = document.getElementById('server-files-ul');
+    ul.innerHTML = '';
+    if (!serverFilesCache.length){
+        const li = document.createElement('li');
+        li.textContent = 'No question files found on server.';
+        ul.appendChild(li);
+        return;
+    }
+    serverFilesCache.forEach((f, idx)=>{
+        const li = document.createElement('li');
+        const checked = serverSelected.has(f.id) ? 'checked' : '';
+        li.innerHTML = `
+            <label style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" data-id="${f.id}" onchange="toggleServerSelection(this)" ${checked} />
+                <span class="file-name">${f.name}</span>
+                <span class="file-size">(${formatFileSize(f.size||0)})</span>
+                <span class="file-mtime" style="color:#888; font-size:12px;">${f.modified?new Date(f.modified).toLocaleString():''}</span>
+            </label>`;
+        ul.appendChild(li);
+    });
+}
+
+function toggleServerSelection(cb){
+    const id = cb.getAttribute('data-id');
+    if (!id) return;
+    if (cb.checked){ serverSelected.add(id); }
+    else { serverSelected.delete(id); }
+}
+
+function clearServerSelection(){
+    serverSelected.clear();
+    renderServerFiles();
+}
+
+async function processServerFiles(){
+    const files = Array.from(serverSelected);
+    if (!files.length){
+        alert('Please select at least one server file.');
+        return;
+    }
+    // Show progress and start timer
+    document.getElementById('processing-progress').style.display = 'block';
+    document.getElementById('server-section').style.display = 'none';
+    document.getElementById('upload-section').style.display = 'none';
+
+    openAiTerminal();
+    resetAiTerminal();
+    appendAiTerminalLine('Starting AI processing for selected server files...');
+    startProgressTimer();
+    const progressInterval = trackRealProgress();
+
+    try{
+        const response = await fetch('/process_question_files',{
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ server_files: files })
+        });
+        clearInterval(progressInterval);
+        updateProgress(60, 'Processing server response...', 'Analyzing server response');
+        if (!response.ok){
+            let msg = `Server error: ${response.status}`;
+            try{ const j = await response.json(); if (j.error) msg = j.error; }catch(_){ }
+            throw new Error(msg);
+        }
+        const result = await response.json();
+        updateProgress(85, 'Preparing results...', 'Formatting improved content');
+        if (result.success){
+            processedResults = result.processed_files;
+            updateProgress(95, 'Loading comparison view...', 'Setting up file comparison');
+            displayComparison();
+            updateProgress(100, 'Processing complete!', 'All files processed successfully');
+            try { renderChangeSummary(processedResults); } catch(e) {}
+            const closeBtn = document.getElementById('ai-terminal-close');
+            if (closeBtn) closeBtn.disabled = false;
+        } else {
+            throw new Error(result.error || 'Unknown error');
+        }
+    }catch(e){
+        appendAiTerminalLine('Error: ' + e.message);
+        alert('Error: ' + e.message);
+    }finally{
+        stopProgressTimer();
+    }
 }
 
 async function processFiles() {
