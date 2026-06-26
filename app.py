@@ -1577,6 +1577,13 @@ def edit_category(category_id):
                     # Remove any duplicate questions that might have been created
                     question_uploader.remove_duplicate_questions()
 
+                    # Best-effort auto-push
+                    try:
+                        from contents.admin_controls.github_integration import push_all_amended_questions_async
+                        push_all_amended_questions_async(detach=True)
+                    except Exception:
+                        pass
+
                     flash('Category updated successfully with new ID!')
                     return redirect(url_for('question_bank_page'))
                 else:
@@ -1590,6 +1597,12 @@ def edit_category(category_id):
 
             if success:
                 flash('Category updated successfully!')
+                # Best-effort auto-push
+                try:
+                    from contents.admin_controls.github_integration import push_all_amended_questions_async
+                    push_all_amended_questions_async(detach=True)
+                except Exception:
+                    pass
             else:
                 flash('Failed to update category.', 'error')
 
@@ -1689,6 +1702,12 @@ def delete_question(question_id):
         # Reload question_bank to reflect the changes
         question_bank.load_questions()
         flash('Question deleted successfully.')
+        # Best-effort auto-push
+        try:
+            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            push_all_amended_questions_async(detach=True)
+        except Exception:
+            pass
     else:
         flash('Failed to delete question.', 'error')
 
@@ -1710,6 +1729,12 @@ def delete_category_questions(category_id):
         # Reload question_bank to reflect the changes
         question_bank.load_questions()
         flash(f'Successfully deleted {count} questions from the category.')
+        # Best-effort auto-push
+        try:
+            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            push_all_amended_questions_async(detach=True)
+        except Exception:
+            pass
     else:
         flash('No questions found in this category or deletion failed.', 'error')
 
@@ -1808,6 +1833,13 @@ def add_question_page():
 
             flash('Question added successfully!')
 
+        # Best-effort auto-push for both add and edit
+        try:
+            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            push_all_amended_questions_async(detach=True)
+        except Exception:
+            pass
+
         # Handle different actions
         if action == 'save_next':
             # Get the next question in the category
@@ -1873,6 +1905,13 @@ def bulk_import_page():
 
                 # Remove the temporary file
                 os.remove(file_path)
+
+                # Best-effort auto-push
+                try:
+                    from contents.admin_controls.github_integration import push_all_amended_questions_async
+                    push_all_amended_questions_async(detach=True)
+                except Exception:
+                    pass
 
                 flash(f'Successfully imported {import_stats["successful"]} questions. Failed: {import_stats["failed"]}')
                 return redirect(url_for('admin_controls'))
@@ -2822,6 +2861,13 @@ def save_processed_files_to_database():
         
         # Reload question bank to reflect changes
         question_bank.load_questions()
+        
+        # Best-effort auto-push
+        try:
+            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            push_all_amended_questions_async(detach=True)
+        except Exception:
+            pass
         
         return jsonify({
             'success': True,
