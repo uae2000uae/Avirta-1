@@ -1379,6 +1379,17 @@ def reset_game():
             'message': f'The game has been ended by the host ({player_name}) to start a new game'
         })
 
+        # Best-effort: push amended question files to GitHub asynchronously
+        try:
+            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            # Fire-and-forget; do not block the request lifecycle
+            push_all_amended_questions_async(detach=True)
+        except Exception as e:
+            try:
+                current_app.logger.warning(f"GitHub auto-push in reset_game skipped: {e}")
+            except Exception:
+                pass
+
     # Redirect to the create-room page
     flash('Starting a new game...')
     return redirect(url_for('create_room'))
