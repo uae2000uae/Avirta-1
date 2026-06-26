@@ -542,6 +542,17 @@ def end_game(room_id):
         'message': f'The game has been ended by the host ({player_name})'
     })
 
+    # Best-effort: push amended question files to GitHub asynchronously
+    try:
+        from contents.admin_controls.github_integration import push_all_amended_questions_async
+        # Fire-and-forget; do not block the request lifecycle
+        push_all_amended_questions_async(detach=True)
+    except Exception as e:
+        try:
+            current_app.logger.warning(f"GitHub auto-push skipped: {e}")
+        except Exception:
+            pass
+
     # Clean up room data (remove room and event files)
     game_status_manager.cleanup_room_data(room_id)
 
@@ -2445,6 +2456,40 @@ def admin_controls():
         login_error=login_error,
         admin_setup=admin_setup
     )
+
+
+@app.route('/admin/github_sync', methods=['POST'])
+def admin_github_sync():
+    """Trigger background synchronization of question files to GitHub.
+
+    Admin-only. Starts a non-blocking background job and returns to Admin Controls.
+    """
+    # Authentication check
+    if not session.get('admin_authenticated', False):
+        flash('You must be logged in as an admin to perform this action.', 'error')
+        return redirect(url_for('admin_controls'))
+
+    try:
+        from contents.admin_controls.github_integration import (
+            push_all_amended_questions_async,
+            GitHubIntegration,
+        )
+        gh = GitHubIntegration()
+        if not getattr(gh, 'token', None):
+            flash('GitHub token is not configured. Please set GITHUB_TOKEN in Secret Manager/env.', 'error')
+            return redirect(url_for('admin_controls'))
+
+        # Fire-and-forget push
+        push_all_amended_questions_async(detach=True)
+        flash('Upload to GitHub started in the background. Changes will appear in the repository shortly.')
+    except Exception as e:
+        try:
+            current_app.logger.warning(f"Failed to start GitHub sync: {e}")
+        except Exception:
+            pass
+        flash(f'Failed to start GitHub sync: {e}', 'error')
+
+    return redirect(url_for('admin_controls'))
 
 
 @app.route('/aivalidator', methods=['GET'])

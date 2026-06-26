@@ -25,6 +25,7 @@ steps:
         echo "Using runtime SA: $SA";
         gcloud services enable secretmanager.googleapis.com || true;
         gcloud secrets add-iam-policy-binding AI_Token --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor" || true;
+        gcloud secrets add-iam-policy-binding GITHUB_TOKEN --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor" || true;
 
   # 1) Build the container image
   - name: "gcr.io/cloud-builders/docker"
@@ -46,7 +47,7 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
-        "--set-secrets=AI_Token=AI_Token:latest"
+        "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
       ]
 
   # 4) Ensure public (unauthenticated) access (roles/run.invoker)
