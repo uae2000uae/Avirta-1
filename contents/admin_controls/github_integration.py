@@ -171,6 +171,60 @@ def _resolve_repo_details() -> Tuple[str, str]:
     return REPO_OWNER, REPO_NAME
 
 
+def _get_changed_question_files() -> List[str]:
+    """Return a list of question JSON files under contents/questions/ that are modified, staged, or untracked in Git."""
+    import subprocess
+    import pathlib
+    
+    project_root = pathlib.Path(__file__).resolve().parents[2]
+    changed_files = set()
+    
+    # 1) Get modified/staged tracked files from Git
+    try:
+        res = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root),
+            timeout=5
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                p_norm = pathlib.Path(project_root / line)
+                # Check if file is in contents/questions/ and is a JSON file
+                if "contents/questions" in line.replace("\\", "/") and line.endswith(".json"):
+                    if p_norm.exists() and p_norm.is_file():
+                        changed_files.add(str(p_norm))
+    except Exception:
+        pass
+
+    # 2) Get untracked files from Git
+    try:
+        res = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root),
+            timeout=5
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                p_norm = pathlib.Path(project_root / line)
+                if "contents/questions" in line.replace("\\", "/") and line.endswith(".json"):
+                    if p_norm.exists() and p_norm.is_file():
+                        changed_files.add(str(p_norm))
+    except Exception:
+        pass
+        
+    return sorted(list(changed_files))
+
+
 class GitHubIntegration:
     """Minimal GitHub client focused on pushing content files."""
 
@@ -338,11 +392,18 @@ class GitHubIntegration:
                 files.append(str(p))
         return self.push_files(files, branch=branch)
 
+    def push_changed_questions(self, branch: Optional[str] = None) -> Tuple[bool, Dict[str, str]]:
+        """Find and push only changed or untracked JSON files under contents/questions/."""
+        changed_files = _get_changed_question_files()
+        if not changed_files:
+            return True, {"No changes": "No modified or untracked question files detected in git."}
+        return self.push_files(changed_files, branch=branch)
+
 
 # ------------------------- Convenience API -------------------------
 
 def push_all_amended_questions_async(detach: bool = True, branch: Optional[str] = None) -> Tuple[bool, str]:
-    """Convenience function to push all question files.
+    """Convenience function to push only changed/untracked question files.
 
     If detach=True, it spawns a thread to avoid blocking the caller and returns immediately.
     Returns (True, 'spawned') when detached, or (ok, summary_message) when run synchronously.
@@ -370,16 +431,21 @@ def push_all_amended_questions_async(detach: bool = True, branch: Optional[str] 
                 _progress_status["errors"] = []
                 _progress_status["start_time"] = datetime.now(timezone.utc).isoformat()
 
-            ok, results = gh.push_all_questions(branch=branch_name)
-            # Build a compact summary
-            failures = [k for k, v in results.items() if not v.startswith("Committed")]
+            ok, results = gh.push_changed_questions(branch=branch_name)
             
             with _progress_lock:
                 _progress_status["completed_time"] = datetime.now(timezone.utc).isoformat()
 
+            if "No changes" in results:
+                update_progress(status="success", message="No changes to upload. Repository is up-to-date.")
+                return True, "No changed files detected."
+
+            # Build a compact summary
+            failures = [k for k, v in results.items() if not v.startswith("Committed")]
+
             if ok:
-                update_progress(status="success", message=f"Pushed {len(results)} files successfully.")
-                return True, f"Pushed {len(results)} files successfully."
+                update_progress(status="success", message=f"Pushed {len(results)} changed files successfully.")
+                return True, f"Pushed {len(results)} changed files successfully."
             else:
                 update_progress(status="failed", message=f"Completed with {len(failures)} failures out of {len(results)} files.")
                 return False, f"Completed with {len(failures)} failures out of {len(results)} files."
@@ -407,7 +473,10 @@ if __name__ == "__main__":
         "--files", nargs="+", help="Specific space-separated files to push to GitHub"
     )
     group.add_argument(
-        "--all", action="store_true", help="Push all question files under contents/questions (default behavior)"
+        "--all", action="store_true", help="Push all question files under contents/questions"
+    )
+    group.add_argument(
+        "--changed", action="store_true", default=True, help="Push only changed/untracked question files (default behavior if --all or --files is not set)"
     )
     parser.add_argument(
         "--questions-dir", help="Override path to the questions directory to upload"
@@ -449,17 +518,23 @@ if __name__ == "__main__":
     if args.files:
         print(f"Uploading specific files: {args.files} ...")
         overall_ok, results = gh.push_files(args.files, branch=branch_name)
-    else:
-        # Default to all questions if nothing else is chosen
+    elif args.all:
         print("Uploading all files from contents/questions ...")
         overall_ok, results = gh.push_all_questions(questions_dir=args.questions_dir, branch=branch_name)
+    else:
+        # Default is changed files only
+        print("Uploading only changed/untracked files from contents/questions ...")
+        overall_ok, results = gh.push_changed_questions(branch=branch_name)
 
     print("\n--- Push Results ---")
     for rpath, status in results.items():
         print(f"  {rpath} => {status}")
 
     if overall_ok:
-        print("\nSUCCESS: All files successfully updated/skipped on GitHub.")
+        if "No changes" in results:
+            print("\nSUCCESS: No modified or untracked question files were detected.")
+        else:
+            print("\nSUCCESS: All changed files successfully updated/skipped on GitHub.")
         sys.exit(0)
     else:
         print("\nFAILURE: One or more files failed to be pushed to GitHub.", file=sys.stderr)
