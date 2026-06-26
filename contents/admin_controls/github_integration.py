@@ -26,6 +26,7 @@ import pathlib
 import subprocess
 import sys
 import threading
+import time
 from datetime import datetime, timezone
 from typing import Iterable, List, Tuple, Optional, Dict
 
@@ -172,57 +173,55 @@ def _resolve_repo_details() -> Tuple[str, str]:
 
 
 def _get_changed_question_files() -> List[str]:
-    """Return a list of question JSON files under contents/questions/ that are modified, staged, or untracked in Git."""
-    import subprocess
+    """Return a list of question JSON files under contents/questions/ that were modified since the last successful push."""
     import pathlib
+    import json
     
     project_root = pathlib.Path(__file__).resolve().parents[2]
-    changed_files = set()
+    qdir = project_root / "contents" / "questions"
     
-    # 1) Get modified/staged tracked files from Git
-    try:
-        res = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
-            capture_output=True,
-            text=True,
-            cwd=str(project_root),
-            timeout=5
-        )
-        if res.returncode == 0:
-            for line in res.stdout.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                p_norm = pathlib.Path(project_root / line)
-                # Check if file is in contents/questions/ and is a JSON file
-                if "contents/questions" in line.replace("\\", "/") and line.endswith(".json"):
-                    if p_norm.exists() and p_norm.is_file():
-                        changed_files.add(str(p_norm))
-    except Exception:
-        pass
+    # Path to store the last push timestamp (independent of gitignore)
+    timestamp_file = project_root / "contents" / "admin_controls" / "last_push_timestamp.json"
+    
+    last_push_time = 0.0
+    if timestamp_file.exists():
+        try:
+            with open(timestamp_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                last_push_time = float(data.get("last_push_time", 0.0))
+        except Exception:
+            pass
+            
+    changed_files = []
+    if qdir.exists():
+        for p in qdir.rglob("*.json"):
+            try:
+                mtime = p.stat().st_mtime
+                if mtime > last_push_time:
+                    changed_files.append(str(p))
+            except Exception:
+                pass
+                
+    return sorted(changed_files)
 
-    # 2) Get untracked files from Git
+
+def _save_last_push_time(timestamp: float):
+    """Save the last successful push timestamp to a JSON file."""
+    import pathlib
+    import json
+    project_root = pathlib.Path(__file__).resolve().parents[2]
+    timestamp_file = project_root / "contents" / "admin_controls" / "last_push_timestamp.json"
     try:
-        res = subprocess.run(
-            ["git", "ls-files", "--others", "--exclude-standard"],
-            capture_output=True,
-            text=True,
-            cwd=str(project_root),
-            timeout=5
-        )
-        if res.returncode == 0:
-            for line in res.stdout.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                p_norm = pathlib.Path(project_root / line)
-                if "contents/questions" in line.replace("\\", "/") and line.endswith(".json"):
-                    if p_norm.exists() and p_norm.is_file():
-                        changed_files.add(str(p_norm))
+        # Create directory if missing
+        timestamp_file.parent.mkdir(parents=True, exist_ok=True)
+        formatted = datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+        with open(timestamp_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "last_push_time": timestamp,
+                "formatted_time": formatted
+            }, f, indent=4)
     except Exception:
         pass
-        
-    return sorted(list(changed_files))
 
 
 class GitHubIntegration:
@@ -383,6 +382,7 @@ class GitHubIntegration:
 
     def push_all_questions(self, questions_dir: Optional[str] = None, branch: Optional[str] = None) -> Tuple[bool, Dict[str, str]]:
         """Push all JSON files from contents/questions to the repo, preserving paths."""
+        start_time = time.time()
         # Default directory
         project_root = pathlib.Path(__file__).resolve().parents[2]
         qdir = pathlib.Path(questions_dir) if questions_dir else project_root / "contents" / "questions"
@@ -390,14 +390,26 @@ class GitHubIntegration:
         if qdir.exists():
             for p in qdir.rglob("*.json"):
                 files.append(str(p))
-        return self.push_files(files, branch=branch)
+        
+        overall_ok, results = self.push_files(files, branch=branch)
+        if overall_ok:
+            _save_last_push_time(start_time)
+            
+        return overall_ok, results
 
     def push_changed_questions(self, branch: Optional[str] = None) -> Tuple[bool, Dict[str, str]]:
         """Find and push only changed or untracked JSON files under contents/questions/."""
+        start_time = time.time()
         changed_files = _get_changed_question_files()
         if not changed_files:
-            return True, {"No changes": "No modified or untracked question files detected in git."}
-        return self.push_files(changed_files, branch=branch)
+            _save_last_push_time(start_time)
+            return True, {"No changes": "No modified or untracked question files detected since last sync."}
+            
+        overall_ok, results = self.push_files(changed_files, branch=branch)
+        if overall_ok:
+            _save_last_push_time(start_time)
+            
+        return overall_ok, results
 
 
 # ------------------------- Convenience API -------------------------
