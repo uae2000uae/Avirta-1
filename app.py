@@ -2925,22 +2925,49 @@ def get_json():
 
 
 def _get_last_commit_time() -> Optional[str]:
-    """Retrieve the ISO 8601 timestamp of the last git commit."""
+    """Retrieve the ISO 8601 timestamp of the last git commit.
+
+    If running locally and git is available, it queries git and caches the result
+    to a local static file 'commit_timestamp.txt'.
+    If git is not available (e.g. in the online production environment), it falls
+    back to reading the cached file.
+    """
     import subprocess
+    
+    cache_path = os.path.join(current_dir, 'commit_timestamp.txt')
+    
+    # 1) Try to query git dynamically if available
     try:
         res = subprocess.run(
             ["git", "log", "-1", "--format=%cI"],
             capture_output=True,
             text=True,
             check=True,
-            cwd=os.path.dirname(os.path.abspath(__file__)),
+            cwd=current_dir,
             timeout=3
         )
         val = res.stdout.strip()
         if val:
+            # Cache the timestamp locally for deployment environments
+            try:
+                with open(cache_path, 'w', encoding='utf-8') as f:
+                    f.write(val)
+            except Exception:
+                pass
             return val
     except Exception:
         pass
+        
+    # 2) Fallback to reading the cached timestamp file if git fails/is absent
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                val = f.read().strip()
+                if val:
+                    return val
+        except Exception:
+            pass
+            
     return None
 
 
