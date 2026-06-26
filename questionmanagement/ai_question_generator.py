@@ -15,6 +15,46 @@ import requests
 from questionmanagement.question_bank import question_bank
 
 
+def _normalize_question_text(text: str) -> str:
+    """Normalize question text for robust duplicate detection.
+
+    - Lowercase
+    - Strip leading/trailing whitespace
+    - Collapse internal whitespace to single spaces
+    - Remove Arabic diacritics/harakat and tatweel
+    - Remove common punctuation (including Arabic punctuation)
+    - Normalize various dash/quote characters
+    """
+    try:
+        if text is None:
+            return ""
+        s = str(text)
+        # Lowercase
+        s = s.lower()
+        # Remove Arabic diacritics and tatweel
+        # Ranges: \u0610-\u061A, \u064B-\u065F, \u0670, \u06D6-\u06ED, tatweel \u0640
+        s = re.sub(r"[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]", "", s)
+        # Normalize various alef forms to bare alef
+        s = s.replace("\u0622", "\u0627").replace("\u0623", "\u0627").replace("\u0625", "\u0627").replace("\u0671", "\u0627")
+        # Normalize yaa alif maqsura to yaa
+        s = s.replace("\u0649", "\u064a")
+        # Unify quotes and dashes
+        for ch in ["\u2018", "\u2019", "\u201C", "\u201D", "\u00AB", "\u00BB", "\u2032", "\u2033", "'", '"']:
+            s = s.replace(ch, " ")
+        for ch in ["\u2013", "\u2014", "-", "–", "—"]:
+            s = s.replace(ch, " ")
+        # Remove punctuation including Arabic question/comma marks
+        s = re.sub(r"[\.,!?؛،:؛\(\)\[\]\{\}<>/~`@#$%^&*_+=|\\]", " ", s)
+        # Collapse whitespace to single spaces
+        s = re.sub(r"\s+", " ", s).strip()
+        return s
+    except Exception:
+        try:
+            return str(text).strip().lower()
+        except Exception:
+            return ""
+
+
 def _post_with_retries(url: str, headers: dict, json_data: dict, timeout: float, max_retries: int = 2, backoff: float = 1.5):
     """POST with limited retries for transient network errors/timeouts.
 
@@ -248,7 +288,26 @@ class AIQuestionGenerator:
             # Token-aware, chunked generation to reliably reach requested count
             total_questions = []
             batch_sizes = []
-            seen_texts = set()
+            # Build a set of normalized texts already existing in selected reference categories (to avoid repeats)
+            existing_normalized = set()
+            try:
+                if reference_categories:
+                    question_bank.load_questions()
+                    for category_id in reference_categories:
+                        if category_id in question_bank.categories:
+                            for qid in question_bank.categories.get(category_id, []):
+                                q = question_bank.questions.get(qid)
+                                if not q:
+                                    continue
+                                qtext = _normalize_question_text(q.get('question', ''))
+                                if qtext:
+                                    existing_normalized.add(qtext)
+            except Exception:
+                # Best effort; continue without blocking generation
+                existing_normalized = set()
+
+            # Track normalized texts we add in this session to prevent duplicates within generated set
+            seen_texts = set(existing_normalized)
 
             # Preserve original start index and adjust per batch to conceptually skip earlier candidates
             original_start = int(getattr(self, 'start_index', 0) or 0)
@@ -285,7 +344,7 @@ class AIQuestionGenerator:
                 added = 0
                 for q in batch:
                     try:
-                        qtext = str(q.get('question', '')).strip().lower()
+                        qtext = _normalize_question_text(q.get('question', ''))
                     except Exception:
                         qtext = ''
                     if not qtext or qtext in seen_texts:

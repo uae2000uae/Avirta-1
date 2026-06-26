@@ -2141,7 +2141,31 @@ def save_ai_questions():
     # Reload question_bank to get the updated questions
     question_bank.load_questions()
 
-    flash(f'Successfully added {saved_count} questions to the question bank.')
+    # After saving, trigger a background GitHub sync of amended question files
+    try:
+        from contents.admin_controls.github_integration import (
+            push_all_amended_questions_async,
+            GitHubIntegration,
+        )
+        # Only attempt if at least one question was saved
+        if saved_count > 0:
+            gh = GitHubIntegration()
+            if getattr(gh, 'token', None):
+                push_all_amended_questions_async(detach=True)
+                flash('Successfully added {} questions. Upload to GitHub started in the background.'.format(saved_count))
+            else:
+                # Proceed without blocking; inform admin token is missing
+                flash('Successfully added {} questions. GitHub upload not started: missing GITHUB_TOKEN.'.format(saved_count), 'warning')
+        else:
+            flash('No questions were selected to add.', 'warning')
+    except Exception as e:
+        try:
+            current_app.logger.warning(f"GitHub auto-push after AI save skipped: {e}")
+        except Exception:
+            pass
+        # Still inform about saved_count
+        flash(f'Successfully added {saved_count} questions to the question bank. (GitHub sync skipped)')
+
     return redirect(url_for('admin_controls'))
 
 @app.route('/export_questions_xlsx/<category_id>')
