@@ -14,10 +14,7 @@
     "openai_json_mode": true,
     "openai_organization": "",
     "openai_user": "",
-    "openai_stop": "",
-    "github_repo_owner": "uae2000uae",
-    "github_repo_name": "Avirta-WebApp",
-    "github_branch": "Avirta-1"
+    "openai_stop": ""
   },
   "gpt-4o-mini": {
     "openai_api_key": "SET_IN_ENV",
@@ -34,9 +31,6 @@
     "openai_json_mode": true,
     "openai_organization": "",
     "openai_user": "",
-    "openai_stop": "",
-    "github_repo_owner": "uae2000uae",
-    "github_repo_name": "Avirta-WebApp",
-    "github_branch": "Avirta-1"
+    "openai_stop": ""
   }
 }

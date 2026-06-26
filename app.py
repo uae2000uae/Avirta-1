@@ -22,7 +22,6 @@ if current_dir not in sys.path:
 
 # Import modules
 from contents.admin_controls.admin_setup import AdminSetup
-from contents.admin_controls.github_integration import GitHubIntegration
 from questionmanagement.categories_questions.category_manager import CategoryManager
 from questionmanagement.categories_questions.question_uploader import QuestionUploader
 from contents.game_room.game_room import GameRoom
@@ -485,11 +484,7 @@ def joined_room(room_id):
 
 @app.route('/end_game/<room_id>')
 def end_game(room_id):
-    """End a game and return to the home page.
-
-    Also attempts to push a snapshot of the used questions to GitHub (if configured).
-    This is best-effort and will never block ending the game.
-    """
+    """End a game and return to the home page."""
     # Check if the room exists
     if room_id not in game_rooms:
         flash('Game room not found.')
@@ -537,24 +532,6 @@ def end_game(room_id):
         flash('Only the host can end the game.')
         return redirect(url_for('index'))
 
-    # Try to push a snapshot of used questions to GitHub (fail-soft)
-    try:
-        from contents.game_events.push_used_questions import push_used_questions_snapshot
-        mode = type(game_room).__name__.lower().replace('gameroom', '')
-        success, msg = push_used_questions_snapshot(game_room, admin_setup, mode or 'game')
-        # Log to admin events for traceability
-        admin_setup.log_event(f"GitHub snapshot push on end_game (room {room_id}): {'success' if success else 'failed'} - {msg}")
-        if success:
-            flash('Pushed used-questions snapshot to GitHub.', 'success')
-        else:
-            # Only show an info-level note to avoid alarming the host
-            flash('Ended game. (GitHub snapshot not pushed: check settings)', 'info')
-    except Exception as e:
-        try:
-            admin_setup.log_event(f"GitHub snapshot push error on end_game (room {room_id}): {e}")
-        except Exception:
-            pass
-        # Do not block end_game
 
     # End the game
     game_room.end_game()
@@ -1024,13 +1001,26 @@ def result(room_id):
 
 @app.route('/report_question', methods=['POST'])
 def report_question():
-    """Report a question for review."""
+    """Report a question for review.
+
+    Behaviors:
+    - Standard form POST: flashes a message and redirects to result page (legacy behavior)
+    - AJAX/JSON POST (X-Requested-With=XMLHttpRequest or Accept includes application/json):
+      returns JSON and does not redirect, so the client can keep the user on the same page.
+    """
     question_id = request.form.get('question_id')
     room_id = request.form.get('room_id')
     player_name = session.get('player_name')
     is_correct = request.form.get('is_correct', 'False')
 
+    wants_json = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or 'application/json' in (request.headers.get('Accept') or '')
+    )
+
     if not question_id or not room_id:
+        if wants_json:
+            return jsonify({'success': False, 'message': 'Invalid request: missing question or room id.'}), 400
         flash('Invalid request.', 'error')
         return redirect(url_for('index'))
 
@@ -1038,21 +1028,34 @@ def report_question():
     question_data = question_uploader.get_question(question_id)
 
     if not question_data:
+        if wants_json:
+            return jsonify({'success': False, 'message': 'Question not found.'}), 404
         flash('Question not found.', 'error')
         return redirect(url_for('result', room_id=room_id, is_correct=is_correct))
 
     # Flag the question as reported in the original database
     if 'reported' not in question_data:
         question_data['reported'] = True
-        question_uploader.update_question(question_id, {'reported': True})
+        try:
+            question_uploader.update_question(question_id, {'reported': True})
+        except Exception:
+            # Non-fatal for reporting flow
+            pass
 
     # Report the question
     success, report_id = reported_question_manager.report_question(question_data, reporter=player_name)
 
+    message = 'Question reported successfully. Thank you for your feedback!' if success else 'Failed to report question. Please try again.'
+
+    if wants_json:
+        status = 200 if success else 500
+        return jsonify({'success': success, 'message': message, 'report_id': report_id if success else None}), status
+
+    # Legacy behavior: flash + redirect to result page
     if success:
-        flash('Question reported successfully. Thank you for your feedback!')
+        flash(message)
     else:
-        flash('Failed to report question. Please try again.', 'error')
+        flash(message, 'error')
 
     return redirect(url_for('result', room_id=room_id, is_correct=is_correct))
 
@@ -1088,8 +1091,10 @@ def reported_questions():
     if not is_authenticated:
         return render_template('reported_questions.html', is_authenticated=False)
 
-    # Get the status filter
+    # Get the status filter (default to 'pending' only when parameter is missing)
     status = request.args.get('status')
+    if status is None:
+        status = 'pending'
 
     # Load reports
     reported_question_manager.load_reports()
@@ -2325,15 +2330,6 @@ def admin_controls():
                         val = raw.strip() if isinstance(raw, str) else raw
                     admin_setup.update_game_setting(fld, val)
 
-            # Optionally accept a manual GitHub token (not persisted) and keep in session
-            if 'github_token_manual' in request.form:
-                manual_token = (request.form.get('github_token_manual') or '').strip()
-                if manual_token:
-                    session['github_token_manual'] = manual_token
-                    flash('A manual GitHub token has been stored for this session. It will override Secret Manager/env for GitHub operations.', 'info')
-                else:
-                    session.pop('github_token_manual', None)
-
             # Create a temporary API settings object to save (excluding any tokens/secrets)
             api_settings = {
                 'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
@@ -2350,11 +2346,7 @@ def admin_controls():
                 'openai_json_mode': admin_setup.game_settings.get('openai_json_mode', True),
                 'openai_organization': admin_setup.game_settings.get('openai_organization', ''),
                 'openai_user': admin_setup.game_settings.get('openai_user', ''),
-                'openai_stop': admin_setup.game_settings.get('openai_stop', ''),
-                # GitHub settings from form (token is no longer stored, use Secret Manager/env)
-                'github_repo_owner': request.form.get('github_repo_owner', ''),
-                'github_repo_name': request.form.get('github_repo_name', ''),
-                'github_branch': request.form.get('github_branch', '')
+                'openai_stop': admin_setup.game_settings.get('openai_stop', '')
             }
 
             # Update the first saved API settings or create a new one if none exist
@@ -2839,116 +2831,6 @@ def serve_timestamp():
             current_app.logger.error(f"Error generating fallback timestamp: {str(fallback_err)}")
             return jsonify({"error": str(e)}), 500
 
-@app.route('/push_questions_to_github', methods=['GET', 'POST'])
-def push_questions_to_github():
-    """
-    Push question files to GitHub.
-    This endpoint uses the GitHubIntegration class to push all question files to GitHub.
-    """
-    # Check if user is authenticated
-    is_authenticated = session.get('admin_authenticated', False)
-    if not is_authenticated:
-        flash('You must be logged in to access this page.', 'error')
-        return redirect(url_for('admin_controls'))
-
-    # Determine if a token is present via Session or Secret Manager/env (for display only)
-    token_present = bool(
-        session.get('github_token_manual') or get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
-    )
-
-    # If it's a POST request, push the files to GitHub
-    if request.method == 'POST':
-        action = request.form.get('action')
-
-        if action == 'push_all':
-            # Resolve GitHub token: prefer manual (form/session), else Secret Manager/env
-            form_token = (request.form.get('github_token_manual') or '').strip()
-            session_token = session.get('github_token_manual')
-            github_token = form_token or session_token or get_secret('GITHUB_TOKEN') or os.environ.get('GITHUB_TOKEN')
-            github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
-            github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
-            github_branch = admin_setup.game_settings.get('github_branch', 'main')
-
-            # Validate GitHub settings
-            if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=bool(github_token))
-
-            # Initialize GitHub integration
-            github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
-
-            # Validate GitHub credentials
-            success, message = github.validate_credentials()
-            if not success:
-                flash(f'GitHub authentication failed: {message}', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
-
-            # Push all question files to GitHub
-            success_count, failed_count, messages = github.push_all_question_files()
-
-            # Log the event
-            admin_setup.log_event(f"Pushed {success_count} question files to GitHub, {failed_count} failed")
-
-            # Flash a message with the results
-            if success_count > 0 and failed_count == 0:
-                flash(f'Successfully pushed {success_count} question files to GitHub.', 'success')
-            elif success_count > 0 and failed_count > 0:
-                flash(f'Pushed {success_count} question files to GitHub, but {failed_count} files failed.', 'warning')
-            else:
-                flash(f'Failed to push any question files to GitHub. {failed_count} files failed.', 'error')
-
-            # Return the template with the messages
-            return render_template('push_to_github.html', 
-                                  is_authenticated=is_authenticated,
-                                  messages=messages,
-                                  admin_setup=admin_setup)
-
-        elif action == 'sync':
-            # Get GitHub settings; resolve token exclusively from Secret Manager/env
-            github_token = (
-                get_secret('GITHUB_TOKEN')
-                or os.environ.get('GITHUB_TOKEN')
-            )
-            github_repo_owner = admin_setup.game_settings.get('github_repo_owner', '')
-            github_repo_name = admin_setup.game_settings.get('github_repo_name', '')
-            github_branch = admin_setup.game_settings.get('github_branch', 'main')
-
-            # Validate GitHub settings
-            if (not github_token or str(github_token).strip() in ('', 'SET_IN_ENV')) or not github_repo_owner or not github_repo_name:
-                flash('GitHub settings are incomplete. Please set GITHUB_TOKEN via Secret Manager/env and configure repo owner/name in the API Settings tab.', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=bool(github_token))
-
-            # Initialize GitHub integration
-            github = GitHubIntegration(github_token, github_repo_owner, github_repo_name, github_branch)
-
-            # Validate GitHub credentials
-            success, message = github.validate_credentials()
-            if not success:
-                flash(f'GitHub authentication failed: {message}', 'error')
-                return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup)
-
-            # Synchronize question files with GitHub
-            success_count, failed_count, messages = github.sync_question_files()
-
-            # Log the event
-            admin_setup.log_event(f"Synchronized question files with GitHub: {success_count} successful, {failed_count} failed")
-
-            # Flash a message with the results
-            if success_count > 0 and failed_count == 0:
-                flash(f'Successfully synchronized {success_count} question files with GitHub.', 'success')
-            elif success_count > 0 and failed_count > 0:
-                flash(f'Synchronized {success_count} question files with GitHub, but {failed_count} files failed.', 'warning')
-            else:
-                flash(f'Failed to synchronize any question files with GitHub. {failed_count} files failed.', 'error')
-
-            # Return the template with the messages
-            return render_template('push_to_github.html', 
-                                  is_authenticated=is_authenticated,
-                                  messages=messages,
-                                  admin_setup=admin_setup)
-
-    # If it's a GET request, just render the template
-    return render_template('push_to_github.html', is_authenticated=is_authenticated, admin_setup=admin_setup, token_present=token_present)
 
 if __name__ == '__main__':
     import os

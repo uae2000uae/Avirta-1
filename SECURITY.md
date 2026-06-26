@@ -10,14 +10,14 @@ What is enabled in GitHub
 What we added in this repository
 - CI secret scanning (Gitleaks): A GitHub Actions workflow scans every push and pull request for secrets and fails the check if any are detected.
 - Allowlist for placeholders: Common placeholders (e.g., SET_IN_ENV, redacted samples) are allowed to reduce false positives. See .gitleaks.toml.
-- Secrets at runtime only: The application reads secrets (OpenAI key, GitHub token) from environment variables or Google Secret Manager on Cloud Run. Secrets are not stored in version control.
+- Secrets at runtime only: The application reads the OpenAI key from environment variables or Google Secret Manager on Cloud Run. Secrets are not stored in version control.
 
 How to report a vulnerability
 - Please open a private security advisory or email the repository owner. Do not open a public issue for sensitive reports.
 
 Developer guidance (avoid leaks)
 - Never commit plaintext secrets (API keys, tokens, passwords) to the repo.
-- Use environment variables locally (e.g., AI_Token, GITHUB_TOKEN) and Google Secret Manager in production.
+- Use environment variables locally (e.g., AI_Token) and Google Secret Manager in production.
 - Files likely to hold local secrets are git-ignored (.env, contents/admin_controls/*settings.json, IDE folders). Do not force-add them.
 - If you accidentally commit a secret:
   1) Revoke/rotate it immediately at the provider.
@@ -30,7 +30,7 @@ Local scanning (optional)
   - Or install gitleaks and run: gitleaks detect --source . --no-banner --redact --config .gitleaks.toml
 
 Cloud Run/Google Cloud notes
-- Provide AI_Token and GITHUB_TOKEN via Google Secret Manager and map them to environment variables during deployment (Cloud Build or gcloud run --set-secrets ..., e.g., GITHUB_TOKEN=GitHub_Token:latest).
+- Provide AI_Token via Google Secret Manager and map it to an environment variable during deployment.
 - Ensure the Cloud Run service account has roles/secretmanager.secretAccessor.
 
 Questions

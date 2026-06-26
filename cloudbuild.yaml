@@ -4,9 +4,28 @@
 substitutions:
   _REGION: us-central1
   _SERVICE_NAME: avirta
-  # You can override _REGION and _SERVICE_NAME at trigger time
+  # Optional: runtime service account email for Cloud Run
+  # Example: my-run-sa@my-project.iam.gserviceaccount.com
+  _RUN_SA_EMAIL: ""
+  # You can override _REGION, _SERVICE_NAME and _RUN_SA_EMAIL at trigger time
 
 steps:
+  # 0) Prepare Secret Manager access for the Cloud Run runtime service account
+  - name: "gcr.io/cloud-builders/gcloud"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - >-
+        set -e;
+        SA="${_RUN_SA_EMAIL}";
+        if [ -z "$SA" ]; then
+          NUM=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)');
+          SA="${NUM}-compute@developer.gserviceaccount.com";
+        fi;
+        echo "Using runtime SA: $SA";
+        gcloud services enable secretmanager.googleapis.com || true;
+        gcloud secrets add-iam-policy-binding AI_Token --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor" || true;
+
   # 1) Build the container image
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-t", "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA", "."]
@@ -27,7 +46,7 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
-        "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
+        "--set-secrets=AI_Token=AI_Token:latest"
       ]
 
   # 4) Ensure public (unauthenticated) access (roles/run.invoker)

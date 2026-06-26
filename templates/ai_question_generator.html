@@ -4,11 +4,10 @@
 {% block title %}AI Question Generator - Avirta{% endblock %}
 
 {% block content %}
-<h2>AI Question Generator</h2>
-
-<div class="actions">
-    <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+<div class="back-navigation">
+    <a href="{{ url_for('admin_controls') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Admin Controls</a>
 </div>
+<h1>AI Question Generator</h1>
 
 <div class="page-section">
     {% if not admin_setup.game_settings.get('openai_api_key') %}

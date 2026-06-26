@@ -1,107 +1,11 @@
-<link href="/static/css/style.css" rel="stylesheet" type="text/css">
 {% extends "base.html" %}
-
-{% block title %}Push Questions to GitHub - Avirta{% endblock %}
-
+{% block title %}Feature Removed{% endblock %}
 {% block content %}
-<h1>Push Questions to GitHub</h1>
-
-{% if not is_authenticated %}
-<div class="login-form">
-    <h2>Admin Login Required</h2>
-    <p>You must be logged in as an admin to access this page.</p>
-    <a href="{{ url_for('admin_controls') }}" class="button">Go to Admin Login</a>
+<div class="section">
+  <h1>GitHub Integration Removed</h1>
+  <p>The Push to GitHub feature has been removed from Avirta. Synchronization with GitHub is no longer supported.</p>
+  <div class="form-actions">
+    <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
+  </div>
 </div>
-{% else %}
-<div class="page-section">
-    <div class="section">
-        <h2>GitHub Integration</h2>
-        <p class="status-message">This tool allows you to push question files from the content/questions folder to GitHub. Make sure you have configured your GitHub API settings in the Admin Controls page.</p>
-        <br>
-        <div class="form-group-grid1">
-            <div class="action-card">
-                <h3>Push All Question Files</h3>
-                <p>Push all question files from the content/questions folder to GitHub. This will create or update files in the repository.</p>
-                <form action="{{ url_for('push_questions_to_github') }}" method="POST" class="form-actions">
-                    <input type="hidden" name="action" value="push_all">
-                    <label for="github_token_manual_pushall">GitHub Token (optional, not saved):</label>
-                    <input type="password" id="github_token_manual_pushall" name="github_token_manual" placeholder="Paste token to use for this push (overrides Secret/env/session)">
-                    <button type="submit" class="button">Push All Files</button>
-                </form>
-            </div>
-            
-            <div class="action-card">
-                <h3>Synchronize Question Files</h3>
-                <p>Synchronize question files between the local directory and GitHub repository. This will create, update, or delete files as necessary.</p>
-                <form action="{{ url_for('push_questions_to_github') }}" method="POST" class="form-actions">
-                    <input type="hidden" name="action" value="sync">
-                    <label for="github_token_manual_sync">GitHub Token (optional, not saved):</label>
-                    <input type="password" id="github_token_manual_sync" name="github_token_manual" placeholder="Paste token to use for this sync (overrides Secret/env/session)">
-                    <button type="submit" class="button">Synchronize Files</button>
-                </form>
-            </div>
-        </div>
-	</div>
-	<br>
-	<div>
-        {% if messages %}
-        <div class="section">
-            <h3>Operation Results</h3>
-            <div class="status-container">
-                {% for message in messages %}
-                <div class="stat-card">{{ message }}</div>
-                {% endfor %}
-            </div>
-        </div>
-        <br>
-        {% endif %}
-        <div class="section">
-            <h3>Current GitHub Settings</h3>
-            <table class="data-table">
-                <tr>
-                    <th>Setting</th>
-                    <th>Value</th>
-                </tr>
-                <tr>
-                    <td>Repository Owner</td>
-                    <td>{{ admin_setup.game_settings.get('github_repo_owner', 'Not set') }}</td>
-                </tr>
-                <tr>
-                    <td>Repository Name</td>
-                    <td>{{ admin_setup.game_settings.get('github_repo_name', 'Not set') }}</td>
-                </tr>
-                <tr>
-                    <td>Branch</td>
-                    <td>{{ admin_setup.game_settings.get('github_branch', 'main') }}</td>
-                </tr>
-                <tr>
-                    <td>GitHub Token</td>
-                    <td>{% if token_present %}Set (via Secret/env){% else %}Not set{% endif %}</td>
-                </tr>
-            </table>
-			<div class="form-actions">
-                <a href="{{ url_for('admin_controls') }}" class="button">Update GitHub Settings</a>
-			    <div class="button">
-       				 <a href="{{ url_for('admin_controls') }}" class="button">Back to Admin Controls</a>
-				</div></div>
-        </div>
-    </div>
-</div>
-<style>
-    .action-card {
-        flex: 1;
-        min-width: 300px;
-        background-color: var(--bg-color);
-        border-radius: var(--border-radius);
-        padding: 15px;
-		margin: 15pt;
-        box-shadow: var(--box-shadow);
-    }
-    
-    .action-card h3 {
-        color: var(--text-color-light);
-        margin-top: 0;
-    }
-</style>
-{% endif %}
 {% endblock %}

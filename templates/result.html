@@ -62,6 +62,7 @@
         const modal = document.getElementById('report-modal');
         const closeBtn = document.querySelector('.close-modal');
         const cancelBtn = document.querySelector('.cancel-report');
+        const reportForm = modal ? modal.querySelector('form') : null;
 
         // Set flag when returning to game board
         const returnToGameBtn = document.getElementById('return-to-game');
@@ -71,33 +72,85 @@
             });
         }
 
+        function closeModal() { if (modal) modal.style.display = 'none'; }
+        function openModal() { if (modal) modal.style.display = 'block'; }
+
         // Show modal when report button is clicked
         if (reportBtn) {
             reportBtn.addEventListener('click', function() {
-                modal.style.display = 'block';
+                openModal();
             });
         }
 
         // Hide modal when close button is clicked
         if (closeBtn) {
-            closeBtn.addEventListener('click', function() {
-                modal.style.display = 'none';
-            });
+            closeBtn.addEventListener('click', function() { closeModal(); });
         }
 
         // Hide modal when cancel button is clicked
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', function() {
-                modal.style.display = 'none';
-            });
+            cancelBtn.addEventListener('click', function() { closeModal(); });
         }
 
         // Hide modal when clicking outside the modal content
         window.addEventListener('click', function(event) {
             if (event.target === modal) {
-                modal.style.display = 'none';
+                closeModal();
             }
         });
+
+        // Intercept report form submit to use AJAX and stay on same page
+        if (reportForm) {
+            reportForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(reportForm);
+                try {
+                    const resp = await fetch(reportForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    const success = resp.ok && data && data.success !== false;
+
+                    const content = modal.querySelector('.modal-content');
+                    const oldHTML = content.innerHTML;
+                    if (success) {
+                        content.innerHTML = '<div class="info-text" style="text-align:center;">' +
+                            (data.message || 'Question reported successfully. Thank you!') +
+                            '</div>';
+                        setTimeout(function() {
+                            closeModal();
+                            // Restore original content for future reports
+                            content.innerHTML = oldHTML;
+                            const newClose = content.querySelector('.close-modal');
+                            const newCancel = content.querySelector('.cancel-report');
+                            if (newClose) newClose.addEventListener('click', closeModal);
+                            if (newCancel) newCancel.addEventListener('click', closeModal);
+                        }, 3000);
+                    } else {
+                        const msg = (data && data.message) ? data.message : 'Failed to report question. Please try again.';
+                        const errBox = document.createElement('div');
+                        errBox.className = 'error-text';
+                        errBox.style.marginTop = '10px';
+                        errBox.style.textAlign = 'center';
+                        errBox.textContent = msg;
+                        content.appendChild(errBox);
+                    }
+                } catch (err) {
+                    const content = modal.querySelector('.modal-content');
+                    const errBox = document.createElement('div');
+                    errBox.className = 'error-text';
+                    errBox.style.marginTop = '10px';
+                    errBox.style.textAlign = 'center';
+                    errBox.textContent = 'Network error. Please try again.';
+                    content.appendChild(errBox);
+                }
+            });
+        }
     });
 </script>
 

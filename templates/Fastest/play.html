@@ -66,9 +66,13 @@
                 {% endif %}
             {% endif %}
     <!-- Answer Display Section -->
-        <div>
+        <div id="answer-container">
             {% if current_question and stats.answer_revealed %}
                 <div dir="{% if current_question.correct_answer|is_arabic %}rtl{% else %}ltr{% endif %}"><h2 class="text-center">{{ current_question.correct_answer }}</h2></div>
+                <!-- Report Question Icon under the answer -->
+                <div class="text-center" style="margin-top: 8px;">
+                    <button id="report-btn" class="report-button" title="Report question | الإبلاغ عن السؤال"><i class="fas fa-flag"></i></button>
+                </div>
             {% else %}
                 {% if is_host and stats.question_revealed and not stats.answer_revealed %}
                     <div class="timer-container"><p>Time remaining:</p><h4><span id="timer">15</span></h4><p dir=rtl>الوقت المتبقي :</p></div>
@@ -81,6 +85,24 @@
         </div>
     </div>
 </div>
+
+{% if current_question %}
+<!-- Report Modal for Fastest -->
+<div id="report-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <p>Would you like to report this question for review?</p>
+        <p dir="rtl">هل تريد الإبلاغ عن هذا السؤال للمراجعة؟</p>
+        <form action="{{ url_for('report_question') }}" method="post" class="form-actions">
+            <input type="hidden" name="question_id" value="{{ current_question.id }}">
+            <input type="hidden" name="room_id" value="{{ room.room_id }}">
+            <input type="hidden" name="is_correct" value="False">
+            <button type="submit" class="button confirm-report">Yes | نعـم</button>
+            <button type="button" class="button cancel-report">No | إلغاء</button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
     <!-- Player Scoring Section -->
 	{% if current_question and stats.answer_revealed %}
@@ -128,6 +150,101 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reportBtn = document.getElementById('report-btn');
+        const modal = document.getElementById('report-modal');
+        const closeBtn = document.querySelector('.close-modal');
+        const cancelBtn = document.querySelector('.cancel-report');
+        const reportForm = modal ? modal.querySelector('form') : null;
+
+        function closeModal() {
+            if (modal) modal.style.display = 'none';
+        }
+        function openModal() {
+            if (modal) modal.style.display = 'block';
+        }
+
+        if (reportBtn) {
+            reportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openModal();
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        function attachAjaxSubmit(form) {
+            if (!form) return;
+            form.addEventListener('submit', async function submitHandler(e) {
+                e.preventDefault();
+                const formData = new FormData(form);
+                try {
+                    const resp = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    const success = resp.ok && data && data.success !== false;
+
+                    // Build a temporary success/error message inside the modal
+                    const content = modal.querySelector('.modal-content');
+                    const oldHTML = content.innerHTML;
+                    if (success) {
+                        content.innerHTML = '<div class="info-text" style="text-align:center;">' +
+                            (data.message || 'Question reported successfully. Thank you!') +
+                            '</div>';
+                        setTimeout(function() {
+                            closeModal();
+                            // Restore original content for future reports
+                            content.innerHTML = oldHTML;
+                            // Re-bind handlers for restored elements
+                            const newClose = content.querySelector('.close-modal');
+                            const newCancel = content.querySelector('.cancel-report');
+                            const newForm = content.querySelector('form');
+                            if (newClose) newClose.addEventListener('click', closeModal);
+                            if (newCancel) newCancel.addEventListener('click', closeModal);
+                            attachAjaxSubmit(newForm);
+                        }, 3000);
+                    } else {
+                        // Show error without navigating
+                        const msg = (data && data.message) ? data.message : 'Failed to report question. Please try again.';
+                        const errBox = document.createElement('div');
+                        errBox.className = 'error-text';
+                        errBox.style.marginTop = '10px';
+                        errBox.style.textAlign = 'center';
+                        errBox.textContent = msg;
+                        content.appendChild(errBox);
+                    }
+                } catch (err) {
+                    const content = modal.querySelector('.modal-content');
+                    const errBox = document.createElement('div');
+                    errBox.className = 'error-text';
+                    errBox.style.marginTop = '10px';
+                    errBox.style.textAlign = 'center';
+                    errBox.textContent = 'Network error. Please try again.';
+                    content.appendChild(errBox);
+                }
+            });
+        }
+
+        // Intercept report form submit to use AJAX and stay on same page
+        attachAjaxSubmit(reportForm);
+    });
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Setup scroll position saving
@@ -333,7 +450,7 @@
             }
         }
 
-        // Function to update the answer section
+        // Function to update the answer section (preserves formatting and report flag)
         function updateAnswerSection(data) {
             const answerContainer = document.getElementById('answer-container');
             if (!answerContainer) return;
@@ -342,10 +459,46 @@
             if (data.answer_revealed && data.current_question) {
                 // Only update if content has changed
                 const answerText = data.current_question.correct_answer || '';
-                const currentText = answerContainer.querySelector('.answer-text')?.textContent || '';
+                const currentText = answerContainer.querySelector('h2')?.textContent || '';
 
                 if (answerText && answerText !== currentText) {
-                    answerContainer.innerHTML = `<div class="answer-text">${answerText}</div>`;
+                    // Clear and rebuild the DOM to match the original server-rendered structure
+                    answerContainer.innerHTML = '';
+
+                    // Determine text direction (basic Arabic detection)
+                    const isArabic = /[\u0600-\u06FF]/.test(answerText);
+                    const dir = isArabic ? 'rtl' : 'ltr';
+
+                    // Answer text wrapper
+                    const ansWrap = document.createElement('div');
+                    ansWrap.setAttribute('dir', dir);
+                    const h2 = document.createElement('h2');
+                    h2.className = 'text-center';
+                    h2.textContent = answerText; // safe text insertion
+                    ansWrap.appendChild(h2);
+                    answerContainer.appendChild(ansWrap);
+
+                    // Report flag under the answer
+                    const flagWrap = document.createElement('div');
+                    flagWrap.className = 'text-center';
+                    flagWrap.style.marginTop = '8px';
+
+                    const btn = document.createElement('button');
+                    btn.id = 'report-btn';
+                    btn.className = 'report-button';
+                    btn.title = 'Report question | الإبلاغ عن السؤال';
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                    flagWrap.appendChild(btn);
+                    answerContainer.appendChild(flagWrap);
+
+                    // Bind click handler to open the modal (in case content was re-rendered)
+                    const modal = document.getElementById('report-modal');
+                    if (btn && modal) {
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            modal.style.display = 'block';
+                        });
+                    }
                 }
             }
 

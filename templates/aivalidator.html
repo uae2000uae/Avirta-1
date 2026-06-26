@@ -1,16 +1,15 @@
+<link href="/static/css/style.css" rel="stylesheet" type="text/css">
 {% extends "base.html" %}
 
 {% block title %}AI Question Validator - Avirta{% endblock %}
 
 {% block content %}
-<link href="/static/css/style.css" rel="stylesheet" type="text/css">
 
 <div class="back-navigation">
     <a href="{{ url_for('admin_controls') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Admin Controls</a>
 </div>
-
-<div class="content-section">
     <h1>AI Question Validator</h1>
+<div class="content-section">
     <p>Upload question files for AI validation and download improved versions.</p>
     
     <!-- File Upload Section -->
