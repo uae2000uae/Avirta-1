@@ -2488,8 +2488,12 @@ def admin_github_sync():
 
     Admin-only. Starts a non-blocking background job and returns to Admin Controls.
     """
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('ajax') == '1' or request.is_json
+
     # Authentication check
     if not session.get('admin_authenticated', False):
+        if is_ajax:
+            return jsonify({"success": False, "message": "You must be logged in as an admin."}), 403
         flash('You must be logged in as an admin to perform this action.', 'error')
         return redirect(url_for('admin_controls'))
 
@@ -2500,20 +2504,45 @@ def admin_github_sync():
         )
         gh = GitHubIntegration()
         if not getattr(gh, 'token', None):
+            if is_ajax:
+                return jsonify({"success": False, "message": "GitHub token is not configured. Please set GITHUB_TOKEN."}), 400
             flash('GitHub token is not configured. Please set GITHUB_TOKEN in Secret Manager/env.', 'error')
             return redirect(url_for('admin_controls'))
 
         # Fire-and-forget push
-        push_all_amended_questions_async(detach=True)
+        ok, msg = push_all_amended_questions_async(detach=True)
+        if not ok:
+            if is_ajax:
+                return jsonify({"success": False, "message": msg}), 400
+            flash(msg, 'error')
+            return redirect(url_for('admin_controls'))
+
+        if is_ajax:
+            return jsonify({"success": True, "message": "Upload to GitHub started in the background."})
         flash('Upload to GitHub started in the background. Changes will appear in the repository shortly.')
     except Exception as e:
         try:
             current_app.logger.warning(f"Failed to start GitHub sync: {e}")
         except Exception:
             pass
+        if is_ajax:
+            return jsonify({"success": False, "message": f"Failed to start GitHub sync: {e}"}), 500
         flash(f'Failed to start GitHub sync: {e}', 'error')
 
     return redirect(url_for('admin_controls'))
+
+
+@app.route('/admin/github_sync_status', methods=['GET'])
+def admin_github_sync_status():
+    """Get the current progress of the GitHub sync operation.
+
+    Admin-only. Returns JSON containing progress details.
+    """
+    if not session.get('admin_authenticated', False):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    from contents.admin_controls.github_integration import get_upload_progress
+    return jsonify(get_upload_progress())
 
 
 @app.route('/aivalidator', methods=['GET'])

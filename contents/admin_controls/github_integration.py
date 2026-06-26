@@ -42,6 +42,44 @@ REPO_OWNER = "uae2000uae"
 REPO_NAME = "Avirta-WebApp"
 
 
+# Thread-safe upload progress state
+_progress_lock = threading.Lock()
+_progress_status = {
+    "status": "idle",       # "idle", "running", "success", "failed"
+    "total": 0,
+    "current": 0,
+    "current_file": "",
+    "message": "",
+    "errors": [],
+    "start_time": "",
+    "completed_time": ""
+}
+
+
+def get_upload_progress() -> dict:
+    """Get a copy of the current upload progress status."""
+    with _progress_lock:
+        return _progress_status.copy()
+
+
+def update_progress(status: Optional[str] = None, total: Optional[int] = None, current: Optional[int] = None, 
+                    current_file: Optional[str] = None, message: Optional[str] = None, error: Optional[str] = None):
+    """Update progress tracking dict in a thread-safe manner."""
+    with _progress_lock:
+        if status is not None:
+            _progress_status["status"] = status
+        if total is not None:
+            _progress_status["total"] = total
+        if current is not None:
+            _progress_status["current"] = current
+        if current_file is not None:
+            _progress_status["current_file"] = current_file
+        if message is not None:
+            _progress_status["message"] = message
+        if error is not None:
+            _progress_status["errors"].append(error)
+
+
 def _resolve_token() -> Optional[str]:
     """Resolve GitHub token from env or Secret Manager.
 
@@ -247,15 +285,27 @@ class GitHubIntegration:
         # Resolve project root
         project_root = pathlib.Path(__file__).resolve().parents[2]  # .../Avirta
 
-        for lp in local_paths:
+        local_paths_list = list(local_paths)
+        total_files = len(local_paths_list)
+        
+        # Reset progress
+        update_progress(status="running", total=total_files, current=0, current_file="", message="Scanning files...")
+
+        for idx, lp in enumerate(local_paths_list):
             try:
                 p = pathlib.Path(lp)
                 if not p.is_absolute():
                     p = (project_root / p).resolve()
+                
+                rel_name = p.name
+                update_progress(current=idx, current_file=rel_name, message=f"Uploading {rel_name} ({idx+1}/{total_files})...")
+
                 if not p.exists() or not p.is_file():
                     results[str(lp)] = "Skip: not found"
                     overall_ok = False
+                    update_progress(error=f"File not found: {lp}")
                     continue
+                
                 # Build repo path: either keep relative from project root or place under repo_base_path
                 try:
                     rel = p.relative_to(project_root).as_posix()
@@ -264,13 +314,17 @@ class GitHubIntegration:
                 repo_path = f"{repo_base_path.rstrip('/')}/{rel}" if repo_base_path else rel
                 with open(p, "rb") as f:
                     content = f.read()
+                
                 ok, msg = self.put_file(repo_path, content, f"{commit_msg_base}: {rel}", branch=branch)
                 results[repo_path] = msg
                 if not ok:
                     overall_ok = False
+                    update_progress(error=f"Failed to upload {rel}: {msg}")
             except Exception as e:
                 results[str(lp)] = f"Error: {e}"
                 overall_ok = False
+                update_progress(error=f"Error in {lp}: {e}")
+
         return overall_ok, results
 
     def push_all_questions(self, questions_dir: Optional[str] = None, branch: Optional[str] = None) -> Tuple[bool, Dict[str, str]]:
@@ -293,15 +347,45 @@ def push_all_amended_questions_async(detach: bool = True, branch: Optional[str] 
     If detach=True, it spawns a thread to avoid blocking the caller and returns immediately.
     Returns (True, 'spawned') when detached, or (ok, summary_message) when run synchronously.
     """
+    with _progress_lock:
+        if _progress_status["status"] == "running":
+            return False, "An upload is already in progress."
+
     def _run() -> Tuple[bool, str]:
-        gh = GitHubIntegration()
-        ok, results = gh.push_all_questions(branch=branch)
-        # Build a compact summary
-        failures = [k for k, v in results.items() if not v.startswith("Committed")]
-        if ok:
-            return True, f"Pushed {len(results)} files successfully."
-        else:
-            return False, f"Completed with {len(failures)} failures out of {len(results)} files."
+        try:
+            gh = GitHubIntegration()
+            # Check token first
+            if not gh.token:
+                update_progress(status="failed", message="Missing GITHUB_TOKEN. Configure in Secret Manager/env.")
+                return False, "Missing GITHUB_TOKEN"
+            
+            # Resolve branch if not provided
+            ok_b, branch_name = gh.get_default_branch() if not branch else (True, branch)
+            if not ok_b:
+                update_progress(status="failed", message=f"Failed to resolve default branch: {branch_name}")
+                return False, f"Failed to resolve branch: {branch_name}"
+
+            # Start time
+            with _progress_lock:
+                _progress_status["errors"] = []
+                _progress_status["start_time"] = datetime.now(timezone.utc).isoformat()
+
+            ok, results = gh.push_all_questions(branch=branch_name)
+            # Build a compact summary
+            failures = [k for k, v in results.items() if not v.startswith("Committed")]
+            
+            with _progress_lock:
+                _progress_status["completed_time"] = datetime.now(timezone.utc).isoformat()
+
+            if ok:
+                update_progress(status="success", message=f"Pushed {len(results)} files successfully.")
+                return True, f"Pushed {len(results)} files successfully."
+            else:
+                update_progress(status="failed", message=f"Completed with {len(failures)} failures out of {len(results)} files.")
+                return False, f"Completed with {len(failures)} failures out of {len(results)} files."
+        except Exception as e:
+            update_progress(status="failed", message=f"Unexpected error during sync: {e}")
+            return False, str(e)
 
     if detach:
         t = threading.Thread(target=_run, daemon=True)
