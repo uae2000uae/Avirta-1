@@ -2526,80 +2526,19 @@ def aivalidator():
     
     return render_template('aivalidator.html')
 
-@app.route('/list_question_files', methods=['GET'])
-def list_question_files():
-    """List available question JSON files stored on the server.
-
-    Returns a JSON list of files located under the whitelisted questions directory.
-    Each item includes an id (relative filename), display name, size, and modified time.
-    """
-    # Auth check
-    if not session.get('admin_authenticated', False):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    base_dir = questions_dir  # already absolute
-    files = []
-    try:
-        for name in sorted(os.listdir(base_dir)):
-            if not name.lower().endswith('.json'):
-                continue
-            path = os.path.join(base_dir, name)
-            if not os.path.isfile(path):
-                continue
-            try:
-                stat = os.stat(path)
-                files.append({
-                    'id': name,  # safe identifier used by client
-                    'name': name,
-                    'size': stat.st_size,
-                    'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                })
-            except Exception:
-                # Skip files we cannot stat
-                continue
-    except Exception as e:
-        return jsonify({'error': f'Failed to list files: {e}'}), 500
-
-    return jsonify({'files': files})
-
 @app.route('/process_question_files', methods=['POST'])
 def process_question_files():
-    """Process question files (from server or uploaded) with AI validation and improvement.
-
-    Accepts either:
-    - Multipart form-data with 'files' (existing behavior, local upload), or
-    - JSON body with {"server_files": ["file1.json", "file2.json"]} to process server-hosted files.
-    """
+    """Process uploaded question files with AI validation and improvement."""
     # Check if user is authenticated as admin
     if not session.get('admin_authenticated', False):
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        server_files = []
-        uploaded_files = []
-
-        # Detect server-side selection
-        if request.is_json:
-            data = request.get_json(silent=True) or {}
-            if isinstance(data.get('server_files'), list):
-                server_files = [str(x) for x in data['server_files'] if isinstance(x, str)]
-        else:
-            # Also allow form field 'server_files' as JSON string (optional)
-            sf = request.form.get('server_files')
-            if sf:
-                try:
-                    parsed = json.loads(sf)
-                    if isinstance(parsed, list):
-                        server_files = [str(x) for x in parsed if isinstance(x, str)]
-                except Exception:
-                    pass
-
-        # Collect uploaded files if provided
-        if not server_files:
-            uploaded_files = request.files.getlist('files')
-
-        if not server_files and not uploaded_files:
-            return jsonify({'error': 'No files selected'}), 400
+        # Get uploaded files
+        uploaded_files = request.files.getlist('files')
+        
+        if not uploaded_files:
+            return jsonify({'error': 'No files uploaded'}), 400
         
         # Initialize global progress tracking immediately for frontend polling
         with PROCESSING_PROGRESS_LOCK:
@@ -2612,7 +2551,7 @@ def process_question_files():
                 'total_files': 0,
                 'overall_percentage': 0,
                 'message': 'Preparing files for processing...',
-                'stage': 'Analyzing selected files...'
+                'stage': 'Analyzing uploaded files...'
             })
         
         processed_files = {}
@@ -2628,58 +2567,28 @@ def process_question_files():
         
         # Update progress while counting questions
         with PROCESSING_PROGRESS_LOCK:
-            PROCESSING_PROGRESS['message'] = 'Counting questions in selected files...'
+            PROCESSING_PROGRESS['message'] = 'Counting questions in uploaded files...'
             PROCESSING_PROGRESS['stage'] = 'Analyzing file contents...'
         
-        # Helper to safely load a server file
-        def load_server_file(rel_name):
-            # Disallow path traversal
-            rel_name = os.path.basename(rel_name)
-            if not rel_name.lower().endswith('.json'):
-                return None, None
-            path = os.path.join(questions_dir, rel_name)
-            # Ensure path is inside questions_dir
+        # First pass: count questions in each file
+        for file in uploaded_files:
+            if not file.filename.endswith('.json'):
+                continue
+                
             try:
-                base_real = os.path.realpath(questions_dir)
-                file_real = os.path.realpath(path)
-                if not file_real.startswith(base_real):
-                    return None, None
-            except Exception:
-                return None, None
-            if not os.path.exists(path):
-                return None, None
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                return path, data
+                file_content = file.read().decode('utf-8')
+                original_data = json.loads(file_content)
+                
+                if isinstance(original_data, list):
+                    file_question_counts[file.filename] = len(original_data)
+                    total_questions += len(original_data)
+                    
+                # Reset file pointer for second pass
+                file.seek(0)
+                
             except Exception as e:
-                print(f"Error reading server file {rel_name}: {e}")
-                return None, None
-        
-        # First pass: count questions
-        if server_files:
-            for name in server_files:
-                path, data = load_server_file(name)
-                if data is None:
-                    continue
-                if isinstance(data, list):
-                    file_question_counts[name] = len(data)
-                    total_questions += len(data)
-        else:
-            for file in uploaded_files:
-                if not file.filename.endswith('.json'):
-                    continue
-                try:
-                    file_content = file.read().decode('utf-8')
-                    original_data = json.loads(file_content)
-                    if isinstance(original_data, list):
-                        file_question_counts[file.filename] = len(original_data)
-                        total_questions += len(original_data)
-                    # Reset file pointer for second pass
-                    file.seek(0)
-                except Exception as e:
-                    print(f"Error reading {file.filename} for counting: {str(e)}")
-                    continue
+                print(f"Error reading {file.filename} for counting: {str(e)}")
+                continue
         
         batch_size = 5  # Must match the batch size in AI validator
         total_batches = (total_questions + batch_size - 1) // batch_size
@@ -2697,58 +2606,46 @@ def process_question_files():
                 'stage': f'Ready to process {total_questions} questions in {total_batches} batches'
             })
         
-        # Second pass: process files
-        if server_files:
-            for name in server_files:
-                path, original_data = load_server_file(name)
-                if original_data is None or not isinstance(original_data, list):
+        for file in uploaded_files:
+            if not file.filename.endswith('.json'):
+                continue
+                
+            try:
+                # Read and parse JSON file
+                file_content = file.read().decode('utf-8')
+                original_data = json.loads(file_content)
+                
+                # Validate the file structure
+                if not isinstance(original_data, list):
                     continue
+                
+                # Update progress for current file
                 with PROCESSING_PROGRESS_LOCK:
-                    PROCESSING_PROGRESS['current_file'] = name
+                    PROCESSING_PROGRESS['current_file'] = file.filename
+                
+                # Use AI validator to improve all questions in the file at once
+                # Pass the global dict as the tracker so the GET endpoint can read live changes
                 try:
                     improved_data = validator._improve_questions_with_openai(
                         questions=original_data,
-                        category_id=name.replace('.json', ''),
+                        category_id=file.filename.replace('.json', ''),
                         options={},
                         progress_tracker=PROCESSING_PROGRESS
                     )
                 except Exception as e:
-                    print(f"Error processing file {name}: {str(e)}")
+                    print(f"Error processing file {file.filename}: {str(e)}")
+                    # If AI processing fails, just copy original data
                     improved_data = original_data
-                processed_files[name] = {
+                
+                processed_files[file.filename] = {
                     'original': original_data,
                     'updated': improved_data,
-                    'filename': name
+                    'filename': file.filename
                 }
-        else:
-            for file in uploaded_files:
-                if not file.filename.endswith('.json'):
-                    continue
-                try:
-                    file_content = file.read().decode('utf-8')
-                    original_data = json.loads(file_content)
-                    if not isinstance(original_data, list):
-                        continue
-                    with PROCESSING_PROGRESS_LOCK:
-                        PROCESSING_PROGRESS['current_file'] = file.filename
-                    try:
-                        improved_data = validator._improve_questions_with_openai(
-                            questions=original_data,
-                            category_id=file.filename.replace('.json', ''),
-                            options={},
-                            progress_tracker=PROCESSING_PROGRESS
-                        )
-                    except Exception as e:
-                        print(f"Error processing file {file.filename}: {str(e)}")
-                        improved_data = original_data
-                    processed_files[file.filename] = {
-                        'original': original_data,
-                        'updated': improved_data,
-                        'filename': file.filename
-                    }
-                except Exception as e:
-                    print(f"Error processing file {file.filename}: {str(e)}")
-                    continue
+                
+            except Exception as e:
+                print(f"Error processing file {file.filename}: {str(e)}")
+                continue
         
         if not processed_files:
             with PROCESSING_PROGRESS_LOCK:
