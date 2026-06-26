@@ -16,7 +16,7 @@
 <body>
     <header style="padding: 5px">
 		<img src="/static/images/logovtext.png" width="71.5" height="83.8" alt=""/>
-<div class="timestamp-info" id="timestamp-info">Last synced: Loading...</div>
+<div class="timestamp-info" id="commit-timestamp-info">Last commit: Loading...</div>
         <div class="admin-login-container" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
             {% if session.get('admin_authenticated') %}
                 <a href="{{ url_for('admin_controls') }}" class="button" style="background: var(--success-color); border-color: var(--success-color-dark); color: #fff;">Admin Controls</a>
@@ -148,9 +148,9 @@
         if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => step(-0.1));
         if (zoomInBtn) zoomInBtn.addEventListener('click', () => step(+0.1));
 
-        // Fetch and display timestamp information
-        const timestampInfo = document.getElementById('timestamp-info');
-        if (timestampInfo) {
+        // Fetch and display commit timestamp information
+        const commitTimestampInfo = document.getElementById('commit-timestamp-info');
+        if (commitTimestampInfo) {
             const parseTimestamp = (value) => {
                 try {
                     if (!value) return null;
@@ -181,21 +181,20 @@
             fetch('/timestamp.json')
                 .then(response => response.json())
                 .then(data => {
-                    const ts = parseTimestamp(data && data.lastSynced);
-                    if (ts) {
-                        const dateStr = ts.toLocaleDateString();
-                        const timeStr = ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                        timestampInfo.textContent = `Last synced: ${dateStr} ${timeStr}`;
-                    } else if (data && data.lastSynced) {
-                        // Fallback: show raw value if parsing fails
-                        timestampInfo.textContent = `Last synced: ${data.lastSynced}`;
+                    const commitTs = parseTimestamp(data && data.lastCommit);
+                    if (commitTs) {
+                        const commitDateStr = commitTs.toLocaleDateString();
+                        const commitTimeStr = commitTs.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                        commitTimestampInfo.textContent = `Last commit: ${commitDateStr} ${commitTimeStr}`;
+                    } else if (data && data.lastCommit) {
+                        commitTimestampInfo.textContent = `Last commit: ${data.lastCommit}`;
                     } else {
-                        timestampInfo.textContent = 'Last synced: Unknown';
+                        commitTimestampInfo.textContent = 'Last commit: Unknown';
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching timestamp:', error);
-                    timestampInfo.textContent = 'Last synced: Error loading';
+                    commitTimestampInfo.textContent = 'Last commit: Error loading';
                 });
         }
     });

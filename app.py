@@ -6,6 +6,7 @@ access and play the game through a web browser.
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, jsonify, current_app
+from typing import Optional
 import os
 import sys
 import tempfile
@@ -2923,6 +2924,26 @@ def get_json():
 
 
 
+def _get_last_commit_time() -> Optional[str]:
+    """Retrieve the ISO 8601 timestamp of the last git commit."""
+    import subprocess
+    try:
+        res = subprocess.run(
+            ["git", "log", "-1", "--format=%cI"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            timeout=3
+        )
+        val = res.stdout.strip()
+        if val:
+            return val
+    except Exception:
+        pass
+    return None
+
+
 @app.route('/timestamp.json')
 def serve_timestamp():
     """
@@ -2930,6 +2951,9 @@ def serve_timestamp():
     This endpoint reads the timestamp.json file and returns its contents as a JSON response.
     """
     current_app.logger.info("Timestamp.json requested")
+
+    # Resolve last commit time
+    last_commit = _get_last_commit_time()
 
     try:
         # Get the absolute path to the timestamp.json file
@@ -2962,12 +2986,17 @@ def serve_timestamp():
             except Exception as write_err:
                 current_app.logger.error(f"Error creating timestamp.json: {str(write_err)}")
 
+            if last_commit:
+                timestamp_data["lastCommit"] = last_commit
             return jsonify(timestamp_data)
 
         # Read the file
         with open(timestamp_path, 'r') as f:
             timestamp_data = json.load(f)
             current_app.logger.info(f"Successfully read timestamp.json: {timestamp_data}")
+
+        if last_commit:
+            timestamp_data["lastCommit"] = last_commit
 
         # Return the data as JSON
         return jsonify(timestamp_data)
@@ -2981,6 +3010,8 @@ def serve_timestamp():
             localized_time = utc_time.astimezone(target_timezone)
             timestamp_data = {"lastSynced": localized_time.strftime("%y%m%d.%H.%M")}
             current_app.logger.info(f"Generated fallback timestamp: {timestamp_data}")
+            if last_commit:
+                timestamp_data["lastCommit"] = last_commit
             return jsonify(timestamp_data)
         except Exception as fallback_err:
             current_app.logger.error(f"Error generating fallback timestamp: {str(fallback_err)}")
