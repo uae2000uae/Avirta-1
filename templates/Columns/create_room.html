@@ -26,7 +26,24 @@
             </div>
         </div>
         <div class="form-group-inline">
-            <label>Select Categories (up to {{ max_categories }}):</label>
+          <label>Select Question Types:</label>
+          <div class="form-group-equal-sm">
+            <div class=category-checkbox>
+              <input type="checkbox" id="type_text" name="question_types" value="text" checked>
+              <label for="type_text">Text</label>
+            </div>
+            <div class=category-checkbox>
+              <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
+              <label for="type_multiple_choice">Multiple Choice</label>
+            </div>
+            <div class=category-checkbox>
+              <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
+              <label for="type_true_false">True/False</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-group-inline">
+          <label>Select Categories (up to {{ max_categories }}):</label>
             <div class="categories-grid">
                 {% for category_id, category in categories.items() %}
 
@@ -37,27 +54,8 @@
                 {% endfor %}
             </div>
         </div>
-
-        <div class="form-group-inline">
-            <label>Select Question Types:</label>
-            <div class="form-group-equal-sm">
-                <div class=category-checkbox>
-                    <input type="checkbox" id="type_text" name="question_types" value="text" checked>
-                    <label for="type_text">Text</label>
-                </div>
-                <div class=category-checkbox>
-                    <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
-                    <label for="type_multiple_choice">Multiple Choice</label>
-                </div>
-                <div class=category-checkbox>
-                    <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
-                    <label for="type_true_false">True/False</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-actions">
-            <button type="submit">Create Room</button>
+<div class="form-actions">
+      <button type="submit">Create Room</button>
             <button class="button secondary"><a class="text-clear" href="{{ url_for('index') }}">Cancel</a></button>
         </div>
     </form>
