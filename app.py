@@ -2974,75 +2974,11 @@ def _get_last_commit_time() -> Optional[str]:
 @app.route('/timestamp.json')
 def serve_timestamp():
     """
-    Serve the timestamp.json file from the root directory.
-    This endpoint reads the timestamp.json file and returns its contents as a JSON response.
+    Serve the last git commit timestamp as a JSON response.
+    The UI uses the ``lastCommit`` field to display the "Last commit" value.
     """
     current_app.logger.info("Timestamp.json requested")
-
-    # Resolve last commit time
-    last_commit = _get_last_commit_time()
-
-    try:
-        # Get the absolute path to the timestamp.json file
-        timestamp_path = os.path.join(current_dir, 'timestamp.json')
-        current_app.logger.info(f"Looking for timestamp.json at: {timestamp_path}")
-
-        # Check if the file exists
-        if not os.path.exists(timestamp_path):
-            current_app.logger.error(f"timestamp.json not found at {timestamp_path}")
-            # List files in the directory to help diagnose the issue
-            try:
-                files = os.listdir(current_dir)
-                current_app.logger.info(f"Files in {current_dir}: {files}")
-            except Exception as list_err:
-                current_app.logger.error(f"Error listing directory: {str(list_err)}")
-
-            # If file doesn't exist, generate a timestamp on the fly
-            current_app.logger.info("Generating timestamp on the fly")
-            from datetime import datetime, timezone, timedelta
-            utc_time = datetime.now(timezone.utc)
-            target_timezone = timezone(timedelta(hours=4))  # UTC+4
-            localized_time = utc_time.astimezone(target_timezone)
-            timestamp_data = {"lastSynced": localized_time.strftime("%y%m%d.%H%M")}
-
-            # Try to write the file for future use
-            try:
-                with open(timestamp_path, 'w') as f:
-                    json.dump(timestamp_data, f, indent=4)
-                current_app.logger.info(f"Created new timestamp.json file: {timestamp_data}")
-            except Exception as write_err:
-                current_app.logger.error(f"Error creating timestamp.json: {str(write_err)}")
-
-            if last_commit:
-                timestamp_data["lastCommit"] = last_commit
-            return jsonify(timestamp_data)
-
-        # Read the file
-        with open(timestamp_path, 'r') as f:
-            timestamp_data = json.load(f)
-            current_app.logger.info(f"Successfully read timestamp.json: {timestamp_data}")
-
-        if last_commit:
-            timestamp_data["lastCommit"] = last_commit
-
-        # Return the data as JSON
-        return jsonify(timestamp_data)
-    except Exception as e:
-        current_app.logger.error(f"Error serving timestamp.json: {str(e)}")
-        # Generate a timestamp on the fly as a fallback
-        try:
-            from datetime import datetime, timezone, timedelta
-            utc_time = datetime.now(timezone.utc)
-            target_timezone = timezone(timedelta(hours=4))  # UTC+4
-            localized_time = utc_time.astimezone(target_timezone)
-            timestamp_data = {"lastSynced": localized_time.strftime("%y%m%d.%H.%M")}
-            current_app.logger.info(f"Generated fallback timestamp: {timestamp_data}")
-            if last_commit:
-                timestamp_data["lastCommit"] = last_commit
-            return jsonify(timestamp_data)
-        except Exception as fallback_err:
-            current_app.logger.error(f"Error generating fallback timestamp: {str(fallback_err)}")
-            return jsonify({"error": str(e)}), 500
+    return jsonify({"lastCommit": _get_last_commit_time()})
 
 
 if __name__ == '__main__':

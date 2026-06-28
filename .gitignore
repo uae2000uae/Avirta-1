@@ -9,3 +9,4 @@ contents/admin_controls/saved_api_settings.json
 # IDE files (may contain cached secrets)
 .idea/
 /.junie/
+!/.aiassistant/

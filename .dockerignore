@@ -26,7 +26,7 @@ Thumbs.db
 
 # Tests and docs (not needed at runtime)
 tests/
-docs/
+.junie/docs/
 
 # Deployment configs not used in Cloud Run image
 app.yaml
@@ -45,3 +45,4 @@ scratches/
 # Optional: exclude local run data/output not required for serving
 .game_runs/
 /Direct deploy.bat
+!/.aiassistant/
