@@ -728,9 +728,17 @@ class AIQuestionGenerator:
             If there are more than 50 existing questions, I've only shown you a subset. Please try to generate questions that are substantially different from these and would explore new aspects of the topic.
             """
 
-        # Add specific instructions based on options
-        if question_type != 'mixed':
-            system_prompt += f"\nOnly generate {question_type} questions."
+        # Add specific instructions based on options. question_type may be a
+        # single type, a comma-separated subset of types, or 'mixed' (all types).
+        if question_type and question_type != 'mixed':
+            selected_types = [t.strip() for t in str(question_type).split(',') if t.strip()]
+            if len(selected_types) == 1:
+                system_prompt += f"\nOnly generate {selected_types[0]} questions."
+            elif selected_types:
+                system_prompt += (
+                    f"\nOnly generate questions of these types: {', '.join(selected_types)}. "
+                    "Distribute the questions roughly evenly across these types."
+                )
 
         if difficulty != 'mixed':
             # Map difficulty to points

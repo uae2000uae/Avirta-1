@@ -1998,7 +1998,15 @@ def ai_question_generator():
     if request.method == 'POST':
         # Get form data
         prompt = request.form.get('prompt')
-        question_type = request.form.get('question_type', 'mixed')
+        # Question types come from checkboxes (multiple_choice, true_false, text).
+        # All/none selected => 'mixed'; otherwise pass the selected subset as a
+        # comma-separated string the generator understands.
+        selected_question_types = request.form.getlist('question_types')
+        all_question_types = {'multiple_choice', 'true_false', 'text'}
+        if not selected_question_types or set(selected_question_types) >= all_question_types:
+            question_type = 'mixed'
+        else:
+            question_type = ','.join(selected_question_types)
         difficulty = request.form.get('difficulty', 'mixed')
         num_questions = request.form.get('num_questions', '20')
         include_explanations = 'include_explanations' in request.form

@@ -27,13 +27,21 @@
         </div></div>
 		<div class="fill-stack"><h3>Generation Options:</h3>
         <div class="form-group equal-md">
-                <label for="question_type">Type:</label>
-                <select id="question_type" name="question_type">
-                    <option value="mixed">All Types</option>
-                    <option value="multiple_choice">Multiple Choice Only</option>
-                    <option value="true_false">True/False Only</option>
-                    <option value="text">Text Answer Only</option>
-                </select>
+                <label>Types:</label>
+                <div class="form-group-equal-sm">
+                    <div class="category-checkbox">
+                        <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
+                        <label for="type_multiple_choice">Multiple Choice</label>
+                    </div>
+                    <div class="category-checkbox">
+                        <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
+                        <label for="type_true_false">True/False</label>
+                    </div>
+                    <div class="category-checkbox">
+                        <input type="checkbox" id="type_text" name="question_types" value="text" checked>
+                        <label for="type_text">Text Answer</label>
+                    </div>
+                </div>
             </div>
         <div class="form-group equal-md">
                 <label for="difficulty">Difficulty:</label>
