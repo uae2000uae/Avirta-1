@@ -12,7 +12,6 @@ import sys
 import tempfile
 import uuid
 import random
-import subprocess
 import json
 from datetime import datetime
 
@@ -36,9 +35,6 @@ from questionmanagement.question_bank import QuestionBank, increment_use_count, 
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
 from contents.admin_controls.ai_settings import load_ai_settings
-from contents.admin_controls.secret_loader import get_secret
-
-from jinja2 import Environment, FileSystemLoader
 
 # --- Global progress tracking for AI validation (server-side, not session-based) ---
 from threading import Lock
@@ -53,7 +49,6 @@ PROCESSING_PROGRESS = {
     'stage': '',
     'total_files': 0,
 }
-env = Environment(loader=FileSystemLoader("templates"))
 
 # In-memory storage for processed results of the last job
 PROCESSED_RESULTS_LOCK = Lock()
@@ -2518,7 +2513,7 @@ def admin_controls():
             # Check credentials
             if username == 'Admin' and password == '123333':
                 session['admin_authenticated'] = True
-                admin_setup.log_event(f"Admin user logged in")
+                admin_setup.log_event("Admin user logged in")
                 flash('Login successful.')
                 return redirect(url_for('admin_controls'))
             else:
@@ -2896,9 +2891,6 @@ def health_check():
     This endpoint is used by App Engine to determine if the application is healthy.
     """
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
-
-import json
-from flask import jsonify, current_app
 
 @app.route('/get-json')
 def get_json():
