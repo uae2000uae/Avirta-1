@@ -6,7 +6,6 @@ access and play the game through a web browser.
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, jsonify, current_app
-from typing import Optional
 import os
 import sys
 import tempfile
@@ -2913,64 +2912,6 @@ def get_json():
     except Exception as e:
         current_app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
-
-
-
-def _get_last_commit_time() -> Optional[str]:
-    """Retrieve the ISO 8601 timestamp of the last git commit.
-
-    If running locally and git is available, it queries git and caches the result
-    to a local static file 'commit_timestamp.txt'.
-    If git is not available (e.g. in the online production environment), it falls
-    back to reading the cached file.
-    """
-    import subprocess
-    
-    cache_path = os.path.join(current_dir, 'commit_timestamp.txt')
-    
-    # 1) Try to query git dynamically if available
-    try:
-        res = subprocess.run(
-            ["git", "log", "-1", "--format=%cI"],
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=current_dir,
-            timeout=3
-        )
-        val = res.stdout.strip()
-        if val:
-            # Cache the timestamp locally for deployment environments
-            try:
-                with open(cache_path, 'w', encoding='utf-8') as f:
-                    f.write(val)
-            except Exception:
-                pass
-            return val
-    except Exception:
-        pass
-        
-    # 2) Fallback to reading the cached timestamp file if git fails/is absent
-    if os.path.exists(cache_path):
-        try:
-            with open(cache_path, 'r', encoding='utf-8') as f:
-                val = f.read().strip()
-                if val:
-                    return val
-        except Exception:
-            pass
-            
-    return None
-
-
-@app.route('/timestamp.json')
-def serve_timestamp():
-    """
-    Serve the last git commit timestamp as a JSON response.
-    The UI uses the ``lastCommit`` field to display the "Last commit" value.
-    """
-    current_app.logger.info("Timestamp.json requested")
-    return jsonify({"lastCommit": _get_last_commit_time()})
 
 
 if __name__ == '__main__':

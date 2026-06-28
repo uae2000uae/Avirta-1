@@ -178,24 +178,53 @@
                 return null;
             };
 
-            fetch('/timestamp.json')
-                .then(response => response.json())
-                .then(data => {
-                    const commitTs = parseTimestamp(data && data.lastCommit);
-                    if (commitTs) {
-                        const commitDateStr = commitTs.toLocaleDateString();
-                        const commitTimeStr = commitTs.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                        commitTimestampInfo.textContent = `Last commit: ${commitDateStr} ${commitTimeStr}`;
-                    } else if (data && data.lastCommit) {
-                        commitTimestampInfo.textContent = `Last commit: ${data.lastCommit}`;
-                    } else {
-                        commitTimestampInfo.textContent = 'Last commit: Unknown';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching timestamp:', error);
-                    commitTimestampInfo.textContent = 'Last commit: Error loading';
-                });
+            // Read the latest commit time directly from GitHub so it stays accurate
+            // online without needing a redeploy. Result is cached briefly in
+            // sessionStorage to stay within GitHub's unauthenticated rate limit
+            // (base.html loads on every page).
+            const GITHUB_COMMITS_URL = 'https://api.github.com/repos/uae2000uae/Avirta-WebApp/commits?sha=Avirta-1&per_page=1';
+            const COMMIT_CACHE_KEY = 'avirta_last_commit';
+            const COMMIT_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+            const renderCommit = (isoDate) => {
+                const commitTs = parseTimestamp(isoDate);
+                if (commitTs) {
+                    const commitDateStr = commitTs.toLocaleDateString();
+                    const commitTimeStr = commitTs.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    commitTimestampInfo.textContent = `Last commit: ${commitDateStr} ${commitTimeStr}`;
+                } else if (isoDate) {
+                    commitTimestampInfo.textContent = `Last commit: ${isoDate}`;
+                } else {
+                    commitTimestampInfo.textContent = 'Last commit: Unknown';
+                }
+            };
+
+            let cachedCommit = null;
+            try { cachedCommit = JSON.parse(sessionStorage.getItem(COMMIT_CACHE_KEY) || 'null'); } catch (_) { /* ignore */ }
+
+            if (cachedCommit && cachedCommit.date && (Date.now() - cachedCommit.fetchedAt) < COMMIT_CACHE_TTL_MS) {
+                renderCommit(cachedCommit.date);
+            } else {
+                fetch(GITHUB_COMMITS_URL, { headers: { 'Accept': 'application/vnd.github+json' } })
+                    .then(response => response.ok ? response.json() : Promise.reject(response.status))
+                    .then(data => {
+                        const commit = Array.isArray(data) ? data[0] : data;
+                        const isoDate = commit && commit.commit && commit.commit.committer && commit.commit.committer.date;
+                        renderCommit(isoDate);
+                        try {
+                            sessionStorage.setItem(COMMIT_CACHE_KEY, JSON.stringify({ date: isoDate, fetchedAt: Date.now() }));
+                        } catch (_) { /* ignore */ }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching commit time from GitHub:', error);
+                        // Fall back to the last cached value if we have one.
+                        if (cachedCommit && cachedCommit.date) {
+                            renderCommit(cachedCommit.date);
+                        } else {
+                            commitTimestampInfo.textContent = 'Last commit: Error loading';
+                        }
+                    });
+            }
         }
     });
 </script>
