@@ -2,11 +2,9 @@
 setlocal enabledelayedexpansion
 
 rem === Avirta Cloud Run Direct Deploy (Windows) ===
-rem This script builds a Docker image, pushes it, and deploys to Cloud Run.
-rem If Docker is not installed or not on PATH, it will fall back to source-based deploy.
+rem This script deploys to Cloud Run directly from source (no Docker required).
 rem Prerequisites:
 rem  - gcloud CLI installed and initialized (gcloud init)
-rem  - (Optional) Docker installed and running for image-based deploy
 rem  - You are logged in to gcloud (gcloud auth login) and have a project set
 
 rem --- Editable defaults ---
@@ -33,58 +31,6 @@ if "%PROJECT_ID%"=="" (
   exit /b 1
 )
 
-set IMAGE=gcr.io/%PROJECT_ID%/avirta:latest
-
-rem Check if Docker is installed; if not, fall back to source deploy
-where docker >NUL 2>&1
-if errorlevel 1 (
-  echo.
-  echo Docker not found on PATH. Falling back to source-based deploy with gcloud.
-  goto SOURCE_DEPLOY
-)
-
-:DOCKER_DEPLOY
-
-echo.
-echo Building Docker image: %IMAGE%
-docker build -t %IMAGE% .
-if errorlevel 1 (
-  echo ERROR: Docker build failed.
-  exit /b 1
-)
-
-echo.
-echo Configuring Docker to use gcloud credentials (if needed)...
-gcloud auth configure-docker -q
-
-
-echo.
-echo Pushing image: %IMAGE%
-docker push %IMAGE%
-if errorlevel 1 (
-  echo ERROR: Docker push failed.
-  exit /b 1
-)
-
-echo.
-echo Deploying to Cloud Run service "%SERVICE_NAME%" in region "%REGION%" (image-based)...
-gcloud run deploy %SERVICE_NAME% ^
-  --image %IMAGE% ^
-  --region %REGION% ^
-  --platform managed ^
-  --allow-unauthenticated ^
-  --port 8080 ^
-  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest
-if errorlevel 1 (
-  echo ERROR: gcloud run deploy failed.
-  echo Tip: You can also deploy from source with: gcloud run deploy %SERVICE_NAME% --source . --region %REGION% --platform managed --allow-unauthenticated --set-secrets AI_Token=AI_Token:latest
-  exit /b 1
-)
-
-goto POST_DEPLOY
-
-:SOURCE_DEPLOY
-
 echo.
 echo Deploying to Cloud Run service "%SERVICE_NAME%" in region "%REGION%" (source-based)...
 gcloud run deploy %SERVICE_NAME% ^
@@ -93,13 +39,11 @@ gcloud run deploy %SERVICE_NAME% ^
   --platform managed ^
   --allow-unauthenticated ^
   --port 8080 ^
-  --set-secrets AI_Token=AI_Token:latest
+  --set-secrets AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest
 if errorlevel 1 (
   echo ERROR: gcloud run deploy (source) failed.
   exit /b 1
 )
-
-:POST_DEPLOY
 
 echo.
 echo Ensuring public (unauthenticated) access to the service...

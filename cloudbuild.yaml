@@ -1,5 +1,5 @@
-# Cloud Build config to build and deploy Avirta to Cloud Run service "avirta"
-# Trigger this build from your repo to produce a container and deploy.
+# Cloud Build config to deploy Avirta to Cloud Run service "avirta" from source.
+# Uses Cloud Run's source-based deploy (Google Cloud buildpacks) — no Docker image to manage.
 
 substitutions:
   _REGION: us-central1
@@ -7,22 +7,14 @@ substitutions:
   # You can override _REGION and _SERVICE_NAME at trigger time
 
 steps:
-  # 1) Build the container image
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA", "."]
-
-  # 2) Push the image to Container Registry / Artifact Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"]
-
-  # 3) Deploy to Cloud Run using the built image
+  # 1) Deploy to Cloud Run directly from source
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
         "run",
         "deploy",
         "${_SERVICE_NAME}",
-        "--image=gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA",
+        "--source=.",
         "--region=${_REGION}",
         "--platform=managed",
         "--allow-unauthenticated",
@@ -30,7 +22,7 @@ steps:
         "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
       ]
 
-  # 4) Ensure public (unauthenticated) access (roles/run.invoker)
+  # 2) Ensure public (unauthenticated) access (roles/run.invoker)
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
@@ -43,9 +35,6 @@ steps:
         "--member=allUsers",
         "--role=roles/run.invoker"
       ]
-
-images:
-  - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
 
 timeout: "1600s"
 

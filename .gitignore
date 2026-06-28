@@ -10,3 +10,4 @@ contents/admin_controls/saved_api_settings.json
 .idea/
 /.junie/
 !/.aiassistant/
+!/Direct deploy.bat
