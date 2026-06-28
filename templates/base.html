@@ -205,7 +205,7 @@
             if (cachedCommit && cachedCommit.date && (Date.now() - cachedCommit.fetchedAt) < COMMIT_CACHE_TTL_MS) {
                 renderCommit(cachedCommit.date);
             } else {
-                fetch(GITHUB_COMMITS_URL, { headers: { 'Accept': 'application/vnd.github+json' } })
+                fetch(GITHUB_COMMITS_URL, { headers: { 'Accept': 'application/vnd.github+json' }, cache: 'no-store' })
                     .then(response => response.ok ? response.json() : Promise.reject(response.status))
                     .then(data => {
                         const commit = Array.isArray(data) ? data[0] : data;
