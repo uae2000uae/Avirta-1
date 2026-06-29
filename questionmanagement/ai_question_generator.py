@@ -437,13 +437,18 @@ class AIQuestionGenerator:
                     'prompt': prompt,
                     'question_type': question_type,
                     'difficulty': difficulty,
+                    'num_questions': len(questions),
                     'num_requested': num_questions,
                     'num_returned': len(questions),
                     'include_explanations': include_explanations,
                     'language': language,
                     'start_index': original_start,
                     'batches': batch_sizes,
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': datetime.now().isoformat(),
+                    'model': self.model,
+                    'temperature': self.temperature,
+                    'top_p': self.top_p,
+                    'reference_categories': reference_categories
                 }
 
                 # Save to temporary storage with metadata
@@ -521,7 +526,16 @@ class AIQuestionGenerator:
                 # Handle both old and new format
                 if isinstance(batch_data, dict) and 'metadata' in batch_data:
                     # New format: dict with 'metadata' and 'questions'
-                    return batch_data['metadata']
+                    meta = batch_data['metadata']
+                    # Ensure backward compatibility and fallback for missing 'num_questions'
+                    if 'num_questions' not in meta:
+                        if 'num_returned' in meta:
+                            meta['num_questions'] = meta['num_returned']
+                        elif 'questions' in batch_data:
+                            meta['num_questions'] = len(batch_data['questions'])
+                        else:
+                            meta['num_questions'] = 'unknown'
+                    return meta
                 elif isinstance(batch_data, list):
                     # Old format: just a list of questions, no metadata
                     # Create basic metadata with file creation time and estimated question count

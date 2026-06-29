@@ -22,9 +22,8 @@
 		<form id="generatorForm" action="{{ url_for('ai_question_generator') }}" method="POST" class="form">
         <div class="form-group-inline">
             <h3 for="prompt">Prompt:</h3>
-            <textarea id="prompt" name="prompt" rows="4" required placeholder="Enter a topic, subject, or specific instructions for generating questions..."></textarea>
-            <div><small>Be specific about the type of questions you want. For example: "Generate questions about ancient Egyptian history."</small>
-        </div></div>
+            <textarea id="prompt" name="prompt" rows="2" required placeholder="Enter a topic, subject, or specific instructions for generating questions..."></textarea>
+            </div>
 		<div class="fill-stack"><h3>Generation Options:</h3>
         <div class="form-group equal-md">
                 <label>Types:</label>
@@ -83,13 +82,11 @@
                     <div class="category-item" data-category-id="{{ category_id }}">{{ category.name }} ({{ category.question_count }})</div>
                     {% endfor %}
                 </div>
-                <small>Click on categories to select them</small>
                 <div id="selected-categories-container" class="selected-categories-container">
                     <p>Selected categories: <span id="selected-categories-text">None</span></p>
                 </div>
                 <div id="hidden-inputs-container"></div>
         </div>
-			<br>
 			<div class="form-group-grid">
           		<input type="checkbox" id="include_explanations" name="include_explanations" checked>
                 <label for="include_explanations">Include explanations for correct answers</label>
