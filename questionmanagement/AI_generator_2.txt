@@ -1,0 +1,610 @@
+I checked your new `ai_question_generator.py`. You **did add the right concepts**: RAG/source facts, 5-level point difficulty, difficulty distribution, validation helper, and approved-question extraction. That is good progress. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+However, based on what is visible in the file, the main issue is that the implementation still appears **additive/incomplete**, not yet a fully enforced pipeline. The code has helpers such as `fetch_wikipedia_summary()`, `build_source_facts()`, `build_difficulty_distribution()`, `calculate_distribution()`, and `extract_approved_questions()`, but I do not see evidence that the main `generate_questions()` flow is forcing retrieval → fact extraction → unique fact IDs → duplicate rejection → replacement generation before saving. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+***
+
+# Executive Diagnosis
+
+You improved the **prompt and helper functions**, but you likely still miss the **hard backend controls**.
+
+Your current file includes:
+
+* Wikipedia summary fetching helper. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+* Source facts builder. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+* 100 / 200 / 300 / 400 / 500 difficulty model. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+* Validation prompt for AI review. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+* Approved-question extraction function. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+But the missing/weak areas are probably:
+
+1. **Only one source summary is being fetched**
+2. **No visible fact-level IDs**
+3. **No persistent used-fact memory**
+4. **No strong duplicate rejection before saving**
+5. **No regeneration loop for rejected duplicates**
+6. **Validation still relies too much on AI judgment**
+7. **The validation schema may be losing important source fields**
+
+***
+
+# What to Improve
+
+## 1) Do not use only `fetch_wikipedia_summary()`
+
+Your file includes `fetch_wikipedia_summary(topic, lang="en")`, which suggests you are fetching a short summary for the topic.  That is not enough for diverse trivia. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+If the topic is “Ancient Egypt,” one summary may only contain a few usable facts. If you ask for 20 questions, the model will repeat the same facts.
+
+### Improve it to:
+
+```text
+search topic → get 8–15 related pages → fetch each page summary/full extract → build fact pool
+```
+
+Example related pages:
+
+```text
+Ancient Egypt
+Pyramids of Giza
+Nile
+Pharaoh
+Egyptian hieroglyphs
+Mummification
+Old Kingdom of Egypt
+New Kingdom of Egypt
+Egyptian mythology
+Cleopatra
+```
+
+### Add these functions:
+
+```python
+def search_wikipedia_pages(topic: str, lang: str = "en", limit: int = 10) -> list:
+    url = f"https://{lang}.wikipedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "list": "search",
+        "srsearch": topic,
+        "format": "json",
+        "srlimit": limit
+    }
+
+    response = requests.get(
+        url,
+        params=params,
+        timeout=20,
+        headers={"User-Agent": "TriviaQuestionGenerator/1.0"}
+    )
+    response.raise_for_status()
+
+    data = response.json()
+    return [item["title"] for item in data.get("query", {}).get("search", [])]
+```
+
+Then update `build_source_facts()` so it does **not** fetch only one page.
+
+***
+
+## 2) Add `fact_id` to every source fact
+
+Your generator needs a **fact pool**, not just a source text package. I do not see a clear visible `fact_id` system in the fetched file.  Without `fact_id`, you cannot reliably stop repeated questions. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+Add this:
+
+```python
+def split_sources_into_facts(sources: list) -> list:
+    facts = []
+
+    for source in sources:
+        text = source.get("extract") or source.get("text") or ""
+        sentences = re.split(r"(?<=[.!?])\s+", text)
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+
+            if len(sentence) < 50:
+                continue
+
+            facts.append({
+                "fact_id": str(uuid.uuid4()),
+                "fact": sentence,
+                "source_title": source.get("title", ""),
+                "source_url": source.get("url", ""),
+                "retrieved_at": source.get("retrieved_at", datetime.utcnow().isoformat())
+            })
+
+    return facts
+```
+
+Then every generated question must include:
+
+```json
+{
+  "fact_id": "...",
+  "source_fact_used": "...",
+  "source_url": "..."
+}
+```
+
+***
+
+## 3) Your validation schema is losing source traceability
+
+Your validation prompt asks the model to preserve fields like:
+
+```text
+type/question/options/correct_answer/explanation/points
+```
+
+But it does **not clearly require preserving**:
+
+```text
+fact_id
+source_fact_used
+source_title
+source_url
+```
+
+This is a major issue. If the validation output removes those fields, your duplicate system becomes weaker.
+
+Your visible validation prompt says approved questions should preserve fields such as `type`, `question`, `options`, `correct_answer`, `explanation`, and `points`.  You should extend that schema. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+### Improve the validation schema to this:
+
+```json
+{
+  "type": "multiple_choice",
+  "question": "",
+  "options": [],
+  "correct_answer": "",
+  "explanation": "",
+  "points": 100,
+  "fact_id": "",
+  "source_fact_used": "",
+  "source_title": "",
+  "source_url": "",
+  "confidence": "high"
+}
+```
+
+This is important because the duplicate problem is not only question wording — it is repeated source facts.
+
+***
+
+## 4) Add backend duplicate rejection, not just AI validation
+
+Your file has `_normalize_question_text(text)` for duplicate detection.  That is useful, but text normalization alone is not enough. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+These are duplicates:
+
+```text
+Which river was central to Ancient Egypt?
+Ancient Egypt developed along which river?
+What river supported Ancient Egyptian civilization?
+```
+
+Different text, same fact.
+
+Add this:
+
+```python
+def is_duplicate_question(new_q: dict, existing_questions: list) -> bool:
+    new_text = _normalize_question_text(new_q.get("question", ""))
+    new_answer = _normalize_question_text(new_q.get("correct_answer", ""))
+    new_fact_id = new_q.get("fact_id")
+    new_source_fact = _normalize_question_text(new_q.get("source_fact_used", ""))
+
+    for old_q in existing_questions:
+        old_text = _normalize_question_text(old_q.get("question", ""))
+        old_answer = _normalize_question_text(old_q.get("correct_answer", ""))
+        old_fact_id = old_q.get("fact_id")
+        old_source_fact = _normalize_question_text(old_q.get("source_fact_used", ""))
+
+        if new_fact_id and old_fact_id and new_fact_id == old_fact_id:
+            return True
+
+        if new_source_fact and old_source_fact and new_source_fact == old_source_fact:
+            return True
+
+        if new_text and old_text and new_text == old_text:
+            return True
+
+        if new_answer and old_answer and new_answer == old_answer and new_source_fact == old_source_fact:
+            return True
+
+    return False
+```
+
+Then filter before saving:
+
+```python
+def filter_duplicates(generated_questions, existing_questions):
+    approved = []
+    rejected = []
+
+    memory = list(existing_questions)
+
+    for q in generated_questions:
+        if is_duplicate_question(q, memory):
+            rejected.append(q)
+            continue
+
+        approved.append(q)
+        memory.append(q)
+
+    return approved, rejected
+```
+
+***
+
+## 5) Add persistent “used facts” memory
+
+Your module imports `question_bank`, and it already has batch-related functions like `get_batch()`, `get_batch_metadata()`, and `get_all_batches()`.  Use those to build cross-batch memory. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+You need to check duplicates against:
+
+```text
+current generated batch
++
+all previous saved questions
++
+all previously used fact_ids
+```
+
+Add:
+
+```python
+def collect_existing_questions_from_bank():
+    existing = []
+
+    try:
+        batches = get_all_batches()
+        for batch_meta in batches:
+            batch_id = batch_meta.get("batch_id") or batch_meta.get("id")
+            batch = get_batch(batch_id)
+
+            for q in batch.get("questions", []):
+                existing.append(q)
+
+    except Exception:
+        pass
+
+    return existing
+```
+
+And:
+
+```python
+def collect_used_fact_ids(existing_questions):
+    return {
+        q.get("fact_id")
+        for q in existing_questions
+        if q.get("fact_id")
+    }
+```
+
+Before generating:
+
+```python
+used_fact_ids = collect_used_fact_ids(existing_questions)
+
+unused_facts = [
+    fact for fact in facts
+    if fact["fact_id"] not in used_fact_ids
+]
+```
+
+***
+
+## 6) Add replacement generation loop
+
+Your file includes `extract_approved_questions(validation_result)`, which pulls approved and revised questions.  But you need logic after that: [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+```text
+requested 20
+AI generated 20
+validator approved 14
+duplicate filter approved 11
+missing 9
+regenerate 9 using unused facts
+```
+
+Add a loop:
+
+```python
+def generate_until_target_count(
+    client,
+    model,
+    topic,
+    category,
+    facts,
+    existing_questions,
+    target_count,
+    distribution,
+    max_rounds=4
+):
+    final_questions = []
+    available_facts = list(facts)
+
+    for round_no in range(max_rounds):
+        missing = target_count - len(final_questions)
+
+        if missing <= 0:
+            break
+
+        used_fact_ids = {
+            q.get("fact_id")
+            for q in existing_questions + final_questions
+            if q.get("fact_id")
+        }
+
+        available_facts = [
+            f for f in available_facts
+            if f.get("fact_id") not in used_fact_ids
+        ]
+
+        if not available_facts:
+            break
+
+        generated = call_ai_generate_questions(
+            client=client,
+            model=model,
+            topic=topic,
+            category=category,
+            facts=available_facts,
+            question_count=missing,
+            distribution=distribution
+        )
+
+        validated = call_ai_validate_questions(
+            client=client,
+            model=model,
+            facts=available_facts,
+            questions=generated
+        )
+
+        approved = extract_approved_questions(validated)
+
+        unique, rejected = filter_duplicates(
+            approved,
+            existing_questions + final_questions
+        )
+
+        final_questions.extend(unique)
+
+    return final_questions
+```
+
+This loop is one of the most important missing pieces.
+
+***
+
+## 7) Fix the type naming inconsistency
+
+Your module docstring says it supports:
+
+```text
+multiple choice, true/false, text
+```
+
+But earlier prompts used:
+
+```text
+multiple_choice, true_false, short_answer
+```
+
+Your visible validation prompt says use type values from:
+
+```text
+{"multiple_choice","true_false","text"}
+```
+
+ [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+Choose one standard and enforce it throughout.
+
+Recommended app schema:
+
+```python
+ALLOWED_TYPES = {"multiple_choice", "true_false", "text"}
+```
+
+Then normalize everything:
+
+```python
+def _normalize_question_type(qtype: str) -> str:
+    qtype = (qtype or "").lower().strip()
+
+    mapping = {
+        "mcq": "multiple_choice",
+        "multiple choice": "multiple_choice",
+        "multiple_choice": "multiple_choice",
+        "true false": "true_false",
+        "true/false": "true_false",
+        "true_false": "true_false",
+        "short_answer": "text",
+        "short answer": "text",
+        "text": "text"
+    }
+
+    return mapping.get(qtype, "multiple_choice")
+```
+
+***
+
+## 8) Add hard validation for multiple choice
+
+AI validation may say a question is fine even when the options are broken. Add code validation:
+
+```python
+def code_validate_question(q: dict) -> tuple[bool, list]:
+    issues = []
+
+    qtype = _normalize_question_type(q.get("type"))
+    q["type"] = qtype
+
+    if not q.get("question"):
+        issues.append("missing_question")
+
+    if q.get("points") not in [100, 200, 300, 400, 500]:
+        issues.append("invalid_points")
+
+    if not q.get("correct_answer"):
+        issues.append("missing_correct_answer")
+
+    if qtype == "multiple_choice":
+        options = q.get("options") or []
+
+        if len(options) != 4:
+            issues.append("multiple_choice_must_have_4_options")
+
+        normalized_options = [_normalize_question_text(o) for o in options]
+        normalized_answer = _normalize_question_text(q.get("correct_answer", ""))
+
+        if normalized_answer not in normalized_options:
+            issues.append("correct_answer_not_in_options")
+
+        if len(set(normalized_options)) != len(normalized_options):
+            issues.append("duplicate_options")
+
+    if qtype == "true_false":
+        valid_answers = {"true", "false"}
+        if _normalize_question_text(q.get("correct_answer", "")) not in valid_answers:
+            issues.append("true_false_answer_must_be_true_or_false")
+
+    if not q.get("fact_id"):
+        issues.append("missing_fact_id")
+
+    if not q.get("source_url"):
+        issues.append("missing_source_url")
+
+    return len(issues) == 0, issues
+```
+
+Then:
+
+```python
+def code_filter_valid_questions(questions):
+    valid = []
+    rejected = []
+
+    for q in questions:
+        ok, issues = code_validate_question(q)
+        if ok:
+            valid.append(q)
+        else:
+            rejected.append({
+                "question": q,
+                "issues": issues
+            })
+
+    return valid, rejected
+```
+
+***
+
+# Best Next Improvement: Rewrite the Main `generate_questions()`
+
+Your helpers are not enough unless the main function uses them in the correct order.
+
+Your main generation should look like this:
+
+```python
+def generate_questions(prompt, options=None):
+    options = options or {}
+
+    topic = options.get("topic") or prompt
+    category = options.get("category", "General Knowledge")
+    num_questions = int(options.get("num_questions", 10))
+    difficulty = options.get("difficulty", "mixed")
+    lang = options.get("lang", "en")
+
+    reset_generation_progress(num_questions)
+
+    _set_generation_progress(percent=5, message="Retrieving online sources...")
+
+    sources = retrieve_multiple_wikipedia_sources(topic, lang=lang, limit=10)
+
+    _set_generation_progress(percent=15, message=f"Retrieved {len(sources)} sources.")
+
+    facts = split_sources_into_facts(sources)
+
+    _set_generation_progress(percent=25, message=f"Built {len(facts)} source facts.")
+
+    existing_questions = collect_existing_questions_from_bank()
+
+    used_fact_ids = collect_used_fact_ids(existing_questions)
+
+    unused_facts = [
+        fact for fact in facts
+        if fact["fact_id"] not in used_fact_ids
+    ]
+
+    distribution = build_difficulty_distribution(num_questions, difficulty)
+
+    _set_generation_progress(percent=35, message="Generating unique questions...")
+
+    questions = generate_until_target_count(
+        client=client,
+        model=model,
+        topic=topic,
+        category=category,
+        facts=unused_facts,
+        existing_questions=existing_questions,
+        target_count=num_questions,
+        distribution=distribution,
+        max_rounds=4
+    )
+
+    valid_questions, rejected_by_code = code_filter_valid_questions(questions)
+
+    _set_generation_progress(percent=90, message="Saving approved questions...")
+
+    batch_id = save_questions_to_bank(
+        topic=topic,
+        category=category,
+        questions=valid_questions,
+        sources=sources,
+        facts=facts
+    )
+
+    _set_generation_progress(
+        status="success",
+        percent=100,
+        message="Generation completed.",
+        generated=len(valid_questions),
+        total=num_questions,
+        batch_id=batch_id
+    )
+
+    return {
+        "batch_id": batch_id,
+        "requested": num_questions,
+        "generated": len(valid_questions),
+        "difficulty_distribution": calculate_distribution(valid_questions),
+        "questions": valid_questions,
+        "rejected_by_code": rejected_by_code
+    }
+```
+
+***
+
+# Short Answer: What You Are Missing
+
+You are missing **enforcement**, not prompting.
+
+Specifically:
+
+1. **Multiple-page online retrieval**, not one Wikipedia summary.
+2. **Fact IDs** for every source fact.
+3. **Question output must include `fact_id` and `source_url`.**
+4. **Persistent duplicate memory across old batches.**
+5. **Backend duplicate rejection before saving.**
+6. **Replacement/regeneration loop when duplicates are rejected.**
+7. **Code-level validation, not only AI validation.**
+8. **Preserving source fields through validation output.**
+
+Your current file shows the right direction, but the visible structure still looks like helper functions were added without fully forcing the main generation pipeline to obey them. [\[uoshj-my.s...epoint.com\]](https://uoshj-my.sharepoint.com/personal/s_alhammadi_sharjah_ac_ae/Documents/Microsoft%20Copilot%20Chat%20Files/ai_question_generator.py)
+
+If you want, upload or paste the **full visible `generate_questions()` method body**, and I can tell you exactly where to insert each block.

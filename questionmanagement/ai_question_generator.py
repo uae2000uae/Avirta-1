@@ -203,25 +203,119 @@ def fetch_wikipedia_summary(topic: str, lang: str = "en") -> dict:
         return {}
 
 
-def build_source_facts(topic: str, lang: str = "en") -> dict:
-    """Build a best-effort source-facts package for grounding generation.
+def search_wikipedia_pages(topic: str, lang: str = "en", limit: int = 10) -> list:
+    """Return titles of pages related to ``topic`` via the MediaWiki search API.
 
-    An empty ``facts`` list is allowed; generation then falls back to general
-    knowledge. Can be extended later with Wikidata/DBpedia/Open Trivia DB.
+    Best-effort: returns an empty list on any failure so callers can degrade to
+    a single-page lookup or to ungrounded generation.
+    """
+    try:
+        topic = (topic or "").strip()
+        if not topic:
+            return []
+        lang = (lang or "en").strip().lower() or "en"
+        url = f"https://{lang}.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": topic,
+            "format": "json",
+            "srlimit": max(1, int(limit or 10)),
+        }
+        response = requests.get(
+            url,
+            params=params,
+            timeout=20,
+            headers={"User-Agent": "AvirtaTriviaQuestionGenerator/1.0"},
+        )
+        if response.status_code != 200:
+            return []
+        data = response.json()
+        return [item.get("title", "") for item in data.get("query", {}).get("search", []) if item.get("title")]
+    except Exception as e:
+        print(f"Wikipedia page search failed for '{topic}' ({lang}): {e}")
+        return []
+
+
+def retrieve_multiple_wikipedia_sources(topic: str, lang: str = "en", limit: int = 10) -> list:
+    """Retrieve several related Wikipedia page summaries to build a fact pool.
+
+    A single short summary rarely yields enough diverse facts for many questions,
+    so we search for related pages and fetch a summary for each. Returns a list of
+    source dicts: ``{source, title, url, text, retrieved_at}``. Best-effort and
+    de-duplicated by title; may be empty (then generation falls back to general
+    knowledge).
+    """
+    now = datetime.now().isoformat()
+    sources = []
+    seen_titles = set()
+
+    # Candidate titles: the topic itself first, then related search hits.
+    titles = [topic] + search_wikipedia_pages(topic, lang=lang, limit=limit)
+
+    for title in titles:
+        key = (title or "").strip().lower()
+        if not key or key in seen_titles:
+            continue
+        seen_titles.add(key)
+
+        wiki = fetch_wikipedia_summary(title, lang=lang)
+        if wiki.get("extract"):
+            sources.append({
+                "source": wiki.get("source_name", "Wikipedia"),
+                "title": wiki.get("title", title),
+                "url": wiki.get("source_url", ""),
+                "text": wiki.get("extract", ""),
+                "retrieved_at": now,
+            })
+        # Stop once we have enough distinct sources.
+        if len(sources) >= max(1, int(limit or 10)):
+            break
+
+    return sources
+
+
+def split_sources_into_facts(sources: list) -> list:
+    """Split source extracts into individual sentence-level facts with IDs.
+
+    Each fact carries a unique ``fact_id`` so the generator can cite it and the
+    backend can reject repeated facts across a batch and across batches. Very
+    short fragments (< 50 chars) are dropped as unlikely to be self-contained.
     """
     facts = []
-    wiki = fetch_wikipedia_summary(topic, lang=lang)
-    if wiki.get("extract"):
-        facts.append({
-            "source": wiki["source_name"],
-            "title": wiki["title"],
-            "url": wiki["source_url"],
-            "text": wiki["extract"],
-        })
+    for source in sources or []:
+        text = source.get("extract") or source.get("text") or ""
+        if not text:
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", text):
+            sentence = (sentence or "").strip()
+            if len(sentence) < 50:
+                continue
+            facts.append({
+                "fact_id": str(uuid.uuid4()),
+                "fact": sentence,
+                "source_title": source.get("title", ""),
+                "source_url": source.get("url", "") or source.get("source_url", ""),
+                "retrieved_at": source.get("retrieved_at", datetime.now().isoformat()),
+            })
+    return facts
+
+
+def build_source_facts(topic: str, lang: str = "en", limit: int = 10) -> dict:
+    """Build a best-effort, multi-source fact pool for grounding generation.
+
+    Retrieves several related Wikipedia pages, splits them into sentence-level
+    facts (each with a ``fact_id``), and returns both the raw ``sources`` and the
+    ``facts`` pool. An empty ``facts`` list is allowed; generation then falls back
+    to general knowledge. Can be extended later with Wikidata/DBpedia/Open Trivia DB.
+    """
+    sources = retrieve_multiple_wikipedia_sources(topic, lang=lang, limit=limit)
+    facts = split_sources_into_facts(sources)
     return {
         "topic": topic,
         "language": lang,
         "retrieved_at": datetime.now().isoformat(),
+        "sources": sources,
         "facts": facts,
     }
 
@@ -274,20 +368,184 @@ def extract_approved_questions(validation_result) -> list:
     return approved
 
 
-def _normalize_question_type(qtype: str) -> str:
-    """Map model-emitted types onto the app's canonical set.
+# The one canonical question-type set enforced everywhere (UI, save, validation).
+ALLOWED_TYPES = {"multiple_choice", "true_false", "text"}
 
-    The enhanced spec uses ``short_answer``; the app uses ``text``. Keep the
-    output JSON consumers happy by collapsing aliases to canonical values.
+
+def _normalize_question_type(qtype: str) -> str:
+    """Map model-emitted types onto the app's single canonical set.
+
+    Earlier prompts/specs used ``short_answer``; the app uses ``text``. Collapse
+    every alias to one of ALLOWED_TYPES so the output JSON consumers stay happy.
+    Unknown values default to ``text`` (the most permissive type — it needs no
+    options, so it never fails the multiple-choice structural checks).
     """
     t = str(qtype or "").strip().lower()
-    if t in ("short_answer", "short", "open", "open_ended", "fill_in_the_blank", "fill_in"):
-        return "text"
-    if t in ("multiple_choice", "mcq", "multiple-choice"):
-        return "multiple_choice"
-    if t in ("true_false", "true/false", "boolean", "tf"):
-        return "true_false"
-    return t or "text"
+    mapping = {
+        "mcq": "multiple_choice",
+        "multiple choice": "multiple_choice",
+        "multiple-choice": "multiple_choice",
+        "multiple_choice": "multiple_choice",
+        "true false": "true_false",
+        "true/false": "true_false",
+        "true-false": "true_false",
+        "true_false": "true_false",
+        "boolean": "true_false",
+        "tf": "true_false",
+        "short_answer": "text",
+        "short answer": "text",
+        "short": "text",
+        "open": "text",
+        "open_ended": "text",
+        "fill_in_the_blank": "text",
+        "fill_in": "text",
+        "text": "text",
+    }
+    return mapping.get(t, "text")
+
+
+def is_duplicate_question(new_q: dict, existing_questions: list) -> bool:
+    """Backend duplicate test that goes beyond exact question wording.
+
+    Two questions are duplicates when they share a ``fact_id``, or the same
+    normalized source fact, or identical normalized question text, or the same
+    answer drawn from the same source fact. This catches paraphrases that ask
+    about the same underlying fact.
+    """
+    new_text = _normalize_question_text(new_q.get("question", ""))
+    new_answer = _normalize_question_text(new_q.get("correct_answer", ""))
+    new_fact_id = new_q.get("fact_id")
+    new_source_fact = _normalize_question_text(new_q.get("source_fact_used", ""))
+
+    for old_q in existing_questions or []:
+        old_text = _normalize_question_text(old_q.get("question", ""))
+        old_answer = _normalize_question_text(old_q.get("correct_answer", ""))
+        old_fact_id = old_q.get("fact_id")
+        old_source_fact = _normalize_question_text(old_q.get("source_fact_used", ""))
+
+        if new_fact_id and old_fact_id and new_fact_id == old_fact_id:
+            return True
+        if new_source_fact and old_source_fact and new_source_fact == old_source_fact:
+            return True
+        if new_text and old_text and new_text == old_text:
+            return True
+        if new_answer and old_answer and new_answer == old_answer and new_source_fact and new_source_fact == old_source_fact:
+            return True
+
+    return False
+
+
+def filter_duplicates(generated_questions: list, existing_questions: list):
+    """Split generated questions into unique vs duplicate against a running memory.
+
+    The memory starts from ``existing_questions`` and grows as each unique question
+    is accepted, so duplicates within the generated set are also caught.
+    """
+    approved, rejected = [], []
+    memory = list(existing_questions or [])
+    for q in generated_questions or []:
+        if is_duplicate_question(q, memory):
+            rejected.append(q)
+            continue
+        approved.append(q)
+        memory.append(q)
+    return approved, rejected
+
+
+# How many of the most recent AI batches to scan for cross-batch duplicate memory.
+_MEMORY_BATCH_WINDOW = 50
+
+
+def collect_existing_questions_from_bank() -> list:
+    """Gather questions from recent AI-generated batches for duplicate memory.
+
+    ``get_all_batches()`` returns newest-first; ``get_batch()`` returns a LIST of
+    question dicts in this module. Capped to the most recent ``_MEMORY_BATCH_WINDOW``
+    batches to bound cost. Best-effort — never raises.
+    """
+    existing = []
+    try:
+        batches = get_all_batches() or []
+        if len(batches) > _MEMORY_BATCH_WINDOW:
+            print(f"Duplicate memory: scanning {_MEMORY_BATCH_WINDOW} of {len(batches)} batches (older ones skipped).")
+            batches = batches[:_MEMORY_BATCH_WINDOW]
+        for batch_meta in batches:
+            batch_id = batch_meta.get("batch_id") or batch_meta.get("id")
+            if not batch_id:
+                continue
+            questions = get_batch(batch_id)
+            if isinstance(questions, list):
+                existing.extend(q for q in questions if isinstance(q, dict))
+    except Exception as e:
+        print(f"collect_existing_questions_from_bank failed (continuing without memory): {e}")
+    return existing
+
+
+def collect_used_fact_ids(existing_questions: list) -> set:
+    """Return the set of non-empty fact_ids already used by existing questions."""
+    return {q.get("fact_id") for q in (existing_questions or []) if isinstance(q, dict) and q.get("fact_id")}
+
+
+def code_validate_question(q: dict, require_source: bool = True):
+    """Deterministic (non-AI) validation of a single question.
+
+    AI review can pass a structurally-broken question; this enforces hard rules:
+    a question/answer must exist, points must be one of the five levels, multiple
+    choice needs exactly 4 distinct options containing the correct answer, and
+    true/false answers must be true/false. ``fact_id``/``source_url`` are required
+    ONLY when ``require_source`` is True (i.e. when the batch is grounded on facts);
+    ungrounded fallback generation is exempt so it never returns empty.
+
+    Returns ``(is_valid, issues)`` and normalizes ``q['type']`` in place.
+    """
+    issues = []
+    if not isinstance(q, dict):
+        return False, ["not_an_object"]
+
+    qtype = _normalize_question_type(q.get("type"))
+    q["type"] = qtype
+
+    if not q.get("question"):
+        issues.append("missing_question")
+    if q.get("points") not in (100, 200, 300, 400, 500):
+        issues.append("invalid_points")
+    if not q.get("correct_answer"):
+        issues.append("missing_correct_answer")
+
+    if qtype == "multiple_choice":
+        options = q.get("options") or []
+        if len(options) != 4:
+            issues.append("multiple_choice_must_have_4_options")
+        normalized_options = [_normalize_question_text(o) for o in options]
+        normalized_answer = _normalize_question_text(q.get("correct_answer", ""))
+        if normalized_answer and normalized_answer not in normalized_options:
+            issues.append("correct_answer_not_in_options")
+        if len(set(normalized_options)) != len(normalized_options):
+            issues.append("duplicate_options")
+
+    if qtype == "true_false":
+        if _normalize_question_text(q.get("correct_answer", "")) not in ("true", "false"):
+            issues.append("true_false_answer_must_be_true_or_false")
+
+    if require_source:
+        if not q.get("fact_id"):
+            issues.append("missing_fact_id")
+        if not q.get("source_url"):
+            issues.append("missing_source_url")
+
+    return len(issues) == 0, issues
+
+
+def code_filter_valid_questions(questions: list, require_source: bool = True):
+    """Apply code_validate_question to a list; return (valid, rejected_with_issues)."""
+    valid, rejected = [], []
+    for q in questions or []:
+        ok, issues = code_validate_question(q, require_source=require_source)
+        if ok:
+            valid.append(q)
+        else:
+            rejected.append({"question": q, "issues": issues})
+    return valid, rejected
 
 
 class AIQuestionGenerator:
@@ -479,11 +737,16 @@ class AIQuestionGenerator:
         print(f"OpenAI API connection successful. Attempting to generate questions.")
         _set_generation_progress(percent=10, message="Connected. Generating questions…")
         try:
-            # Token-aware, chunked generation to reliably reach requested count
+            # Token-aware, chunked generation to reliably reach requested count.
+            # Each round runs the enforced pipeline:
+            #   generate (over unused facts) -> AI validate -> code validate ->
+            #   backend duplicate rejection -> top up until the target is met.
             total_questions = []
             batch_sizes = []
-            # Build a set of normalized texts already existing in selected reference categories (to avoid repeats)
-            existing_normalized = set()
+
+            # --- Duplicate memory (dicts) ----------------------------------------
+            # 1) Questions in the admin-selected reference categories.
+            ref_existing = []
             try:
                 if reference_categories:
                     question_bank.load_questions()
@@ -491,33 +754,40 @@ class AIQuestionGenerator:
                         if category_id in question_bank.categories:
                             for qid in question_bank.categories.get(category_id, []):
                                 q = question_bank.questions.get(qid)
-                                if not q:
-                                    continue
-                                qtext = _normalize_question_text(q.get('question', ''))
-                                if qtext:
-                                    existing_normalized.add(qtext)
+                                if isinstance(q, dict) and q.get('question'):
+                                    ref_existing.append(q)
             except Exception:
-                # Best effort; continue without blocking generation
-                existing_normalized = set()
+                ref_existing = []
 
-            # Track normalized texts we add in this session to prevent duplicates within generated set
-            seen_texts = set(existing_normalized)
+            # 2) Cross-batch memory: questions (and their fact_ids) from recent AI batches.
+            bank_existing = collect_existing_questions_from_bank()
+            existing_questions = ref_existing + bank_existing
+            print(f"Duplicate memory loaded: {len(ref_existing)} reference + {len(bank_existing)} prior-batch questions.")
 
-            # Best-effort RAG: retrieve source facts once for grounding. Never
-            # blocks generation — an empty package falls back to general knowledge.
+            # --- Best-effort RAG: multi-source fact pool -------------------------
+            # Never blocks generation — an empty pool falls back to general knowledge.
             source_facts = None
             if use_source_grounding:
                 try:
                     wiki_lang = 'ar' if str(language).lower() == 'arabic' else 'en'
-                    _set_generation_progress(message="Retrieving source facts…")
+                    _set_generation_progress(percent=12, message="Retrieving online sources…")
                     source_facts = build_source_facts(prompt, lang=wiki_lang)
-                    if source_facts.get("facts"):
-                        print(f"Grounding generation on {len(source_facts['facts'])} retrieved source fact(s).")
+                    n_src = len(source_facts.get("sources", []))
+                    n_facts = len(source_facts.get("facts", []))
+                    if n_facts:
+                        print(f"Grounding on {n_facts} facts from {n_src} source(s).")
+                        _set_generation_progress(percent=20, message=f"Built {n_facts} source facts from {n_src} pages…")
                     else:
                         print("No source facts retrieved; generating from general knowledge.")
                 except Exception as e:
                     print(f"Source-fact retrieval failed (continuing ungrounded): {e}")
                     source_facts = None
+
+            # When we have a fact pool we enforce source-grounding (fact_id /
+            # source_url required, one question per fact). Otherwise we fall back
+            # to ungrounded generation with text/answer dedup only.
+            grounded = bool(source_facts and source_facts.get('facts'))
+            fact_pool = list(source_facts.get('facts', [])) if grounded else []
 
             # Preserve original start index and adjust per batch to conceptually skip earlier candidates
             original_start = int(getattr(self, 'start_index', 0) or 0)
@@ -527,6 +797,10 @@ class AIQuestionGenerator:
             remaining = int(num_questions)
             max_batches = max(10, (remaining + default_chunk - 1) // default_chunk + 4)
             batches_done = 0
+            code_rejected_total = 0
+            dup_rejected_total = 0
+            validated = False
+            review_summary = {}
 
             while remaining > 0 and batches_done < max_batches:
                 per_call = min(default_chunk, remaining)
@@ -536,6 +810,18 @@ class AIQuestionGenerator:
                         per_call = min(15, remaining)
                 except Exception:
                     pass
+
+                # Grounded mode: only generate from facts not already used by prior
+                # questions (memory + this batch) so we never repeat a fact.
+                chunk_source_facts = source_facts
+                if grounded:
+                    used_ids = collect_used_fact_ids(existing_questions + total_questions)
+                    unused_facts = [f for f in fact_pool if f.get('fact_id') not in used_ids]
+                    if not unused_facts:
+                        print("No unused source facts remain; stopping generation early.")
+                        break
+                    per_call = min(per_call, len(unused_facts))
+                    chunk_source_facts = {**source_facts, 'facts': unused_facts}
 
                 # Adjust start_index for this batch to avoid earlier candidates
                 setattr(self, 'start_index', original_start + len(total_questions))
@@ -551,32 +837,50 @@ class AIQuestionGenerator:
                     include_explanations,
                     language,
                     reference_categories,
-                    source_facts=source_facts,
+                    source_facts=chunk_source_facts,
                     distribution=chunk_distribution
                 ) or []
 
-                # De-duplicate by normalized question text
+                # Per-round AI validation (best-effort; returns input on failure).
+                if batch and use_validation:
+                    _set_generation_progress(message="Validating questions…")
+                    batch, round_summary = self._validate_questions_with_openai(
+                        batch, source_facts=chunk_source_facts, language=language
+                    )
+                    validated = True
+                    if isinstance(round_summary, dict) and round_summary:
+                        review_summary = round_summary
+
+                # Code-level (deterministic) validation. Source fields are required
+                # only when grounded so the ungrounded fallback still yields questions.
+                code_valid, code_rej = code_filter_valid_questions(batch, require_source=grounded)
+                code_rejected_total += len(code_rej)
+
+                # Backend duplicate rejection against memory + everything accepted so far.
+                unique, dups = filter_duplicates(code_valid, existing_questions + total_questions)
+                dup_rejected_total += len(dups)
+
                 added = 0
-                for q in batch:
-                    try:
-                        qtext = _normalize_question_text(q.get('question', ''))
-                    except Exception:
-                        qtext = ''
-                    if not qtext or qtext in seen_texts:
-                        continue
-                    seen_texts.add(qtext)
+                for q in unique:
                     total_questions.append(q)
                     added += 1
                     if len(total_questions) >= num_questions:
                         break
 
-                batch_sizes.append({'requested': per_call, 'received': len(batch), 'added_unique': added})
+                batch_sizes.append({
+                    'requested': per_call,
+                    'received': len(batch),
+                    'code_valid': len(code_valid),
+                    'rejected_by_code': len(code_rej),
+                    'rejected_as_duplicate': len(dups),
+                    'added_unique': added,
+                })
                 remaining = max(0, num_questions - len(total_questions))
                 batches_done += 1
 
-                # Report real progress: scale the generation phase (10%–95%) by
+                # Report real progress: scale the generation phase (20%–95%) by
                 # how many unique questions we've accumulated so far.
-                pct = 10 + int(85 * min(1.0, len(total_questions) / max(1, num_questions)))
+                pct = 20 + int(75 * min(1.0, len(total_questions) / max(1, num_questions)))
                 _set_generation_progress(
                     percent=pct,
                     generated=len(total_questions),
@@ -591,19 +895,6 @@ class AIQuestionGenerator:
 
             # Restore original start index
             setattr(self, 'start_index', original_start)
-
-            # Optional second AI pass: strict quality-control review. Best-effort —
-            # on failure it returns the generated questions unchanged.
-            review_summary = {}
-            validated = False
-            if questions and use_validation:
-                _set_generation_progress(percent=95, message="Validating questions…")
-                reviewed, review_summary = self._validate_questions_with_openai(
-                    questions, source_facts=source_facts, language=language
-                )
-                if reviewed:
-                    validated = reviewed is not questions
-                    questions = reviewed
 
             # If successful, return the questions
             if questions:
@@ -632,9 +923,14 @@ class AIQuestionGenerator:
                     'top_p': self.top_p,
                     'reference_categories': reference_categories,
                     # Enhanced (RAG + points-difficulty + validation) flow metadata
-                    'generation_version': 'v3_rag_points_difficulty',
-                    'source_grounded': bool(source_facts and source_facts.get('facts')),
+                    'generation_version': 'v4_rag_factpool_enforced',
+                    'source_grounded': grounded,
+                    'used_fact_grounding': grounded,
+                    'sources_count': len(source_facts.get('sources', [])) if source_facts else 0,
+                    'facts_count': len(source_facts.get('facts', [])) if source_facts else 0,
                     'validated': validated,
+                    'rejected_by_code': code_rejected_total,
+                    'rejected_as_duplicate': dup_rejected_total,
                     'difficulty_distribution': calculate_distribution(questions),
                     'validation_summary': review_summary,
                 }
@@ -1027,11 +1323,38 @@ class AIQuestionGenerator:
             grounding_facts = []
 
         if grounding_facts:
+            # Grounded mode: each fact has a fact_id / source_title / source_url.
+            # Require every question to cite exactly the fact it was built from so
+            # the backend can enforce one-question-per-fact and full traceability.
             system_prompt += f"""
 
-        SOURCE FACTS (verified). Generate questions using ONLY the information below.
-        Do not introduce facts that are not supported by these sources:
-        {json.dumps(source_facts, ensure_ascii=False, indent=2)}
+        SOURCE FACTS (verified). Each fact has a "fact_id", "fact" text, "source_title", and "source_url".
+        Build questions using ONLY these facts. Do not introduce facts not supported below.
+        Use each fact for AT MOST ONE question (do not ask about the same fact twice).
+        FACT POOL:
+        {json.dumps(grounding_facts, ensure_ascii=False, indent=2)}
+
+        For EVERY question, you MUST also include these fields, copied from the single fact you used:
+        - "fact_id": the exact "fact_id" of the source fact.
+        - "source_fact_used": the exact "fact" text of that source fact.
+        - "source_title": that fact's "source_title".
+        - "source_url": that fact's "source_url".
+        - "confidence": one of "high" | "medium" | "low".
+
+        Example multiple-choice object in grounded mode:
+        {{
+            "type": "multiple_choice",
+            "question": "...",
+            "options": ["...", "...", "...", "..."],
+            "correct_answer": "...",
+            "explanation": "...",
+            "points": 100,
+            "fact_id": "<fact_id from the pool>",
+            "source_fact_used": "<the fact text>",
+            "source_title": "<source_title>",
+            "source_url": "<source_url>",
+            "confidence": "high"
+        }}
             """
         else:
             system_prompt += (
@@ -1347,9 +1670,13 @@ Review each question for:
 
 For each question return a status of "approved", "needs_revision", or "rejected".
 For "approved" and "needs_revision", include the final corrected question under
-"approved_question", preserving the SAME field schema as the input
-(type/question/options/correct_answer/explanation/points). Use type values from
-{{"multiple_choice","true_false","text"}} only. {lang_note}
+"approved_question", preserving the SAME field schema as the input. Use type values
+from {{"multiple_choice","true_false","text"}} only. {lang_note}
+
+CRITICAL: you MUST carry through the source-traceability fields UNCHANGED from the
+input question — do NOT drop or alter them: "fact_id", "source_fact_used",
+"source_title", "source_url", "confidence". These power backend duplicate
+detection; losing them corrupts the pipeline.
 
 Return ONLY valid JSON with this exact structure:
 
@@ -1366,7 +1693,12 @@ Return ONLY valid JSON with this exact structure:
         "options": [],
         "correct_answer": "",
         "explanation": "",
-        "points": 100
+        "points": 100,
+        "fact_id": "",
+        "source_fact_used": "",
+        "source_title": "",
+        "source_url": "",
+        "confidence": "high"
       }}
     }}
   ]
