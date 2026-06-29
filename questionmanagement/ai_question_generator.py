@@ -10,9 +10,52 @@ import json
 import uuid
 import os
 import re
+import threading
 from datetime import datetime
 import requests
 from questionmanagement.question_bank import question_bank
+
+
+# ------------------------- Generation progress tracking -------------------------
+# Thread-safe progress slot the AI Generator UI polls while questions are being
+# generated. Mirrors the polling pattern used by github_integration.py. This is a
+# single-admin tool, so a single module-level slot is sufficient.
+_gen_progress_lock = threading.Lock()
+_gen_progress = {
+    "status": "idle",     # idle | running | success | failed
+    "percent": 0,
+    "message": "",
+    "generated": 0,
+    "total": 0,
+    "batch_id": None,
+    "error": None,
+}
+
+
+def reset_generation_progress(total: int = 0):
+    """Reset the progress slot to a fresh running state."""
+    with _gen_progress_lock:
+        _gen_progress.update({
+            "status": "running",
+            "percent": 0,
+            "message": "Starting…",
+            "generated": 0,
+            "total": int(total or 0),
+            "batch_id": None,
+            "error": None,
+        })
+
+
+def _set_generation_progress(**kwargs):
+    """Update the progress slot in a thread-safe manner."""
+    with _gen_progress_lock:
+        _gen_progress.update(kwargs)
+
+
+def get_generation_progress() -> dict:
+    """Return a copy of the current generation progress."""
+    with _gen_progress_lock:
+        return dict(_gen_progress)
 
 
 def _normalize_question_text(text: str) -> str:
@@ -277,6 +320,8 @@ class AIQuestionGenerator:
 
         print(f"API key is provided (length: {len(self.api_key.strip())}). Verifying OpenAI API connection...")
 
+        _set_generation_progress(percent=5, total=num_questions, message="Validating API key…")
+
         # Verify the API connection first
         connection_success, connection_message = self.verify_api_connection()
 
@@ -284,6 +329,7 @@ class AIQuestionGenerator:
             raise ValueError(f"OpenAI API connection failed: {connection_message}")
 
         print(f"OpenAI API connection successful. Attempting to generate questions.")
+        _set_generation_progress(percent=10, message="Connected. Generating questions…")
         try:
             # Token-aware, chunked generation to reliably reach requested count
             total_questions = []
@@ -358,6 +404,15 @@ class AIQuestionGenerator:
                 batch_sizes.append({'requested': per_call, 'received': len(batch), 'added_unique': added})
                 remaining = max(0, num_questions - len(total_questions))
                 batches_done += 1
+
+                # Report real progress: scale the generation phase (10%–95%) by
+                # how many unique questions we've accumulated so far.
+                pct = 10 + int(85 * min(1.0, len(total_questions) / max(1, num_questions)))
+                _set_generation_progress(
+                    percent=pct,
+                    generated=len(total_questions),
+                    message=f"Generated {len(total_questions)} of {num_questions} questions…",
+                )
 
                 # If provider keeps returning too few (e.g., 4-5), try one more slightly smaller batch
                 if remaining > 0 and added == 0 and per_call > 1:
@@ -966,6 +1021,48 @@ class AIQuestionGenerator:
 
 # Create a singleton instance
 ai_question_generator = AIQuestionGenerator()
+
+
+def start_generation_async(prompt, options=None):
+    """Run question generation in a background thread, reporting progress.
+
+    Progress is exposed via get_generation_progress() for the UI to poll. On
+    success the progress slot carries the resulting batch_id; on failure it
+    carries a redacted error message.
+
+    Returns:
+        bool: True if a new generation was started, False if one is already running.
+    """
+    with _gen_progress_lock:
+        if _gen_progress.get("status") == "running":
+            return False
+
+    try:
+        total = int((options or {}).get('num_questions', 20))
+    except (TypeError, ValueError):
+        total = 0
+    reset_generation_progress(total=total)
+
+    def _run():
+        try:
+            batch_id, questions = ai_question_generator.generate_questions(prompt, options)
+            _set_generation_progress(
+                status="success",
+                percent=100,
+                generated=len(questions),
+                batch_id=batch_id,
+                message=f"Generated {len(questions)} questions.",
+            )
+        except Exception as e:
+            _set_generation_progress(
+                status="failed",
+                message="Generation failed.",
+                error=AIQuestionGenerator._redact_secrets(str(e)),
+            )
+
+    threading.Thread(target=_run, daemon=True).start()
+    return True
+
 
 def generate_questions(prompt, options=None):
     """

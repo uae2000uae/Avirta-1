@@ -29,15 +29,15 @@
         <div class="form-group equal-md">
                 <label>Types:</label>
                 <div class="form-group-equal-sm">
-                    <div class="category-checkbox">
+                    <div class="checkbox-group">
                         <input type="checkbox" id="type_multiple_choice" name="question_types" value="multiple_choice" checked>
                         <label for="type_multiple_choice">Multiple Choice</label>
                     </div>
-                    <div class="category-checkbox">
+                    <div class="checkbox-group">
                         <input type="checkbox" id="type_true_false" name="question_types" value="true_false" checked>
                         <label for="type_true_false">True/False</label>
                     </div>
-                    <div class="category-checkbox">
+                    <div class="checkbox-group">
                         <input type="checkbox" id="type_text" name="question_types" value="text" checked>
                         <label for="type_text">Text Answer</label>
                     </div>
@@ -100,14 +100,14 @@
 			</div>
         </div>
     <!-- Progress indicator (hidden by default) -->
-		<div class="form-group centered"></div>
+		<div class="form-group centered">
 		<div id="progressContainer" class="progress-container" style="display: none;">
 				<h3>Generating Questions...</h3>
 				 <div class="progress-bar-container">
 					<div id="progressBar" class="progress-bar"></div>
 				 </div>
 			 <div id="progressStatus" class="progress-status">Initializing...</div>
-		</div>
+		</div></div>
 	</form>
 </div>
 
@@ -264,59 +264,52 @@
             });
         });
 
-        // Define the stages of AI question generation
-        const stages = [
-            { percent: 10, message: "Validating API key..." },
-            { percent: 20, message: "Testing API connection..." },
-            { percent: 30, message: "Preparing prompt..." },
-            { percent: 40, message: "Connecting to OpenAI..." },
-            { percent: 50, message: "Generating questions..." },
-            { percent: 70, message: "Receiving response..." },
-            { percent: 80, message: "Parsing questions..." },
-            { percent: 90, message: "Validating questions..." },
-            { percent: 95, message: "Finalizing..." },
-            { percent: 100, message: "Complete! Loading questions..." }
-        ];
+        // Function to update progress bar and status
+        function updateProgress(percent, message) {
+            progressBar.style.width = percent + '%';
+            progressStatus.textContent = message;
+            progressStatus.className = 'progress-status active';
+        }
 
         form.addEventListener('submit', function(event) {
-            // Prevent the default form submission
+            // Drive the bar from real backend progress instead of a fixed timer.
             event.preventDefault();
 
-            // Show loading state on button
+            // Show loading state on button and reveal the progress UI
             generateButton.textContent = 'Generating...';
             generateButton.disabled = true;
-
-            // Show progress container
             progressContainer.style.display = 'block';
+            updateProgress(0, 'Starting…');
 
-            // Simulate progress through the stages
-            let currentStage = 0;
+            // Kick off generation in the background.
+            const formData = new FormData(form);
+            formData.set('ajax', '1');
+            fetch(form.action, { method: 'POST', body: formData })
+                .catch(() => { /* generation runs server-side; polling reports status */ });
 
-            // Update progress status with the first stage
-            updateProgress(stages[0].percent, stages[0].message);
-
-            // Set up interval to update progress
+            // Poll the backend for actual generation progress.
             const progressInterval = setInterval(function() {
-                currentStage++;
-
-                if (currentStage < stages.length) {
-                    // Update progress with the current stage
-                    updateProgress(stages[currentStage].percent, stages[currentStage].message);
-                } else {
-                    // Clear the interval when all stages are complete
-                    clearInterval(progressInterval);
-
-                    // Submit the form after all stages are complete
-                    form.submit();
-                }
-            }, 2000); // Update every 2 seconds
-
-            // Function to update progress bar and status
-            function updateProgress(percent, message) {
-                progressBar.style.width = percent + '%';
-                progressStatus.textContent = message;
-                progressStatus.className = 'progress-status active';
-            }
+                fetch('/api/ai/generation_progress', { cache: 'no-store' })
+                    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                    .then(data => {
+                        if (data.status === 'success') {
+                            clearInterval(progressInterval);
+                            updateProgress(100, data.message || 'Complete! Loading questions...');
+                            window.location = '/ai_question_generator?batch_id=' + encodeURIComponent(data.batch_id);
+                        } else if (data.status === 'failed') {
+                            clearInterval(progressInterval);
+                            progressBar.style.width = '0%';
+                            progressStatus.textContent = data.error || data.message || 'Generation failed.';
+                            progressStatus.className = 'progress-status error';
+                            generateButton.textContent = 'Generate Questions';
+                            generateButton.disabled = false;
+                        } else {
+                            // running / starting
+                            updateProgress(data.percent || 0, data.message || 'Generating…');
+                        }
+                    })
+                    .catch(() => { /* transient poll error; keep current state and retry */ });
+            }, 700);
         });
     });
 </script>

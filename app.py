@@ -32,7 +32,7 @@ from contents.thehive.thehive import register_hive_routes
 from contents.fastest.fastest import register_fastest_routes
 from questionmanagement.question_bank import QuestionBank, increment_use_count, set_question_bank_instance
 from questionmanagement.question_import_export import export_template
-from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches
+from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches, start_generation_async, get_generation_progress
 from contents.admin_controls.ai_settings import load_ai_settings
 
 # --- Global progress tracking for AI validation (server-side, not session-based) ---
@@ -1995,6 +1995,13 @@ def ai_question_generator():
     generated_questions = None
     batch_id = None
 
+    # After an async generation completes the client redirects here with the
+    # resulting batch id so the preview can be rendered server-side.
+    if request.method == 'GET':
+        batch_id = request.args.get('batch_id')
+        if batch_id:
+            generated_questions = get_batch(batch_id)
+
     if request.method == 'POST':
         # Get form data
         prompt = request.form.get('prompt')
@@ -2053,6 +2060,12 @@ def ai_question_generator():
             'start_index': start_index,
         }
 
+        # AJAX submissions kick off generation in the background and let the
+        # client poll /api/ai/generation_progress to drive the progress bar.
+        if request.form.get('ajax') == '1':
+            started = start_generation_async(prompt, options)
+            return jsonify({"started": started})
+
         try:
             batch_id, generated_questions = generate_questions(prompt, options)
             flash(f'Successfully generated {len(generated_questions)} questions.')
@@ -2061,12 +2074,19 @@ def ai_question_generator():
             return render_template('ai_question_generator.html', categories=categories, admin_setup=admin_setup)
 
     return render_template(
-        'ai_question_generator.html', 
+        'ai_question_generator.html',
         categories=categories,
         generated_questions=generated_questions,
         batch_id=batch_id,
         admin_setup=admin_setup
     )
+
+@app.route('/api/ai/generation_progress')
+def ai_generation_progress():
+    """Return the current AI question-generation progress for the UI to poll."""
+    if not session.get('admin_authenticated', False):
+        return jsonify({"error": "unauthorized"}), 403
+    return jsonify(get_generation_progress())
 
 @app.route('/ai_question_history')
 def ai_question_history():
