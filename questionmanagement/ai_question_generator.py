@@ -145,6 +145,151 @@ def _post_with_retries(url: str, headers: dict, json_data: dict, timeout: float,
     hint = " Consider increasing the Openai Request Timeout in Admin settings and try again."
     raise requests.exceptions.RequestException(f"OpenAI request failed after retries: {last_err}{hint}")
 
+
+# ------------------------- RAG / difficulty / validation helpers -------------------------
+# These implement the source-grounded, points-based-difficulty, AI-validated flow
+# described in questionmanagement/AI_generator.txt. They are kept additive: the
+# generated/saved JSON structure consumed by the app is unchanged.
+
+# 5-level difficulty system. Points double as the difficulty signal: higher points
+# means a harder / less common question.
+DIFFICULTY_LEVELS = {
+    100: "Very easy: direct recall of a basic, well-known fact. No reasoning required.",
+    200: "Easy: simple recognition or a one-step factual question; slightly less obvious than 100.",
+    300: "Medium: requires connecting two facts or understanding context.",
+    400: "Hard: requires comparison, chronology, classification, or cause/effect reasoning.",
+    500: "Very hard: requires deeper reasoning, multi-step deduction, or less obvious facts.",
+}
+
+# Baseline shape used to spread a "mixed" batch evenly across the five levels.
+DEFAULT_DISTRIBUTION = {100: 2, 200: 2, 300: 2, 400: 2, 500: 2}
+
+# Map the admin difficulty labels to point values (shared by generation + validation).
+DIFFICULTY_TO_POINTS = {"easiest": 100, "easy": 200, "medium": 300, "hard": 400, "hardest": 500}
+
+
+def fetch_wikipedia_summary(topic: str, lang: str = "en") -> dict:
+    """Fetch a short encyclopedic summary from Wikipedia (best-effort).
+
+    Returns an empty dict on any failure (missing page, network error, timeout)
+    so callers can degrade gracefully to ungrounded generation.
+    """
+    try:
+        topic = (topic or "").strip()
+        if not topic:
+            return {}
+        lang = (lang or "en").strip().lower() or "en"
+        safe_topic = topic.replace(" ", "_")
+        url = f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{safe_topic}"
+        response = requests.get(
+            url,
+            timeout=20,
+            headers={"User-Agent": "AvirtaTriviaQuestionGenerator/1.0"},
+        )
+        if response.status_code != 200:
+            return {}
+        data = response.json()
+        extract = data.get("extract", "")
+        if not extract:
+            return {}
+        return {
+            "source_name": "Wikipedia",
+            "source_url": data.get("content_urls", {}).get("desktop", {}).get("page", ""),
+            "title": data.get("title", topic),
+            "extract": extract,
+        }
+    except Exception as e:
+        print(f"Wikipedia summary fetch failed for '{topic}' ({lang}): {e}")
+        return {}
+
+
+def build_source_facts(topic: str, lang: str = "en") -> dict:
+    """Build a best-effort source-facts package for grounding generation.
+
+    An empty ``facts`` list is allowed; generation then falls back to general
+    knowledge. Can be extended later with Wikidata/DBpedia/Open Trivia DB.
+    """
+    facts = []
+    wiki = fetch_wikipedia_summary(topic, lang=lang)
+    if wiki.get("extract"):
+        facts.append({
+            "source": wiki["source_name"],
+            "title": wiki["title"],
+            "url": wiki["source_url"],
+            "text": wiki["extract"],
+        })
+    return {
+        "topic": topic,
+        "language": lang,
+        "retrieved_at": datetime.now().isoformat(),
+        "facts": facts,
+    }
+
+
+def build_difficulty_distribution(num_questions: int, difficulty: str = "mixed") -> dict:
+    """Return a target points distribution for a batch of ``num_questions``.
+
+    - For a specific difficulty, all questions land on the mapped point value.
+    - For ``mixed``, spread as evenly as possible across the five levels,
+      distributing any remainder from the easiest level upward.
+    """
+    levels = [100, 200, 300, 400, 500]
+    dist = {str(p): 0 for p in levels}
+    try:
+        n = max(0, int(num_questions))
+    except (TypeError, ValueError):
+        n = 0
+
+    if difficulty and difficulty != "mixed":
+        points = DIFFICULTY_TO_POINTS.get(difficulty, 300)
+        dist[str(points)] = n
+        return dist
+
+    base, remainder = divmod(n, len(levels))
+    for i, p in enumerate(levels):
+        dist[str(p)] = base + (1 if i < remainder else 0)
+    return dist
+
+
+def calculate_distribution(questions) -> dict:
+    """Count how many questions fall on each point value."""
+    dist = {str(p): 0 for p in (100, 200, 300, 400, 500)}
+    for q in questions or []:
+        points = str(q.get("points")) if isinstance(q, dict) else None
+        if points in dist:
+            dist[points] += 1
+    return dist
+
+
+def extract_approved_questions(validation_result) -> list:
+    """Pull the approved (and revised) questions out of a validation result."""
+    approved = []
+    if not isinstance(validation_result, dict):
+        return approved
+    for item in validation_result.get("questions", []):
+        if not isinstance(item, dict):
+            continue
+        if item.get("status") in ("approved", "needs_revision") and item.get("approved_question"):
+            approved.append(item["approved_question"])
+    return approved
+
+
+def _normalize_question_type(qtype: str) -> str:
+    """Map model-emitted types onto the app's canonical set.
+
+    The enhanced spec uses ``short_answer``; the app uses ``text``. Keep the
+    output JSON consumers happy by collapsing aliases to canonical values.
+    """
+    t = str(qtype or "").strip().lower()
+    if t in ("short_answer", "short", "open", "open_ended", "fill_in_the_blank", "fill_in"):
+        return "text"
+    if t in ("multiple_choice", "mcq", "multiple-choice"):
+        return "multiple_choice"
+    if t in ("true_false", "true/false", "boolean", "tf"):
+        return "true_false"
+    return t or "text"
+
+
 class AIQuestionGenerator:
     """
     A class to generate questions using AI services.
@@ -263,6 +408,9 @@ class AIQuestionGenerator:
         include_explanations = options.get('include_explanations', True)
         language = options.get('language', 'arabic')
         reference_categories = options.get('reference_categories', [])
+        # Enhanced flow toggles (default on; degrade gracefully when disabled/failed)
+        use_source_grounding = bool(options.get('use_source_grounding', True))
+        use_validation = bool(options.get('use_validation', True))
 
         # Get API settings from options if provided (centralized loader feeds these)
         self.api_key = options.get('api_key', self.api_key)
@@ -355,6 +503,22 @@ class AIQuestionGenerator:
             # Track normalized texts we add in this session to prevent duplicates within generated set
             seen_texts = set(existing_normalized)
 
+            # Best-effort RAG: retrieve source facts once for grounding. Never
+            # blocks generation — an empty package falls back to general knowledge.
+            source_facts = None
+            if use_source_grounding:
+                try:
+                    wiki_lang = 'ar' if str(language).lower() == 'arabic' else 'en'
+                    _set_generation_progress(message="Retrieving source facts…")
+                    source_facts = build_source_facts(prompt, lang=wiki_lang)
+                    if source_facts.get("facts"):
+                        print(f"Grounding generation on {len(source_facts['facts'])} retrieved source fact(s).")
+                    else:
+                        print("No source facts retrieved; generating from general knowledge.")
+                except Exception as e:
+                    print(f"Source-fact retrieval failed (continuing ungrounded): {e}")
+                    source_facts = None
+
             # Preserve original start index and adjust per batch to conceptually skip earlier candidates
             original_start = int(getattr(self, 'start_index', 0) or 0)
 
@@ -376,6 +540,9 @@ class AIQuestionGenerator:
                 # Adjust start_index for this batch to avoid earlier candidates
                 setattr(self, 'start_index', original_start + len(total_questions))
 
+                # Soft difficulty target for this chunk (spread across 100–500 when mixed).
+                chunk_distribution = build_difficulty_distribution(per_call, difficulty)
+
                 batch = self._generate_questions_with_openai(
                     prompt,
                     question_type,
@@ -383,7 +550,9 @@ class AIQuestionGenerator:
                     per_call,
                     include_explanations,
                     language,
-                    reference_categories
+                    reference_categories,
+                    source_facts=source_facts,
+                    distribution=chunk_distribution
                 ) or []
 
                 # De-duplicate by normalized question text
@@ -423,6 +592,19 @@ class AIQuestionGenerator:
             # Restore original start index
             setattr(self, 'start_index', original_start)
 
+            # Optional second AI pass: strict quality-control review. Best-effort —
+            # on failure it returns the generated questions unchanged.
+            review_summary = {}
+            validated = False
+            if questions and use_validation:
+                _set_generation_progress(percent=95, message="Validating questions…")
+                reviewed, review_summary = self._validate_questions_with_openai(
+                    questions, source_facts=source_facts, language=language
+                )
+                if reviewed:
+                    validated = reviewed is not questions
+                    questions = reviewed
+
             # If successful, return the questions
             if questions:
                 print(f"Successfully generated {len(questions)} questions with OpenAI API (requested {num_questions}).")
@@ -448,7 +630,13 @@ class AIQuestionGenerator:
                     'model': self.model,
                     'temperature': self.temperature,
                     'top_p': self.top_p,
-                    'reference_categories': reference_categories
+                    'reference_categories': reference_categories,
+                    # Enhanced (RAG + points-difficulty + validation) flow metadata
+                    'generation_version': 'v3_rag_points_difficulty',
+                    'source_grounded': bool(source_facts and source_facts.get('facts')),
+                    'validated': validated,
+                    'difficulty_distribution': calculate_distribution(questions),
+                    'validation_summary': review_summary,
                 }
 
                 # Save to temporary storage with metadata
@@ -696,7 +884,7 @@ class AIQuestionGenerator:
             print(error_message)
             return False, error_message
 
-    def _generate_questions_with_openai(self, prompt, question_type, difficulty, num_questions, include_explanations, language='english', reference_categories=None):
+    def _generate_questions_with_openai(self, prompt, question_type, difficulty, num_questions, include_explanations, language='english', reference_categories=None, source_facts=None, distribution=None):
         """
         Generate questions using the OpenAI API.
 
@@ -708,6 +896,12 @@ class AIQuestionGenerator:
             include_explanations (bool): Whether to include explanations
             language (str, optional): Language for questions (english, arabic). Defaults to 'english'.
             reference_categories (list, optional): List of category IDs to read and avoid repeating questions from.
+            source_facts (dict, optional): Best-effort RAG grounding package from
+                build_source_facts(). When it contains facts, the model is told to
+                generate ONLY from them; when empty/None, generation falls back to
+                general knowledge.
+            distribution (dict, optional): Target points distribution for this chunk
+                (e.g. {"100": 2, "200": 2, ...}) used as a soft difficulty target.
 
         Returns:
             list: A list of generated question dictionaries
@@ -749,13 +943,49 @@ class AIQuestionGenerator:
                 else:
                     print(f"Category {category_id} not found in question bank")
 
-        # Create a system prompt that instructs the AI how to format the response
+        # Create a system prompt that instructs the AI how to format the response.
+        # This is the enhanced, source-grounded designer prompt (see
+        # questionmanagement/AI_generator.txt). The OUTPUT schema is intentionally
+        # pinned to the fields the rest of the app consumes (type/question/options/
+        # correct_answer/explanation/points), with optional enrichment fields.
         system_prompt = """
-        You are a question generator for an educational game. Generate questions based on the user's prompt.
-        Set the difficulty level of the generated questions from the perspective of an average high school student.
-        The "points": 100|200|300|400|500 are to define how difficult the questions are or much the information is common,
-        the higher the points, the harder the questions.
-        Format your response as a JSON array of question objects with the following structure:
+        You are an expert trivia question designer for a high-quality educational trivia game.
+        Generate clear, factually accurate questions based on the user's prompt.
+
+        DIFFICULTY POINT SYSTEM (the "points" field doubles as the difficulty signal —
+        higher points means a harder or less commonly known question):
+        100 = Very easy: direct recall of a well-known, clearly stated fact. No reasoning required.
+        200 = Easy: simple recognition or a one-step factual question; slightly less obvious than 100.
+        300 = Medium: requires connecting two facts or understanding context; not answerable by only
+              recognizing a famous name.
+        400 = Hard: requires comparison, chronology, classification, or cause/effect reasoning;
+              distractors should be highly plausible.
+        500 = Very hard: requires deeper reasoning, multi-step deduction, less obvious facts, or careful
+              distinction between similar concepts. Must still be fair and fully answerable.
+
+        QUESTION REQUIREMENTS:
+        1. Each question must have exactly one correct answer.
+        2. Do not invent facts; do not produce trick questions.
+        3. Avoid ambiguous wording.
+        4. Avoid duplicate or near-duplicate questions, and avoid asking the same kind of fact repeatedly.
+        5. Mix question styles and phrasing.
+        6. Do not mention "source", "passage", "context", or "provided facts" inside the question text.
+
+        MULTIPLE CHOICE RULES:
+        - Provide exactly 4 options.
+        - Exactly one option is correct; "correct_answer" must match one option verbatim.
+        - Distractors must be plausible but clearly incorrect.
+        - Do not use "All of the above" or "None of the above"; vary the position of the correct option.
+
+        TRUE/FALSE RULES:
+        - Avoid trivially obvious statements; false statements must be realistically false.
+
+        TEXT (SHORT ANSWER) RULES:
+        - The answer must be short and specific.
+
+        OUTPUT FORMAT:
+        Return ONLY valid JSON: a JSON array of question objects (no markdown, no commentary).
+        Use exactly these object shapes.
 
         For multiple-choice questions:
         {
@@ -786,6 +1016,29 @@ class AIQuestionGenerator:
         }
         """
 
+        # Source-grounded (RAG) block: if we retrieved verified facts, require the
+        # model to generate strictly from them; otherwise rely on general knowledge
+        # but still demand factual accuracy.
+        grounding_facts = []
+        try:
+            if isinstance(source_facts, dict):
+                grounding_facts = source_facts.get("facts", []) or []
+        except Exception:
+            grounding_facts = []
+
+        if grounding_facts:
+            system_prompt += f"""
+
+        SOURCE FACTS (verified). Generate questions using ONLY the information below.
+        Do not introduce facts that are not supported by these sources:
+        {json.dumps(source_facts, ensure_ascii=False, indent=2)}
+            """
+        else:
+            system_prompt += (
+                "\nThere are no retrieved source facts; rely on widely-accepted general knowledge "
+                "and only state facts you are confident are correct."
+            )
+
         # Add existing questions to the system prompt if available
         if existing_questions:
             existing_questions_text = "\n".join([f"- {q}" for q in existing_questions[:50]])  # Limit to 50 questions to avoid token limits
@@ -811,11 +1064,16 @@ class AIQuestionGenerator:
 
         if difficulty != 'mixed':
             # Map difficulty to points
-            difficulty_level = {"easiest": 100, "easy": 200, "medium": 300, "hard": 400, "hardest": 500}
-            points_value = difficulty_level.get(difficulty, 0)  # Get the correct point value
+            points_value = DIFFICULTY_TO_POINTS.get(difficulty, 0)  # Get the correct point value
             system_prompt += f"\nAll questions should have {points_value} points."
         else:
             system_prompt += "\nGenerate questions across all difficulty levels."
+            # Provide a soft target distribution across the five point levels.
+            if isinstance(distribution, dict) and any(distribution.values()):
+                system_prompt += (
+                    "\nAim for approximately this distribution of point values "
+                    f"(points: count): {json.dumps(distribution)}."
+                )
 
         if not include_explanations:
             system_prompt += "\nDo not include explanations."
@@ -987,23 +1245,32 @@ class AIQuestionGenerator:
                         print(f"Question {i+1} missing required fields, skipping")
                         continue
 
+                    # Collapse the enhanced spec's type aliases (e.g. short_answer)
+                    # onto the canonical set the app consumes (text/multiple_choice/
+                    # true_false) so the output JSON structure stays unchanged.
+                    question['type'] = _normalize_question_type(question.get('type'))
+
                     # Ensure multiple choice questions have options
                     if question['type'] == 'multiple_choice' and ('options' not in question or not question['options']):
                         print(f"Multiple choice question {i+1} missing options, skipping")
                         continue
 
-                    # Ensure points are set correctly based on difficulty
-                    # Map difficulty to points
-                    difficulty_points = {"easiest": 100, "easy": 200, "medium": 300, "hard": 400, "hardest": 500}
-
                     # Always set points based on difficulty if not mixed
                     if difficulty != 'mixed':
-                        question['points'] = difficulty_points.get(difficulty, 300)
+                        question['points'] = DIFFICULTY_TO_POINTS.get(difficulty, 300)
                         print(f"Set points to {question['points']} for question {i+1} based on difficulty: {difficulty}")
-                    elif 'points' not in question:
-                        # For mixed difficulty, only set default points if not already present
-                        question['points'] = 300
-                        print(f"Added default points (300) to question {i+1} for mixed difficulty")
+                    else:
+                        # For mixed difficulty, keep the model's points if valid,
+                        # otherwise default to 300.
+                        try:
+                            pts = int(question.get('points'))
+                        except (TypeError, ValueError):
+                            pts = None
+                        if pts not in (100, 200, 300, 400, 500):
+                            question['points'] = 300
+                            print(f"Normalized points to default (300) for question {i+1} (mixed difficulty)")
+                        else:
+                            question['points'] = pts
 
                     # Remove difficulty field if present (as per PRJ-002 rule)
                     if 'difficulty' in question:
@@ -1031,6 +1298,167 @@ class AIQuestionGenerator:
         except Exception as e:
             print(f"Unexpected error during API call: {str(e)}")
             raise
+
+    def _validate_questions_with_openai(self, questions, source_facts=None, language='english'):
+        """Second AI pass: a strict quality-control review of generated questions.
+
+        Implements the validation stage from AI_generator.txt. Best-effort by
+        design: on ANY failure (network, parse, empty result) it returns the
+        input ``questions`` unchanged so generation never ends up empty.
+
+        Returns:
+            tuple(list, dict): (approved_questions, review_summary)
+        """
+        review_summary = {}
+        if not questions:
+            return questions, review_summary
+        if not self.api_key or not self.api_key.strip():
+            return questions, review_summary
+
+        api_key = self.api_key.strip()
+
+        try:
+            facts_payload = source_facts if isinstance(source_facts, dict) else {"facts": []}
+            lang_note = (
+                "Keep all reviewed/approved question text in Arabic."
+                if str(language).lower() == 'arabic'
+                else "Keep all reviewed/approved question text in English."
+            )
+
+            review_prompt = f"""
+You are a strict trivia quality-control reviewer.
+
+Review the generated trivia questions against the source facts (when provided).
+
+SOURCE FACTS:
+{json.dumps(facts_payload, ensure_ascii=False, indent=2)}
+
+GENERATED QUESTIONS:
+{json.dumps(questions, ensure_ascii=False, indent=2)}
+
+Review each question for:
+1. Factual accuracy (and, when source facts are provided, support by those facts).
+2. Exactly one correct answer.
+3. Clear, unambiguous wording.
+4. For multiple_choice: plausible-but-incorrect distractors and a correct_answer matching one option.
+5. Whether the points value (100/200/300/400/500) matches the actual difficulty.
+6. No duplicate or near-duplicate questions.
+7. A correct explanation.
+
+For each question return a status of "approved", "needs_revision", or "rejected".
+For "approved" and "needs_revision", include the final corrected question under
+"approved_question", preserving the SAME field schema as the input
+(type/question/options/correct_answer/explanation/points). Use type values from
+{{"multiple_choice","true_false","text"}} only. {lang_note}
+
+Return ONLY valid JSON with this exact structure:
+
+{{
+  "review_summary": {{ "total_questions": 0, "approved": 0, "rejected": 0, "needs_revision": 0 }},
+  "questions": [
+    {{
+      "status": "approved",
+      "issues": [],
+      "recommended_fix": "",
+      "approved_question": {{
+        "type": "multiple_choice",
+        "question": "",
+        "options": [],
+        "correct_answer": "",
+        "explanation": "",
+        "points": 100
+      }}
+    }}
+  ]
+}}
+"""
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+            if self.organization:
+                headers["OpenAI-Organization"] = str(self.organization)
+
+            data = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": "You are a strict trivia quality-control reviewer. Return JSON only."},
+                    {"role": "user", "content": review_prompt},
+                ],
+                # Low temperature for consistent, conservative review.
+                "temperature": min(max(0.2, 0.0), 2.0),
+                "top_p": self.top_p,
+                "max_tokens": self.max_output_tokens,
+            }
+            if self.response_format:
+                data["response_format"] = self.response_format
+            if self.user:
+                data["user"] = self.user
+
+            base = (self.base_url or "https://api.openai.com/v1").rstrip("/")
+            url = f"{base}/chat/completions"
+
+            print(f"Running AI validation pass on {len(questions)} questions...")
+            response = _post_with_retries(
+                url, headers, data,
+                timeout=self.request_timeout or 60,
+                max_retries=2, backoff=1.5,
+            )
+
+            # Handle the json_object "must contain the word 'json'" constraint.
+            if response.status_code == 400 and "must contain the word 'json'" in response.text.lower():
+                data_no_rf = dict(data)
+                data_no_rf.pop("response_format", None)
+                response = _post_with_retries(
+                    url, headers, data_no_rf,
+                    timeout=self.request_timeout or 60,
+                    max_retries=2, backoff=1.5,
+                )
+
+            if response.status_code != 200:
+                print(self._redact_secrets(f"Validation pass failed: {response.status_code} - {response.text[:200]}"))
+                return questions, review_summary
+
+            content = response.json()['choices'][0]['message']['content']
+            try:
+                validation_result = json.loads(content)
+            except Exception:
+                m = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                if not m:
+                    return questions, review_summary
+                validation_result = json.loads(m.group(0))
+
+            review_summary = validation_result.get("review_summary", {}) if isinstance(validation_result, dict) else {}
+            approved = extract_approved_questions(validation_result)
+
+            # Re-normalize approved questions to the canonical app schema.
+            cleaned = []
+            for q in approved:
+                if not isinstance(q, dict) or not q.get("question") or "correct_answer" not in q:
+                    continue
+                q["type"] = _normalize_question_type(q.get("type"))
+                if q["type"] == "multiple_choice" and not q.get("options"):
+                    continue
+                try:
+                    pts = int(q.get("points"))
+                except (TypeError, ValueError):
+                    pts = 300
+                q["points"] = pts if pts in (100, 200, 300, 400, 500) else 300
+                cleaned.append(q)
+
+            # Only adopt the validated set if it kept a reasonable amount of
+            # content; otherwise fall back to the original generated questions.
+            if cleaned:
+                print(f"Validation kept {len(cleaned)} of {len(questions)} questions.")
+                return cleaned, review_summary
+
+            print("Validation produced no usable questions; keeping originals.")
+            return questions, review_summary
+
+        except Exception as e:
+            print(f"Validation pass error (keeping originals): {self._redact_secrets(str(e))}")
+            return questions, review_summary
 
 
 # Create a singleton instance
@@ -1117,25 +1545,6 @@ def get_batch(batch_id):
         list: The list of questions in the batch, or None if not found
     """
     return ai_question_generator.get_batch(batch_id)
-
-def verify_api_connection(api_key=None):
-    """
-    Verify the connection to the OpenAI API.
-
-    This is a standalone function that uses the AIQuestionGenerator class.
-
-    Args:
-        api_key (str, optional): The OpenAI API key to verify. If not provided,
-            uses the API key already set in the AIQuestionGenerator instance.
-
-    Returns:
-        tuple: (success, message) where success is a boolean indicating if the connection was successful
-            and message is a string with details about the connection status
-    """
-    if api_key:
-        ai_question_generator.api_key = api_key
-
-    return ai_question_generator.verify_api_connection()
 
 def get_batch_metadata(batch_id):
     """

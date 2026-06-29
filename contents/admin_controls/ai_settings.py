@@ -106,6 +106,11 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
     organization = (os.environ.get("OPENAI_ORG") or gs.get("openai_organization") or "").strip()
     user = str(gs.get("openai_user", "") or "").strip()
 
+    # Enhanced generation flow toggles (RAG source grounding + AI validation pass).
+    # Default to enabled; both degrade gracefully if they fail at runtime.
+    use_source_grounding = _coerce_bool(gs.get("openai_use_source_grounding", True), default=True)
+    use_validation = _coerce_bool(gs.get("openai_use_validation", True), default=True)
+
     # Clamp max tokens to model cap
     cap = _model_max_completion_tokens(model)
     max_tokens = max(1, min(int(max_tokens_cfg), cap))
@@ -125,4 +130,6 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
         "base_url": base_url,
         "organization": organization,
         "user": user,
+        "use_source_grounding": use_source_grounding,
+        "use_validation": use_validation,
     }

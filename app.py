@@ -2058,6 +2058,9 @@ def ai_question_generator():
             'user': ai_opts.get('user'),
             'seed': ai_opts.get('seed'),
             'start_index': start_index,
+            # Enhanced flow toggles (RAG grounding + AI validation pass)
+            'use_source_grounding': ai_opts.get('use_source_grounding', True),
+            'use_validation': ai_opts.get('use_validation', True),
         }
 
         # AJAX submissions kick off generation in the background and let the
