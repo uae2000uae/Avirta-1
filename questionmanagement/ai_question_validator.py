@@ -292,41 +292,21 @@ class AIQuestionValidator:
             list: List of improved question dictionaries
         """
         # Create system prompt for question improvement
-        system_prompt = """
-        You are an expert educational content creator. Your task is to improve quiz questions by:
+        system_prompt = """You are an expert educational content creator. Improve quiz questions by:
+1. Fixing inaccuracies: correct any factual errors in questions or answers.
+2. Completing missing information: add explanations where missing, fix incomplete answers.
+3. Adjusting difficulty: set an appropriate point value (100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard).
+4. Improving clarity: make questions clearer and more precise.
+5. Fixing formatting: proper punctuation, grammar, and structure.
 
-        1. **Fixing inaccuracies**: Correct any factual errors in questions or answers
-        2. **Completing missing information**: Add explanations where missing, fix incomplete answers
-        3. **Adjusting difficulty levels**: Set appropriate point values (100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard)
-        4. **Improving clarity**: Make questions clearer and more precise
-        5. **Fixing formatting issues**: Ensure proper punctuation, grammar, and structure
+Key rules:
+- Replace placeholder answers (e.g. "Add '?' at the end of the question") with actual correct answers.
+- Add missing explanations for every question.
+- Ensure questions end with proper punctuation.
+- Preserve all original metadata (id, timestamps, category_id, use_count, active) unchanged.
 
-        For each question, return the COMPLETE improved question object with all original fields preserved plus improvements.
-        
-        Response format should be a JSON array of complete question objects like this:
-        {
-            "type": "original_type",
-            "question": "improved question text (with proper punctuation)",
-            "correct_answer": "improved correct answer (replace 'Add ? at the end' type answers with actual answers)",
-            "options": ["option1", "option2", "option3", "option4"],  // only for multiple_choice
-            "explanation": "clear explanation of why this answer is correct",
-            "points": appropriate_point_value_100_to_500,
-            "id": "original_id",
-            "created_at": "original_created_at",
-            "updated_at": "current_timestamp",
-            "active": original_active_value,
-            "category_id": "original_category_id",
-            "use_count": original_use_count
-        }
-
-        Key improvement rules:
-        - Replace placeholder answers like "Add '?' at the end of the question" with actual correct answers
-        - Add missing explanations for all questions
-        - Fix grammatical errors and improve clarity
-        - Ensure questions end with proper punctuation (? for questions)
-        - Set difficulty points based on question complexity and knowledge requirements
-        - Preserve all original metadata (id, timestamps, etc.)
-        """
+Return a JSON array of COMPLETE improved question objects - every original field preserved, options only present for multiple_choice, points a number 100-500. Example shape:
+{"type": "original_type", "question": "improved text?", "correct_answer": "improved answer", "options": ["...", "...", "...", "..."], "explanation": "why this is correct", "points": 300, "id": "original_id", "created_at": "original_created_at", "updated_at": "current_timestamp", "active": true, "category_id": "original_category_id", "use_count": 0}"""
 
         improved_questions = []
         batch_size = 5  # Smaller batches for more detailed processing
@@ -344,17 +324,10 @@ class AIQuestionValidator:
                 progress_tracker['stage'] = f"Processing questions {i + 1}-{min(i + len(batch), len(questions))} of {len(questions)}"
             
             # Create user prompt with the batch of questions
-            user_prompt = f"Please improve these questions from the '{category_id}' category. Return the complete improved question objects:\n\n"
-            
+            user_prompt = f"Improve these questions from the '{category_id}' category:\n"
             for question in batch:
-                user_prompt += f"""
-Original Question {question.get('id', 'unknown')}:
-{json.dumps(question, ensure_ascii=False, indent=2)}
-
----
-"""
-
-            user_prompt += "\nReturn a JSON array with the complete improved question objects (preserve all original fields, just improve the content)."
+                user_prompt += f"\nQuestion {question.get('id', 'unknown')}: {json.dumps(question, ensure_ascii=False, separators=(',', ':'))}"
+            user_prompt += "\n\nReturn a JSON array with the complete improved question objects (preserve all original fields, just improve the content)."
 
             try:
                 headers = {
@@ -495,65 +468,33 @@ Original Question {question.get('id', 'unknown')}:
             list: List of validation results for each question
         """
         # Create system prompt for question validation
-        system_prompt = """
-        You are an expert educational content validator. Your task is to assess questions for:
+        system_prompt = """You are an expert educational content validator. Assess each question for:
+1. Accuracy: is the information in the question and answer factually correct?
+2. Completeness: is the answer complete and present?
+3. Difficulty: does the points value (100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard) match the question's actual complexity?
 
-        1. **Accuracy**: Check if the information in the question and answer is factually correct
-        2. **Completeness**: Verify that answers are complete and not missing
-        3. **Difficulty Level**: Assess if the difficulty level (based on points: 100=easy, 200=medium-easy, 300=medium, 400=hard, 500=very hard) matches the question complexity
+Return a JSON array with one object per question, in this exact structure:
+{"question_id": "<must exactly match the Question ID given in the input, unchanged>", "accuracy_issues": [{"issue": "...", "severity": "low|medium|high", "suggested_fix": "..."}], "completeness_issues": [{"issue": "...", "severity": "low|medium|high", "suggested_fix": "..."}], "difficulty_assessment": {"current_points": 300, "suggested_points": 300, "reasoning": "..."}, "overall_score": "excellent|good|fair|poor", "recommended_action": "keep_as_is|minor_edit|major_revision|remove"}
 
-        For each question, provide a JSON response with this exact structure:
-        {
-            "question_id": "the original question ID",
-            "accuracy_issues": [
-                {
-                    "issue": "description of inaccuracy",
-                    "severity": "low|medium|high",
-                    "suggested_fix": "suggested correction"
-                }
-            ],
-            "completeness_issues": [
-                {
-                    "issue": "description of missing information",
-                    "severity": "low|medium|high", 
-                    "suggested_fix": "suggested completion"
-                }
-            ],
-            "difficulty_assessment": {
-                "current_points": current_point_value,
-                "suggested_points": suggested_point_value,
-                "reasoning": "explanation for difficulty adjustment"
-            },
-            "overall_score": "excellent|good|fair|poor",
-            "recommended_action": "keep_as_is|minor_edit|major_revision|remove"
-        }
-
-        If there are no issues in a category, return an empty array for that category.
-        Be thorough but practical - focus on significant issues that would impact educational value.
-        """
+Use an empty array when a category has no issues. Be thorough but practical - flag only issues that would meaningfully impact educational value."""
 
         validation_results = []
         batch_size = 10  # Process questions in batches to avoid token limits
 
         for i in range(0, len(questions), batch_size):
             batch = questions[i:i + batch_size]
-            
+
             # Create user prompt with the batch of questions
-            user_prompt = f"Please validate these questions from the '{category_id}' category:\n\n"
-            
+            user_prompt = f"Validate these questions from the '{category_id}' category:\n"
             for question in batch:
-                user_prompt += f"""
-Question ID: {question.get('id', 'unknown')}
-Type: {question.get('type', 'unknown')}
-Question: {question.get('question', '')}
-Correct Answer: {question.get('correct_answer', '')}
-Current Points: {question.get('points', 0)}
-Explanation: {question.get('explanation', '')}
-
----
-"""
-
-            user_prompt += "\nRespond with a JSON array containing validation results for each question."
+                user_prompt += (
+                    f"\nQuestion ID: {question.get('id', 'unknown')} | Type: {question.get('type', 'unknown')} | "
+                    f"Points: {question.get('points', 0)}\n"
+                    f"Question: {question.get('question', '')}\n"
+                    f"Correct Answer: {question.get('correct_answer', '')}\n"
+                    f"Explanation: {question.get('explanation', '')}"
+                )
+            user_prompt += "\n\nRespond with a JSON array containing one validation result per question, in the same order, using the exact question_id given above."
 
             try:
                 headers = {

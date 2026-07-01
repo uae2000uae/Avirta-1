@@ -1280,78 +1280,40 @@ class AIQuestionGenerator:
                 else:
                     print(f"Category {category_id} not found in question bank")
 
-        # Create a system prompt that instructs the AI how to format the response.
-        # This is the enhanced, source-grounded designer prompt (see
-        # questionmanagement/AI_generator.txt). The OUTPUT schema is intentionally
-        # pinned to the fields the rest of the app consumes (type/question/options/
+        # Build the system prompt as flush-left sections joined at the end, so
+        # nothing carries stray leading whitespace into the token stream and no
+        # earlier instruction gets silently dropped by a later reassignment
+        # (the previous version overwrote user_prompt in the JSON-mode branch,
+        # discarding the start_index instruction - fixed below). Loosely based
+        # on questionmanagement/AI_generator.txt. The OUTPUT schema is pinned to
+        # the fields the rest of the app consumes (type/question/options/
         # correct_answer/explanation/points), with optional enrichment fields.
-        system_prompt = """
-        You are an expert trivia question designer for a high-quality educational trivia game.
-        Generate clear, factually accurate questions based on the user's prompt.
+        sections = ['''You are an expert trivia question designer for a high-quality educational trivia game.
+Generate clear, factually accurate questions based on the user's prompt.
 
-        DIFFICULTY POINT SYSTEM (the "points" field doubles as the difficulty signal —
-        higher points means a harder or less commonly known question):
-        100 = Very easy: direct recall of a well-known, clearly stated fact. No reasoning required.
-        200 = Easy: simple recognition or a one-step factual question; slightly less obvious than 100.
-        300 = Medium: requires connecting two facts or understanding context; not answerable by only
-              recognizing a famous name.
-        400 = Hard: requires comparison, chronology, classification, or cause/effect reasoning;
-              distractors should be highly plausible.
-        500 = Very hard: requires deeper reasoning, multi-step deduction, less obvious facts, or careful
-              distinction between similar concepts. Must still be fair and fully answerable.
+DIFFICULTY POINTS ("points" is the difficulty signal):
+100 Very easy - direct recall of a well-known fact, no reasoning needed
+200 Easy - simple recognition or a one-step fact, slightly less obvious than 100
+300 Medium - connects two facts or needs context; not answerable from a name alone
+400 Hard - comparison, chronology, classification, or cause/effect; distractors highly plausible
+500 Very hard - multi-step deduction or fine distinctions between similar concepts; still fair and answerable
 
-        QUESTION REQUIREMENTS:
-        1. Each question must have exactly one correct answer.
-        2. Do not invent facts; do not produce trick questions.
-        3. Avoid ambiguous wording.
-        4. Avoid duplicate or near-duplicate questions, and avoid asking the same kind of fact repeatedly.
-        5. Mix question styles and phrasing.
-        6. Do not mention "source", "passage", "context", or "provided facts" inside the question text.
+QUESTION REQUIREMENTS:
+1. Exactly one correct answer per question.
+2. Do not invent facts or write trick questions.
+3. Avoid ambiguous wording.
+4. No duplicate/near-duplicate questions or repeating the same kind of fact.
+5. Mix question styles and phrasing.
+6. Never mention "source", "passage", "context", or "provided facts" in the question text.
 
-        MULTIPLE CHOICE RULES:
-        - Provide exactly 4 options.
-        - Exactly one option is correct; "correct_answer" must match one option verbatim.
-        - Distractors must be plausible but clearly incorrect.
-        - Do not use "All of the above" or "None of the above"; vary the position of the correct option.
+MULTIPLE CHOICE: exactly 4 options; exactly one correct, matching "correct_answer" verbatim; distractors plausible but clearly wrong; no "All/None of the above"; vary the correct option's position.
+TRUE/FALSE: avoid trivially obvious statements; false statements must be realistically false.
+TEXT: the answer must be short and specific.
 
-        TRUE/FALSE RULES:
-        - Avoid trivially obvious statements; false statements must be realistically false.
-
-        TEXT (SHORT ANSWER) RULES:
-        - The answer must be short and specific.
-
-        OUTPUT FORMAT:
-        Return ONLY valid JSON: a JSON array of question objects (no markdown, no commentary).
-        Use exactly these object shapes.
-
-        For multiple-choice questions:
-        {
-            "type": "multiple_choice",
-            "question": "The question text",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correct_answer": "The correct option (exactly matching one of the options)",
-            "explanation": "Explanation of why this is the correct answer",
-            "points": 100|200|300|400|500
-        }
-
-        For true/false questions:
-        {
-            "type": "true_false",
-            "question": "The question text",
-            "correct_answer": "True|False",
-            "explanation": "Explanation of why this is correct",
-            "points": 100|200|300|400|500
-        }
-
-        For text questions:
-        {
-            "type": "text",
-            "question": "The question text",
-            "correct_answer": "The correct answer",
-            "explanation": "Explanation of why this is correct",
-            "points": 100|200|300|400|500
-        }
-        """
+OUTPUT FORMAT: return ONLY a JSON array of question objects (no markdown, no commentary), using exactly these shapes:
+{"type": "multiple_choice", "question": "...", "options": ["...", "...", "...", "..."], "correct_answer": "...", "explanation": "...", "points": 100}
+{"type": "true_false", "question": "...", "correct_answer": "True|False", "explanation": "...", "points": 100}
+{"type": "text", "question": "...", "correct_answer": "...", "explanation": "...", "points": 100}''']
 
         # Source-grounded (RAG) block: if we retrieved verified facts, require the
         # model to generate strictly from them; otherwise rely on general knowledge
@@ -1367,95 +1329,84 @@ class AIQuestionGenerator:
             # Grounded mode: each fact has a fact_id / source_title / source_url.
             # Require every question to cite exactly the fact it was built from so
             # the backend can enforce one-question-per-fact and full traceability.
-            system_prompt += f"""
-
-        SOURCE FACTS (verified). Each fact has a "fact_id", "fact" text, "source_title", and "source_url".
-        Build questions using ONLY these facts. Do not introduce facts not supported below.
-        Use each fact for AT MOST ONE question (do not ask about the same fact twice).
-        FACT POOL:
-        {json.dumps(grounding_facts, ensure_ascii=False, indent=2)}
-
-        For EVERY question, you MUST also include these fields, copied from the single fact you used:
-        - "fact_id": the exact "fact_id" of the source fact.
-        - "source_fact_used": the exact "fact" text of that source fact.
-        - "source_title": that fact's "source_title".
-        - "source_url": that fact's "source_url".
-        - "confidence": one of "high" | "medium" | "low".
-
-        Example multiple-choice object in grounded mode:
-        {{
-            "type": "multiple_choice",
-            "question": "...",
-            "options": ["...", "...", "...", "..."],
-            "correct_answer": "...",
-            "explanation": "...",
-            "points": 100,
-            "fact_id": "<fact_id from the pool>",
-            "source_fact_used": "<the fact text>",
-            "source_title": "<source_title>",
-            "source_url": "<source_url>",
-            "confidence": "high"
-        }}
-            """
+            facts_json = json.dumps(grounding_facts, ensure_ascii=False, separators=(',', ':'))
+            sections.append(
+                'SOURCE FACTS (verified) - each has "fact_id", "fact", "source_title", "source_url".\n'
+                "Build questions using ONLY these facts; do not introduce unsupported facts. "
+                "Use each fact for at most one question.\n"
+                f"FACT POOL: {facts_json}\n\n"
+                "For EVERY question, also copy these fields from the single fact you used: "
+                '"fact_id", "source_fact_used" (that fact\'s exact text), "source_title", "source_url", '
+                'and "confidence" (one of "high"|"medium"|"low").\n'
+                'Grounded example: {"type":"multiple_choice","question":"...","options":["...","...","...","..."],'
+                '"correct_answer":"...","explanation":"...","points":100,"fact_id":"<id>",'
+                '"source_fact_used":"<fact text>","source_title":"<title>","source_url":"<url>","confidence":"high"}'
+            )
         else:
-            system_prompt += (
-                "\nThere are no retrieved source facts; rely on widely-accepted general knowledge "
+            sections.append(
+                "There are no retrieved source facts; rely on widely-accepted general knowledge "
                 "and only state facts you are confident are correct."
             )
 
-        # Add existing questions to the system prompt if available
+        # Avoid re-asking questions that already exist in the referenced categories.
         if existing_questions:
-            existing_questions_text = "\n".join([f"- {q}" for q in existing_questions[:50]])  # Limit to 50 questions to avoid token limits
-            system_prompt += f"""
+            shown = existing_questions[:50]
+            coverage = f"showing 50 of {len(existing_questions)}" if len(existing_questions) > 50 else f"all {len(existing_questions)}"
+            sections.append(
+                f"AVOID DUPLICATES ({coverage}) - do not repeat or closely resemble any of these existing questions:\n"
+                + "\n".join(f"- {q}" for q in shown)
+            )
 
-            IMPORTANT: Avoid generating questions that are similar to the following existing questions:
-            {existing_questions_text}
-
-            If there are more than 50 existing questions, I've only shown you a subset. Please try to generate questions that are substantially different from these and would explore new aspects of the topic.
-            """
-
-        # Add specific instructions based on options. question_type may be a
-        # single type, a comma-separated subset of types, or 'mixed' (all types).
+        # Consolidate all per-request generation settings into one block instead
+        # of scattering single-line appends throughout the function.
+        settings_lines = []
         if question_type and question_type != 'mixed':
+            # question_type may be a single type or a comma-separated subset.
             selected_types = [t.strip() for t in str(question_type).split(',') if t.strip()]
             if len(selected_types) == 1:
-                system_prompt += f"\nOnly generate {selected_types[0]} questions."
+                settings_lines.append(f"Only generate {selected_types[0]} questions.")
             elif selected_types:
-                system_prompt += (
-                    f"\nOnly generate questions of these types: {', '.join(selected_types)}. "
-                    "Distribute the questions roughly evenly across these types."
+                settings_lines.append(
+                    f"Only generate questions of these types: {', '.join(selected_types)}, distributed roughly evenly."
                 )
 
         if difficulty != 'mixed':
-            # Map difficulty to points
-            points_value = DIFFICULTY_TO_POINTS.get(difficulty, 0)  # Get the correct point value
-            system_prompt += f"\nAll questions should have {points_value} points."
+            points_value = DIFFICULTY_TO_POINTS.get(difficulty, 0)
+            settings_lines.append(f"All questions must have {points_value} points.")
         else:
-            system_prompt += "\nGenerate questions across all difficulty levels."
-            # Provide a soft target distribution across the five point levels.
+            settings_lines.append("Generate questions across all difficulty levels.")
             if isinstance(distribution, dict) and any(distribution.values()):
-                system_prompt += (
-                    "\nAim for approximately this distribution of point values "
-                    f"(points: count): {json.dumps(distribution)}."
+                settings_lines.append(
+                    "Aim for this distribution of point values (points: count): "
+                    f"{json.dumps(distribution, separators=(',', ':'))}."
                 )
 
         if not include_explanations:
-            system_prompt += "\nDo not include explanations."
+            settings_lines.append("Do not include explanations.")
 
-        # Add language-specific instructions
-        if language.lower() == 'arabic':
-            system_prompt += "\nGenerate all questions and answers in Arabic language. Use proper Arabic grammar and vocabulary."
-        else:
-            system_prompt += "\nGenerate all questions and answers in English language."
+        settings_lines.append(
+            "Generate all questions and answers in Arabic, using proper Arabic grammar and vocabulary."
+            if language.lower() == 'arabic'
+            else "Generate all questions and answers in English."
+        )
 
-        # Create the user prompt
-        user_prompt = f"Generate {num_questions} questions about: {prompt}"
-        # If start_index > 0, instruct the model to conceptually skip earlier results
         if isinstance(self.start_index, int) and self.start_index > 0:
-            system_prompt += f"\nWhen listing or selecting candidate questions, start at index {self.start_index} (skip the first {self.start_index} possible results)."
-            user_prompt += f" Also, skip the first {self.start_index} possible results when selecting which questions to output."
+            settings_lines.append(
+                f"Start at candidate index {self.start_index} (skip the first {self.start_index} possible results)."
+            )
 
-        # If JSON response_format is requested, explicitly instruct JSON output in both messages
+        sections.append("GENERATION SETTINGS:\n" + "\n".join(f"- {line}" for line in settings_lines))
+
+        system_prompt = "\n\n".join(sections)
+
+        # Build the user prompt incrementally (never reassigned wholesale) so
+        # every addition - including the start_index skip - survives into the
+        # final request regardless of whether JSON mode is on.
+        user_prompt = f"Generate {num_questions} questions about: {prompt}"
+        if isinstance(self.start_index, int) and self.start_index > 0:
+            user_prompt += f" Skip the first {self.start_index} possible results when selecting which questions to output."
+
+        # If JSON response_format is requested, reinforce JSON-only output in both messages.
         wants_json = False
         try:
             rf = self.response_format
@@ -1467,11 +1418,8 @@ class AIQuestionGenerator:
             wants_json = False
 
         if wants_json:
-            system_prompt += "\nReturn only JSON. Respond with a single valid JSON object or array adhering to the expected schema. Do not include any non-JSON text."
-            user_prompt = (
-                f"Produce JSON only. Generate {num_questions} questions about: {prompt}. "
-                "Respond strictly in JSON."
-            )
+            system_prompt += "\n\nReturn only JSON: a single valid JSON array/object matching the schema above, with no other text."
+            user_prompt += " Respond strictly in JSON."
 
         # Prepare the API request
         headers = {
@@ -1691,10 +1639,10 @@ You are a strict trivia quality-control reviewer.
 Review the generated trivia questions against the source facts (when provided).
 
 SOURCE FACTS:
-{json.dumps(facts_payload, ensure_ascii=False, indent=2)}
+{json.dumps(facts_payload, ensure_ascii=False, separators=(',', ':'))}
 
 GENERATED QUESTIONS:
-{json.dumps(questions, ensure_ascii=False, indent=2)}
+{json.dumps(questions, ensure_ascii=False, separators=(',', ':'))}
 
 Review each question for:
 1. Factual accuracy (and, when source facts are provided, support by those facts).
