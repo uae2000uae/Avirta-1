@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "prompt": "Ancient Egypt",
+    "question_type": "mixed",
+    "difficulty": "mixed",
+    "num_questions": 3,
+    "num_requested": 3,
+    "num_returned": 3,
+    "include_explanations": true,
+    "language": "english",
+    "start_index": 0,
+    "batches": [
+      {
+        "requested": 3,
+        "received": 3,
+        "added_unique": 3
+      }
+    ],
+    "timestamp": "2026-06-29T05:48:05.697980",
+    "model": "gpt-4o-mini",
+    "temperature": 0.55,
+    "top_p": 1.0,
+    "reference_categories": [],
+    "generation_version": "v3_rag_points_difficulty",
+    "source_grounded": true,
+    "validated": true,
+    "difficulty_distribution": {
+      "100": 1,
+      "200": 1,
+      "300": 1,
+      "400": 0,
+      "500": 0
+    },
+    "validation_summary": {
+      "total_questions": 3,
+      "approved": 3
+    }
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "Which river was central to ancient Egypt?",
+      "options": [
+        "Nile",
+        "Amazon",
+        "Danube",
+        "Tigris"
+      ],
+      "correct_answer": "Nile",
+      "explanation": "The Nile.",
+      "points": 100
+    },
+    {
+      "type": "text",
+      "question": "Name the script used by ancient Egyptians.",
+      "correct_answer": "Hieroglyphs",
+      "explanation": "Hieroglyphic writing.",
+      "points": 300
+    },
+    {
+      "type": "true_false",
+      "question": "The pyramids were built as tombs.",
+      "correct_answer": "True",
+      "explanation": "Yes.",
+      "points": 200
+    }
+  ]
+}
