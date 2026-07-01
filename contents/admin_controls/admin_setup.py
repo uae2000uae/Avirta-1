@@ -8,6 +8,11 @@ import os
 import json
 import glob
 from datetime import datetime
+from contents.admin_controls.openai_models import (
+    get_model_defaults,
+    is_known_model,
+    DEFAULT_MODEL,
+)
 
 class AdminSetup:
     """
@@ -35,6 +40,10 @@ class AdminSetup:
         """
         self.admins = {}
         self.saved_api_settings = {}
+        # Per-model AI parameter memory: {model_id: {openai_temperature: ..., ...}}.
+        # Populated with each model's registry defaults until the admin saves
+        # model-specific overrides via the "AI Model" dropdown/form.
+        self.model_param_settings = {}
         # Initialize with default settings
         self.game_settings = {
             # Game settings
@@ -52,9 +61,11 @@ class AdminSetup:
             'openai_presence_penalty': 0.2,
             'openai_max_tokens': 16384,
             'openai_seed': 0,
+            # Reasoning-model-only settings (e.g. GPT-5.x); ignored by standard chat models
+            'openai_reasoning_effort': 'medium',
+            'openai_verbosity': 'medium',
             # Modern OpenAI settings (future-proof)
             'openai_response_format': 'json_object',
-            'openai_json_mode': True,
             'openai_stop': '',
             'openai_request_timeout': 60,
             'openai_base_url': 'https://api.openai.com/v1',
@@ -129,6 +140,7 @@ class AdminSetup:
         # Load saved settings from file (if available)
         self.load_game_settings()
         self.load_saved_api_settings_from_file()
+        self.load_model_param_settings_from_file()
         self.selected_categories = []
 
     def add_admin(self, username, permission_level='MODERATOR'):
@@ -282,6 +294,15 @@ class AdminSetup:
             # Update the game_settings with the loaded settings
             for key, value in loaded_settings.items():
                 self.game_settings[key] = value
+
+            # Migration: the old "JSON Response Mode" checkbox was removed and
+            # folded into the Response Format Override field. Preserve prior
+            # forced-JSON behavior for installs that had the checkbox on with
+            # no explicit override already set.
+            if 'openai_json_mode' in loaded_settings:
+                if loaded_settings.get('openai_json_mode') and not str(self.game_settings.get('openai_response_format') or '').strip():
+                    self.game_settings['openai_response_format'] = 'json_object'
+                self.game_settings.pop('openai_json_mode', None)
 
             self.log_event("Game settings loaded from file")
             return True, "Game settings loaded successfully"
@@ -604,12 +625,16 @@ class AdminSetup:
             self.log_event(f"Error loading saved API settings: {str(e)}")
             return False, f"Error loading saved API settings: {str(e)}"
 
-    def save_api_settings(self, name):
+    def save_api_settings(self, name, values=None):
         """
-        Save the current API settings with a name.
+        Save API settings under a name, creating the preset if it doesn't
+        exist yet or overwriting it if it does.
 
         Args:
             name (str): Name to identify the saved settings
+            values (dict, optional): openai_* values to snapshot (e.g. the
+                admin's unsaved on-screen edits). If omitted, falls back to
+                snapshotting the live game_settings.
 
         Returns:
             tuple: (success, message)
@@ -617,17 +642,20 @@ class AdminSetup:
         if not name or not name.strip():
             return False, "Settings name cannot be empty"
 
-        # Extract OpenAI settings from game_settings
-        api_settings = {
-            'openai_api_key': self.game_settings.get('openai_api_key', ''),
-            'openai_model': self.game_settings.get('openai_model', 'gpt-4o-mini'),
-            'openai_temperature': self.game_settings.get('openai_temperature', 0.55),
-            'openai_top_p': self.game_settings.get('openai_top_p', 1.0),
-            'openai_frequency_penalty': self.game_settings.get('openai_frequency_penalty', 0.3),
-            'openai_presence_penalty': self.game_settings.get('openai_presence_penalty', 0.2),
-            'openai_max_tokens': self.game_settings.get('openai_max_tokens', 20000),
-            'openai_seed': self.game_settings.get('openai_seed', 0)
-        }
+        if values is not None:
+            api_settings = dict(values)
+        else:
+            # Snapshot every current OpenAI setting (model, per-model params,
+            # and advanced/global fields) so loading this preset later
+            # restores everything, not just a hardcoded subset.
+            api_settings = {
+                key: value for key, value in self.game_settings.items()
+                if key.startswith('openai_')
+            }
+
+        # Saved presets never store the real API key - only the runtime
+        # AI_Token (env/Secret Manager) is used to actually call OpenAI.
+        api_settings['openai_api_key'] = ''
 
         # Save the settings with the given name
         self.saved_api_settings[name.strip()] = api_settings
@@ -639,42 +667,6 @@ class AdminSetup:
 
         self.log_event(f"API settings saved as '{name}'")
         return True, f"API settings saved as '{name}'"
-
-    def load_api_settings(self, name):
-        """
-        Load saved API settings by name.
-
-        Args:
-            name (str): Name of the saved settings to load
-
-        Returns:
-            tuple: (success, message)
-        """
-        if name not in self.saved_api_settings:
-            return False, f"No saved settings found with name '{name}'"
-
-        # Get the saved settings
-        api_settings = self.saved_api_settings[name]
-
-        # Backward compatibility: map legacy openai_max_output_tokens to openai_max_tokens if needed
-        if 'openai_max_tokens' not in api_settings and 'openai_max_output_tokens' in api_settings:
-            try:
-                self.game_settings['openai_max_tokens'] = int(api_settings.get('openai_max_output_tokens') or 0)
-            except (TypeError, ValueError):
-                pass
-
-        # Update only the OpenAI settings in game_settings
-        for key, value in api_settings.items():
-            if key.startswith('openai_'):
-                # Normalize old key to new key
-                target_key = 'openai_max_tokens' if key == 'openai_max_output_tokens' else key
-                self.game_settings[target_key] = value
-
-        # Save settings to file to make changes permanent
-        self.save_game_settings()
-
-        self.log_event(f"Loaded API settings '{name}'")
-        return True, f"Loaded API settings '{name}'"
 
     def get_saved_api_settings(self):
         """
@@ -708,6 +700,97 @@ class AdminSetup:
 
         self.log_event(f"Deleted API settings '{name}'")
         return True, f"Deleted API settings '{name}'"
+
+    def save_model_param_settings_to_file(self):
+        """
+        Save the per-model AI parameter memory to a JSON file for persistence.
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                             'admin_controls', 'model_param_settings.json')
+
+            with open(settings_file_path, 'w', encoding="utf-8") as f:
+                json.dump(self.model_param_settings, f, indent=4, ensure_ascii=False)
+
+            self.log_event("Model parameter settings saved to file")
+            return True, "Model parameter settings saved successfully"
+        except Exception as e:
+            self.log_event(f"Error saving model parameter settings: {str(e)}")
+            return False, f"Error saving model parameter settings: {str(e)}"
+
+    def load_model_param_settings_from_file(self):
+        """
+        Load the per-model AI parameter memory from a JSON file.
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                             'admin_controls', 'model_param_settings.json')
+
+            if not os.path.exists(settings_file_path):
+                self.log_event("Model parameter settings file not found, using defaults")
+                return False, "Model parameter settings file not found, using defaults"
+
+            with open(settings_file_path, 'r') as f:
+                self.model_param_settings = json.load(f)
+
+            self.log_event("Model parameter settings loaded from file")
+            return True, "Model parameter settings loaded successfully"
+        except Exception as e:
+            self.log_event(f"Error loading model parameter settings: {str(e)}")
+            return False, f"Error loading model parameter settings: {str(e)}"
+
+    def get_model_settings(self, model_id):
+        """
+        Get the effective parameter values for a model: registry defaults
+        overridden by anything previously saved for that model.
+
+        Args:
+            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
+
+        Returns:
+            dict: Effective openai_* parameter values for the model
+        """
+        if not is_known_model(model_id):
+            model_id = DEFAULT_MODEL
+
+        values = get_model_defaults(model_id)
+        values.update(self.model_param_settings.get(model_id, {}))
+        return values
+
+    def set_model_settings(self, model_id, values):
+        """
+        Save parameter overrides for a model, make it the active model, and
+        mirror the values into the live game_settings used at generation time.
+
+        Args:
+            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
+            values (dict): openai_* parameter values to store for this model
+
+        Returns:
+            tuple: (success, message)
+        """
+        if not is_known_model(model_id):
+            return False, f"Unknown model '{model_id}'"
+
+        self.model_param_settings[model_id] = dict(values)
+        success, message = self.save_model_param_settings_to_file()
+        if not success:
+            return False, f"Failed to save model settings permanently: {message}"
+
+        # Make this the active model and apply its values immediately.
+        self.game_settings['openai_model'] = model_id
+        for key, value in values.items():
+            self.game_settings[key] = value
+        self.save_game_settings()
+
+        self.log_event(f"Saved AI parameter settings for model '{model_id}'")
+        return True, f"Settings for '{model_id}' saved successfully"
 
     def get_available_themes(self):
         """

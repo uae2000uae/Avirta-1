@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from typing import Dict, Any, Optional
 from contents.admin_controls.secret_loader import get_secret
+from contents.admin_controls.openai_models import is_known_model, get_max_output_tokens, get_model_config
 
 
 PLACEHOLDER_VALUES = {"SET_IN_ENV", "set_in_env", "", None}
@@ -41,6 +42,12 @@ def _parse_stop(value: Any) -> Optional[list]:
 
 def _model_max_completion_tokens(model: str) -> int:
     # Known caps (completion tokens). This does not reflect context window.
+    # Prefer the admin-facing model registry so the cap always matches what's
+    # shown/enforced in the Admin Controls UI.
+    if is_known_model(model):
+        return get_max_output_tokens(model)
+
+    # Fallback for models saved before the registry existed / aliases.
     caps = {
         "gpt-4o": 16384,
         "gpt-4o-mini": 16384,
@@ -48,7 +55,6 @@ def _model_max_completion_tokens(model: str) -> int:
         "gpt-4.1": 16384,
         "gpt-4.1-mini": 16384,
     }
-    # fallbacks for aliases/other
     for k, v in caps.items():
         if model.startswith(k):
             return v
@@ -83,16 +89,17 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
     max_tokens_cfg = int(gs.get("openai_max_tokens", 16384))
     seed = int(gs.get("openai_seed", 0) or 0)
 
-    # Newer/modern optional fields
-    json_mode = _coerce_bool(gs.get("openai_json_mode", True), default=True)
+    # Reasoning-family models (e.g. GPT-5.x) use reasoning_effort/verbosity
+    # instead of temperature/top_p/penalties - the generator picks the right
+    # payload shape based on is_reasoning_model.
+    is_reasoning_model = is_known_model(model) and get_model_config(model).get("family") == "reasoning"
+    reasoning_effort = str(gs.get("openai_reasoning_effort", "medium") or "medium").strip()
+    verbosity = str(gs.get("openai_verbosity", "medium") or "medium").strip()
+
+    # Response format is controlled solely by the "Response Format Override"
+    # field - "" means plain text, "json_object" forces JSON mode.
     response_format_setting = (gs.get("openai_response_format") or "").strip()
-    if response_format_setting:
-        # if explicitly set, build response_format
-        response_format = {"type": response_format_setting}
-    elif json_mode:
-        response_format = {"type": "json_object"}
-    else:
-        response_format = None
+    response_format = {"type": response_format_setting} if response_format_setting else None
 
     stop_list = _parse_stop(gs.get("openai_stop"))
 
@@ -124,6 +131,9 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
         "presence_penalty": presence_penalty,
         "max_output_tokens": max_tokens,
         "seed": seed,
+        "is_reasoning_model": is_reasoning_model,
+        "reasoning_effort": reasoning_effort,
+        "verbosity": verbosity,
         "stop": stop_list,
         "response_format": response_format,
         "request_timeout": request_timeout,

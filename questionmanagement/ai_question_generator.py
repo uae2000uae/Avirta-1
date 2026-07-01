@@ -602,6 +602,8 @@ class AIQuestionGenerator:
         self.top_p = 1.0
         self.frequency_penalty = 0.0
         self.presence_penalty = 0.0
+        self.reasoning_effort = 'medium'  # used only by reasoning-family models (e.g. GPT-5.x)
+        self.verbosity = 'medium'  # used only by reasoning-family models (e.g. GPT-5.x)
         self.max_output_tokens = 2000
         self.seed = 0
         self.stop = None
@@ -618,6 +620,10 @@ class AIQuestionGenerator:
 
     def _get_model_max_completion_tokens(self, model_name: str) -> int:
         """Return max supported completion tokens for known models; safe fallback otherwise."""
+        from contents.admin_controls.openai_models import is_known_model, get_max_output_tokens
+        if is_known_model(model_name):
+            return get_max_output_tokens(model_name)
+
         caps = {
             'gpt-4o': 16384,
             'gpt-4o-mini': 16384,
@@ -629,6 +635,40 @@ class AIQuestionGenerator:
             if str(model_name or '').startswith(key):
                 return val
         return 4096
+
+    def _is_reasoning_model(self) -> bool:
+        """Whether self.model is a reasoning-family model (e.g. GPT-5.x) rather
+        than a standard chat-completions model (e.g. GPT-4o). Reasoning models
+        don't accept temperature/top_p/frequency_penalty/presence_penalty and
+        use max_completion_tokens + reasoning_effort/verbosity instead."""
+        try:
+            from contents.admin_controls.openai_models import is_known_model, get_model_config
+            if is_known_model(self.model):
+                return get_model_config(self.model).get('family') == 'reasoning'
+        except Exception:
+            pass
+        return False
+
+    def _generation_params(self, max_tokens_value, temperature_override=None):
+        """Build the model-appropriate sampling/reasoning + token-limit params
+        for a Chat Completions payload. Centralizes the standard-vs-reasoning
+        split so the three call sites below stay in sync."""
+        if self._is_reasoning_model():
+            params = {"max_completion_tokens": max_tokens_value}
+            if getattr(self, 'reasoning_effort', None):
+                params["reasoning_effort"] = self.reasoning_effort
+            if getattr(self, 'verbosity', None):
+                params["verbosity"] = self.verbosity
+            return params
+
+        temperature = self.temperature if temperature_override is None else temperature_override
+        return {
+            "temperature": min(max(temperature, 0.0), 2.0),
+            "top_p": self.top_p,
+            "frequency_penalty": self.frequency_penalty,
+            "presence_penalty": self.presence_penalty,
+            "max_tokens": max_tokens_value,
+        }
 
     def generate_questions(self, prompt, options=None):
         """
@@ -688,6 +728,9 @@ class AIQuestionGenerator:
         self.top_p = float(options.get('top_p', self.top_p))
         self.frequency_penalty = float(options.get('frequency_penalty', self.frequency_penalty))
         self.presence_penalty = float(options.get('presence_penalty', self.presence_penalty))
+        # Reasoning-model-only controls (ignored for standard chat models)
+        self.reasoning_effort = options.get('reasoning_effort', self.reasoning_effort)
+        self.verbosity = options.get('verbosity', self.verbosity)
         # Tokens / seed / stops
         self.max_output_tokens = int(options.get('max_output_tokens', self.max_output_tokens))
         self.seed = int(options.get('seed', self.seed) or 0)
@@ -1128,9 +1171,7 @@ class AIQuestionGenerator:
             data = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": min(max(self.temperature, 0.0), 2.0),
-                "top_p": self.top_p,
-                "max_tokens": test_max_tokens,
+                **self._generation_params(test_max_tokens),
             }
             if self.response_format:
                 data["response_format"] = self.response_format
@@ -1446,11 +1487,7 @@ class AIQuestionGenerator:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": min(max(self.temperature, 0.0), 2.0),
-            "top_p": self.top_p,
-            "frequency_penalty": self.frequency_penalty,
-            "presence_penalty": self.presence_penalty,
-            "max_tokens": self.max_output_tokens,
+            **self._generation_params(self.max_output_tokens),
         }
         if self.stop:
             data["stop"] = self.stop
@@ -1718,10 +1755,8 @@ Return ONLY valid JSON with this exact structure:
                     {"role": "system", "content": "You are a strict trivia quality-control reviewer. Return JSON only."},
                     {"role": "user", "content": review_prompt},
                 ],
-                # Low temperature for consistent, conservative review.
-                "temperature": min(max(0.2, 0.0), 2.0),
-                "top_p": self.top_p,
-                "max_tokens": self.max_output_tokens,
+                # Low temperature for consistent, conservative review (ignored for reasoning models).
+                **self._generation_params(self.max_output_tokens, temperature_override=0.2),
             }
             if self.response_format:
                 data["response_format"] = self.response_format

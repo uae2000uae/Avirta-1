@@ -34,6 +34,12 @@ from questionmanagement.question_bank import QuestionBank, increment_use_count, 
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches, start_generation_async, get_generation_progress
 from contents.admin_controls.ai_settings import load_ai_settings
+from contents.admin_controls.openai_models import (
+    get_model_params,
+    is_known_model,
+    DEFAULT_MODEL,
+    get_registry_for_frontend,
+)
 
 # --- Global progress tracking for AI validation (server-side, not session-based) ---
 from threading import Lock
@@ -2050,6 +2056,8 @@ def ai_question_generator():
             'top_p': ai_opts.get('top_p'),
             'frequency_penalty': ai_opts.get('frequency_penalty'),
             'presence_penalty': ai_opts.get('presence_penalty'),
+            'reasoning_effort': ai_opts.get('reasoning_effort'),
+            'verbosity': ai_opts.get('verbosity'),
             'stop': ai_opts.get('stop'),
             'response_format': ai_opts.get('response_format'),
             'request_timeout': ai_opts.get('request_timeout'),
@@ -2333,6 +2341,71 @@ def download_exported_file():
 
     return send_file(file_path, as_attachment=True, download_name=file_name)
 
+ADVANCED_OPENAI_FIELDS = [
+    'openai_base_url', 'openai_request_timeout', 'openai_response_format',
+    'openai_organization', 'openai_user', 'openai_stop', 'openai_seed'
+]
+
+
+def _resolve_model_id(form):
+    """Resolve the submitted AI model id, falling back to the default if unknown/blank."""
+    model_id = (form.get('openai_model') or '').strip() or DEFAULT_MODEL
+    if not is_known_model(model_id):
+        model_id = DEFAULT_MODEL
+    return model_id
+
+
+def _collect_model_values(form, model_id):
+    """Parse+clamp the per-model parameter fields (temperature, top_p, etc.) for model_id."""
+    values = {}
+    for param in get_model_params(model_id):
+        key = param['key']
+        if param['type'] == 'checkbox':
+            values[key] = key in form
+            continue
+        if param['type'] == 'select':
+            raw = form.get(key)
+            options = param.get('options') or []
+            values[key] = raw if raw in options else param['default']
+            continue
+        raw = form.get(key)
+        if raw is None or str(raw).strip() == '':
+            values[key] = param['default']
+            continue
+        try:
+            value = int(raw) if key == 'openai_max_tokens' else float(raw)
+        except (TypeError, ValueError):
+            value = param['default']
+        if param.get('min') is not None:
+            value = max(param['min'], value)
+        if param.get('max') is not None:
+            value = min(param['max'], value)
+        values[key] = value
+    return values
+
+
+def _collect_advanced_values(form):
+    """Parse the advanced/global OpenAI fields that apply uniformly across models."""
+    values = {}
+    for fld in ADVANCED_OPENAI_FIELDS:
+        if fld not in form:
+            continue
+        raw = form.get(fld)
+        if fld == 'openai_request_timeout':
+            try:
+                values[fld] = float(raw)
+            except Exception:
+                values[fld] = 60.0
+        elif fld == 'openai_seed':
+            try:
+                values[fld] = int(raw)
+            except Exception:
+                values[fld] = 0
+        else:
+            values[fld] = raw.strip() if isinstance(raw, str) else raw
+    return values
+
+
 @app.route('/get_api_settings/<name>', methods=['GET'])
 def get_api_settings(name):
     """Get saved API settings by name as JSON."""
@@ -2347,6 +2420,17 @@ def get_api_settings(name):
 
     # Return the settings as JSON
     return saved_settings[name]
+
+@app.route('/get_model_settings/<model_id>', methods=['GET'])
+def get_model_settings(model_id):
+    """Get the effective (saved-or-default) parameter values for an AI model as JSON."""
+    if not session.get('admin_authenticated', False):
+        return {'error': 'Not authenticated'}, 401
+
+    if not is_known_model(model_id):
+        return {'error': f'Unknown model {model_id}'}, 404
+
+    return admin_setup.get_model_settings(model_id)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_controls():
@@ -2389,95 +2473,43 @@ def admin_controls():
 
         # Handle API settings update
         elif action == 'update_api_settings' and is_authenticated:
-            # Update OpenAI settings in game_settings
-            for setting_name in list(admin_setup.game_settings.keys()):
-                if setting_name.startswith('openai_') and setting_name in request.form:
-                    value = request.form.get(setting_name)
+            model_id = _resolve_model_id(request.form)
 
-                    # Convert string values to appropriate types
-                    if isinstance(value, str) and value.lower() in ('true','false'):
-                        value = True if value.lower() == 'true' else False
-                    elif isinstance(value, str) and value.replace('.', '', 1).isdigit():
-                        # int if no dot, else float
-                        value = int(value) if value.isdigit() else float(value)
-
-                    # If updating the OpenAI API key, verify the connection
-                    if setting_name == 'openai_api_key':
-                        # If value is blank or placeholder, prefer runtime secret and skip validation
-                        if not value or not str(value).strip() or str(value).strip() == 'SET_IN_ENV':
-                            value = 'SET_IN_ENV'
-                            flash('Using AI_Token from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
-                        else:
-                            # Verify only when a non-placeholder key is provided
-                            from questionmanagement.ai_question_generator import verify_api_connection
-                            cleaned = str(value).strip()
-                            success, message = verify_api_connection(cleaned)
-                            if success:
-                                flash(f'OpenAI API connection successful: {message}')
-                                value = cleaned  # store trimmed value
-                            else:
-                                flash(f'OpenAI API connection failed: {message}', 'error')
-
-                    admin_setup.update_game_setting(setting_name, value)
-
-            # Handle additional OpenAI fields that might not yet exist in game_settings.json
-            extra_openai_fields = [
-                'openai_base_url', 'openai_request_timeout', 'openai_response_format',
-                'openai_json_mode', 'openai_organization', 'openai_user', 'openai_stop'
-            ]
-            for fld in extra_openai_fields:
-                if fld in request.form:
-                    raw = request.form.get(fld)
-                    # Coerce types
-                    if fld == 'openai_request_timeout':
-                        try:
-                            val = float(raw)
-                        except Exception:
-                            val = 60.0
-                    elif fld == 'openai_json_mode':
-                        # Checkbox: present means true
-                        val = True if request.form.get('openai_json_mode') else False
-                    else:
-                        val = raw.strip() if isinstance(raw, str) else raw
-                    admin_setup.update_game_setting(fld, val)
-
-            # Create a temporary API settings object to save (excluding any tokens/secrets)
-            api_settings = {
-                'openai_api_key': admin_setup.game_settings.get('openai_api_key', ''),
-                'openai_model': admin_setup.game_settings.get('openai_model', 'gpt-4o-mini'),
-                'openai_temperature': admin_setup.game_settings.get('openai_temperature', 0.55),
-                'openai_top_p': admin_setup.game_settings.get('openai_top_p', 1.0),
-                'openai_frequency_penalty': admin_setup.game_settings.get('openai_frequency_penalty', 0.3),
-                'openai_presence_penalty': admin_setup.game_settings.get('openai_presence_penalty', 0.2),
-                'openai_max_tokens': admin_setup.game_settings.get('openai_max_tokens', 16384),
-                'openai_seed': admin_setup.game_settings.get('openai_seed', 0),
-                'openai_base_url': admin_setup.game_settings.get('openai_base_url', 'https://api.openai.com/v1'),
-                'openai_request_timeout': admin_setup.game_settings.get('openai_request_timeout', 60),
-                'openai_response_format': admin_setup.game_settings.get('openai_response_format', ''),
-                'openai_json_mode': admin_setup.game_settings.get('openai_json_mode', True),
-                'openai_organization': admin_setup.game_settings.get('openai_organization', ''),
-                'openai_user': admin_setup.game_settings.get('openai_user', ''),
-                'openai_stop': admin_setup.game_settings.get('openai_stop', '')
-            }
-
-            # Update the first saved API settings or create a new one if none exist
-            saved_settings = admin_setup.get_saved_api_settings()
-            if saved_settings:
-                first_setting_name = list(saved_settings.keys())[0]
-                admin_setup.saved_api_settings[first_setting_name] = api_settings
+            # The API key is global (not per-model); verify it if a real key was provided
+            api_key_value = request.form.get('openai_api_key')
+            if not api_key_value or not str(api_key_value).strip() or str(api_key_value).strip() == 'SET_IN_ENV':
+                admin_setup.update_game_setting('openai_api_key', 'SET_IN_ENV')
+                flash('Using AI_Token from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
             else:
-                admin_setup.saved_api_settings['Default API Settings'] = api_settings
+                from questionmanagement.ai_question_generator import verify_api_connection
+                cleaned = str(api_key_value).strip()
+                success, message = verify_api_connection(cleaned)
+                if success:
+                    flash(f'OpenAI API connection successful: {message}')
+                    admin_setup.update_game_setting('openai_api_key', cleaned)
+                else:
+                    flash(f'OpenAI API connection failed: {message}', 'error')
 
-            # Save to file
-            admin_setup.save_api_settings_to_file()
+            model_values = _collect_model_values(request.form, model_id)
+            success, message = admin_setup.set_model_settings(model_id, model_values)
+            if success:
+                flash(message)
+            else:
+                flash(message, 'error')
 
-            flash('API settings updated successfully.')
+            advanced_values = _collect_advanced_values(request.form)
+            for fld, val in advanced_values.items():
+                admin_setup.update_game_setting(fld, val)
 
-        # Handle save API settings
+        # Handle "Save Current Settings" (save the on-screen values as a new named preset)
         elif action == 'save_api_settings' and is_authenticated:
-            settings_name = request.form.get('settings_name')
+            settings_name = (request.form.get('settings_name') or '').strip()
             if settings_name:
-                success, message = admin_setup.save_api_settings(settings_name)
+                model_id = _resolve_model_id(request.form)
+                values = {'openai_model': model_id}
+                values.update(_collect_model_values(request.form, model_id))
+                values.update(_collect_advanced_values(request.form))
+                success, message = admin_setup.save_api_settings(settings_name, values=values)
                 if success:
                     flash(message)
                 else:
@@ -2487,17 +2519,21 @@ def admin_controls():
 
             return redirect(url_for('admin_controls'))
 
-        # Handle load API settings
-        elif action == 'load_api_settings' and is_authenticated:
-            settings_name = request.form.get('saved_settings')
+        # Handle "Update" on a selected saved preset (re-save the on-screen values onto it)
+        elif action == 'update_saved_preset' and is_authenticated:
+            settings_name = (request.form.get('saved_settings') or '').strip()
             if settings_name:
-                success, message = admin_setup.load_api_settings(settings_name)
+                model_id = _resolve_model_id(request.form)
+                values = {'openai_model': model_id}
+                values.update(_collect_model_values(request.form, model_id))
+                values.update(_collect_advanced_values(request.form))
+                success, message = admin_setup.save_api_settings(settings_name, values=values)
                 if success:
                     flash(message)
                 else:
                     flash(message, 'error')
             else:
-                flash('Please select a saved setting', 'error')
+                flash('Please select a saved setting to update', 'error')
 
             return redirect(url_for('admin_controls'))
 
@@ -2550,11 +2586,18 @@ def admin_controls():
                 login_error = 'Invalid username or password.'
                 is_authenticated = False
 
+    current_model = admin_setup.game_settings.get('openai_model', DEFAULT_MODEL)
+    if not is_known_model(current_model):
+        current_model = DEFAULT_MODEL
+
     return render_template(
         'admin_controls.html',
         is_authenticated=is_authenticated,
         login_error=login_error,
-        admin_setup=admin_setup
+        admin_setup=admin_setup,
+        openai_model_registry=get_registry_for_frontend(),
+        current_openai_model=current_model,
+        current_model_settings=admin_setup.get_model_settings(current_model)
     )
 
 

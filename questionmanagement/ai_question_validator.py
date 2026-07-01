@@ -12,6 +12,7 @@ import glob
 import requests
 from datetime import datetime
 from questionmanagement.question_bank import question_bank
+from contents.admin_controls.openai_models import is_known_model, get_max_output_tokens, get_model_config
 
 
 class AIQuestionValidator:
@@ -61,6 +62,8 @@ class AIQuestionValidator:
             self.top_p = gs.get('openai_top_p', 1.0)
             self.frequency_penalty = gs.get('openai_frequency_penalty', 0.0)
             self.presence_penalty = gs.get('openai_presence_penalty', 0.0)
+            self.reasoning_effort = gs.get('openai_reasoning_effort', 'medium')
+            self.verbosity = gs.get('openai_verbosity', 'medium')
             self.response_format = gs.get('openai_response_format', None)
             # Support legacy boolean json mode flag
             if not self.response_format and gs.get('openai_json_mode', False):
@@ -71,9 +74,10 @@ class AIQuestionValidator:
             self.organization = gs.get('openai_organization', None)
             self.user = gs.get('openai_user', None)
             self.request_timeout = gs.get('openai_request_timeout', 60)
-            # Limit max_output_tokens to 16384 to avoid API errors
+            # Limit max_output_tokens to the selected model's real cap
             configured_tokens = gs.get('openai_max_tokens', gs.get('openai_max_output_tokens', 3000))
-            self.max_output_tokens = min(configured_tokens, 16384)
+            cap = get_max_output_tokens(self.model) if is_known_model(self.model) else 16384
+            self.max_output_tokens = min(configured_tokens, cap)
             # Seed (optional determinism)
             self.seed = gs.get('openai_seed', 0)
         else:
@@ -84,6 +88,8 @@ class AIQuestionValidator:
             self.top_p = 1.0
             self.frequency_penalty = 0.0
             self.presence_penalty = 0.0
+            self.reasoning_effort = 'medium'
+            self.verbosity = 'medium'
             self.response_format = None
             self.base_url = 'https://api.openai.com/v1'
             self.organization = None
@@ -97,6 +103,33 @@ class AIQuestionValidator:
 
         # Internal helper: redact secrets in logs
         self._secret_prefix = (self.api_key or '').strip()[:5]
+
+    def _is_reasoning_model(self) -> bool:
+        """Whether self.model is a reasoning-family model (e.g. GPT-5.x) rather
+        than a standard chat-completions model (e.g. GPT-4o). Reasoning models
+        don't accept temperature/top_p/frequency_penalty/presence_penalty."""
+        if is_known_model(self.model):
+            return get_model_config(self.model).get('family') == 'reasoning'
+        return False
+
+    def _generation_params(self, max_tokens_value, temperature_override=None):
+        """Build the model-appropriate sampling/reasoning + token-limit params for a request payload."""
+        if self._is_reasoning_model():
+            params = {"max_completion_tokens": max_tokens_value}
+            if getattr(self, 'reasoning_effort', None):
+                params["reasoning_effort"] = self.reasoning_effort
+            if getattr(self, 'verbosity', None):
+                params["verbosity"] = self.verbosity
+            return params
+
+        temperature = self.temperature if temperature_override is None else temperature_override
+        return {
+            "temperature": min(max(temperature, 0.0), 2.0),
+            "top_p": self.top_p,
+            "frequency_penalty": self.frequency_penalty,
+            "presence_penalty": self.presence_penalty,
+            "max_tokens": max_tokens_value,
+        }
 
     def validate_category_questions(self, category_id, api_key=None, options=None):
         """
@@ -127,6 +160,8 @@ class AIQuestionValidator:
             self.top_p = gs.get('openai_top_p', 1.0)
             self.frequency_penalty = gs.get('openai_frequency_penalty', 0.0)
             self.presence_penalty = gs.get('openai_presence_penalty', 0.0)
+            self.reasoning_effort = gs.get('openai_reasoning_effort', self.reasoning_effort)
+            self.verbosity = gs.get('openai_verbosity', self.verbosity)
             self.response_format = gs.get('openai_response_format', self.response_format)
             if not self.response_format and gs.get('openai_json_mode', False):
                 self.response_format = {"type": "json_object"}
@@ -136,9 +171,10 @@ class AIQuestionValidator:
             self.organization = gs.get('openai_organization', self.organization)
             self.user = gs.get('openai_user', self.user)
             self.request_timeout = gs.get('openai_request_timeout', self.request_timeout)
-            # Limit max_output_tokens to 16384 to avoid API errors
+            # Limit max_output_tokens to the selected model's real cap
             configured_tokens = gs.get('openai_max_tokens', gs.get('openai_max_output_tokens', 3000))
-            self.max_output_tokens = min(configured_tokens, 16384)
+            cap = get_max_output_tokens(self.model) if is_known_model(self.model) else 16384
+            self.max_output_tokens = min(configured_tokens, cap)
             self.seed = gs.get('openai_seed', self.seed)
 
         # Check if we have a valid API key
@@ -214,9 +250,7 @@ class AIQuestionValidator:
             data = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": min(max(self.temperature, 0.0), 2.0),
-                "top_p": self.top_p,
-                "max_tokens": 20 if wants_json else 50,
+                **self._generation_params(20 if wants_json else 50),
             }
             if self.response_format:
                 data["response_format"] = self.response_format
@@ -336,11 +370,7 @@ Original Question {question.get('id', 'unknown')}:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": min(max(self.temperature, 0.0), 2.0),
-                    "top_p": self.top_p,
-                    "frequency_penalty": self.frequency_penalty,
-                    "presence_penalty": self.presence_penalty,
-                    "max_tokens": self.max_output_tokens
+                    **self._generation_params(self.max_output_tokens),
                 }
                 if self.response_format:
                     data["response_format"] = self.response_format
@@ -537,11 +567,7 @@ Explanation: {question.get('explanation', '')}
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": min(max(self.temperature, 0.0), 2.0),
-                    "top_p": self.top_p,
-                    "frequency_penalty": self.frequency_penalty,
-                    "presence_penalty": self.presence_penalty,
-                    "max_tokens": self.max_output_tokens
+                    **self._generation_params(self.max_output_tokens),
                 }
                 if self.response_format:
                     data["response_format"] = self.response_format
