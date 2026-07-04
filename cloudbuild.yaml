@@ -19,6 +19,17 @@ steps:
         "--platform=managed",
         "--allow-unauthenticated",
         "--port=8080",
+        # STOPGAP: game state and question/report data live in this instance's
+        # memory and local filesystem, which are not shared across instances.
+        # Pin to a single always-on instance so multiplayer state stays
+        # consistent. Remove these once state is moved to Firestore/Redis.
+        "--min-instances=1",
+        "--max-instances=1",
+        # Route a given client back to the same instance (belt-and-suspenders).
+        "--session-affinity",
+        # To sign session cookies with a stable key, create a "SECRET_KEY"
+        # secret in Secret Manager and append it below, e.g.:
+        #   SECRET_KEY=SECRET_KEY:latest
         "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
       ]
 

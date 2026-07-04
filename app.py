@@ -12,6 +12,7 @@ import tempfile
 import uuid
 import random
 import json
+import secrets
 from datetime import datetime
 
 # Add the current directory to the Python path
@@ -61,7 +62,111 @@ PROCESSED_RESULTS = None
 
 # Create Flask application
 app = Flask(__name__, static_url_path='/static', template_folder="templates")
-app.secret_key = os.environ.get('486b7dc36bcfad6008626f39706f8c77', 'Pud6FwJ5U/maGx3uS36F+Mkxz/FX2W1SxeDNhhtZ')
+
+# Secret key for signing session cookies.
+# Resolution order: SECRET_KEY env var / Google Secret Manager (via get_secret),
+# then FLASK_SECRET_KEY env var, then an ephemeral random key as a last resort.
+# Never commit a real key to source. In production, set a "SECRET_KEY" secret
+# (see cloudbuild.yaml --set-secrets) so sessions survive restarts.
+try:
+    from contents.admin_controls.secret_loader import get_secret as _get_secret
+    _resolved_secret_key = _get_secret('SECRET_KEY')
+except Exception:
+    _resolved_secret_key = None
+
+_resolved_secret_key = _resolved_secret_key or os.environ.get('FLASK_SECRET_KEY')
+
+if not _resolved_secret_key:
+    _resolved_secret_key = secrets.token_hex(32)
+    print(
+        "WARNING: No SECRET_KEY configured; using an ephemeral random key. "
+        "Sessions will reset on restart and will not be shared across instances. "
+        "Set a SECRET_KEY secret/env var for production."
+    )
+
+app.secret_key = _resolved_secret_key
+
+# Harden session cookies.
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    # Cloud Run serves over HTTPS; only send the cookie over secure connections
+    # in production. Allow HTTP locally when FLASK_DEBUG is enabled.
+    SESSION_COOKIE_SECURE=os.environ.get('FLASK_DEBUG', '0') != '1',
+)
+
+
+@app.after_request
+def set_security_headers(response):
+    """Add baseline security headers to every response (dependency-free)."""
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    # HSTS is safe here because the public Cloud Run URL is always HTTPS.
+    response.headers.setdefault(
+        'Strict-Transport-Security', 'max-age=31536000; includeSubDomains'
+    )
+    return response
+
+
+# --- CSRF protection (dependency-free, session-based) ---
+import hmac
+
+_CSRF_SESSION_KEY = '_csrf_token'
+_CSRF_SAFE_METHODS = {'GET', 'HEAD', 'OPTIONS', 'TRACE'}
+
+
+def _get_or_create_csrf_token():
+    """Return the session CSRF token, creating one if needed."""
+    token = session.get(_CSRF_SESSION_KEY)
+    if not token:
+        token = secrets.token_hex(32)
+        session[_CSRF_SESSION_KEY] = token
+    return token
+
+
+def csrf_exempt(view):
+    """Decorator to exempt a specific view function from CSRF checks."""
+    view._csrf_exempt = True
+    return view
+
+
+@app.context_processor
+def _inject_csrf_token():
+    # Exposes {{ csrf_token }} to every template and ensures the token exists.
+    return {'csrf_token': _get_or_create_csrf_token()}
+
+
+def _extract_submitted_csrf_token():
+    # Accept the token from a form field or from common request headers
+    # (used by fetch/XHR requests that send JSON or FormData bodies).
+    token = request.form.get('csrf_token')
+    if not token:
+        token = (
+            request.headers.get('X-CSRFToken')
+            or request.headers.get('X-CSRF-Token')
+            or request.headers.get('X-Csrf-Token')
+        )
+    return token
+
+
+@app.before_request
+def _csrf_protect():
+    """Reject state-changing requests that lack a valid CSRF token."""
+    if request.method in _CSRF_SAFE_METHODS:
+        return None
+    view = app.view_functions.get(request.endpoint)
+    if view is not None and getattr(view, '_csrf_exempt', False):
+        return None
+    expected = session.get(_CSRF_SESSION_KEY)
+    submitted = _extract_submitted_csrf_token()
+    if (
+        not expected
+        or not submitted
+        or not hmac.compare_digest(str(expected), str(submitted))
+    ):
+        return jsonify({'error': 'Invalid or missing CSRF token'}), 400
+    return None
 
 
 # Add template filter to detect Arabic text
