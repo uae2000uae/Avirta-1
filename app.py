@@ -664,14 +664,16 @@ def end_game(room_id):
         'message': f'The game has been ended by the host ({player_name})'
     })
 
-    # Best-effort: push amended question files to GitHub asynchronously
+    # Best-effort: push this instance's usage-count ledger to GitHub. Use counts
+    # are the only thing that changes during play; question content is pushed only
+    # by the admin edit routes.
     try:
-        from contents.admin_controls.github_integration import push_all_amended_questions_async
+        from contents.admin_controls.github_integration import push_usage_ledger_async
         # Fire-and-forget; do not block the request lifecycle
-        push_all_amended_questions_async(detach=True)
+        push_usage_ledger_async(detach=True)
     except Exception as e:
         try:
-            current_app.logger.warning(f"GitHub auto-push skipped: {e}")
+            current_app.logger.warning(f"GitHub usage-ledger push skipped: {e}")
         except Exception:
             pass
 
@@ -1513,14 +1515,15 @@ def reset_game():
             'message': f'The game has been ended by the host ({player_name}) to start a new game'
         })
 
-        # Best-effort: push amended question files to GitHub asynchronously
+        # Best-effort: push this instance's usage-count ledger to GitHub (use
+        # counts are the only thing that changes during play).
         try:
-            from contents.admin_controls.github_integration import push_all_amended_questions_async
+            from contents.admin_controls.github_integration import push_usage_ledger_async
             # Fire-and-forget; do not block the request lifecycle
-            push_all_amended_questions_async(detach=True)
+            push_usage_ledger_async(detach=True)
         except Exception as e:
             try:
-                current_app.logger.warning(f"GitHub auto-push in reset_game skipped: {e}")
+                current_app.logger.warning(f"GitHub usage-ledger push in reset_game skipped: {e}")
             except Exception:
                 pass
 

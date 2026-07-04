@@ -522,6 +522,7 @@ This document defines the core specifications, design guidelines, and system cod
   * `push_all_amended_questions_async(commit_message=None, detach=True)` — push all `contents/questions/*.json` via the API. Fire-and-forget when `detach=True`.
   * `push_files_async(rel_paths, commit_message=None, detach=True)` — push an explicit list of files.
   * `push_reports_async(commit_message=None, detach=True, include_questions=True)` — push all `questionmanagement/reported_questions/*.json` (plus the question files carrying the `reported` flag).
+  * `push_usage_ledger_async(commit_message=None, detach=True)` — push ONLY this instance's usage-count ledger (`datastore/usage/usage_<INSTANCE_ID>.json`). Conflict-free; used by end/reset game.
   * `push_to_github(commit_message=None, detach=False)` — one-call convenience helper.
   * `GitHubIntegration` — client class; always check `.token` before pushing.
   * `get_push_progress()` — thread-safe progress dict used for status polling.
@@ -534,8 +535,8 @@ This document defines the core specifications, design guidelines, and system cod
 
   | Type | Route | Function | When |
   |------|-------|----------|------|
-  | Auto | `/end_game/<room_id>` | `end_game` | a host ends a game |
-  | Auto | `/reset_game` | `reset_game` | starting a new game |
+  | Auto | `/end_game/<room_id>` | `end_game` | a host ends a game — pushes the **usage-count ledger only** (`push_usage_ledger_async`) |
+  | Auto | `/reset_game` | `reset_game` | starting a new game — pushes the **usage-count ledger only** (`push_usage_ledger_async`) |
   | Auto | `/edit_category/<id>` | `edit_category` | category ID changed |
   | Auto | `/edit_category/<id>` | `edit_category` | category updated |
   | Auto | `/question_bank/delete/<id>` | `delete_question` | a question deleted |
@@ -559,6 +560,7 @@ This document defines the core specifications, design guidelines, and system cod
   4. Question-sync and full-source pushes must keep separate progress state and separate status endpoints.
   5. This Trigger Map must be updated whenever a call site is added or removed.
   6. Every commit this module makes carries a `[skip ci]` token so question-data syncs never trigger a Cloud Run redeploy — defense-in-depth alongside the Cloud Build `ignoredFiles` filter for `contents/questions/**`. The native full-source push (`git_push_helper.py`) intentionally omits it so code pushes still deploy.
+  7. `use_count` is NOT stored via whole-file replace. It lives in per-instance grow-only ledgers under `datastore/usage/` (`usage_<INSTANCE_ID>.json`); each instance writes only its own file (conflict-free), and effective `use_count` = file base + sum of all ledgers (applied in memory by `QuestionBank.load_questions`). Increments go through `usage_ledger.increment()`; question files no longer churn on play. `datastore/usage/**` is in the trigger `ignoredFiles`. An optional single-writer `usage_ledger.rollup_into_question_files()` folds ledgers back into the question files and compacts them.
 * **Rationale**:
   * The token-based REST API works on Cloud Run, where the `git` binary and credentials are unavailable.
   * A single, independent module keeps the integration testable and callable from anywhere in the app.

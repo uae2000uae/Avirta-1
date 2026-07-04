@@ -404,6 +404,26 @@ def push_reports_async(commit_message: Optional[str] = None, detach: bool = True
     return push_files_async(files, commit_message=commit_message or "Update reported questions",
                             detach=detach)
 
+def push_usage_ledger_async(commit_message: Optional[str] = None,
+                            detach: bool = True) -> Tuple[bool, str]:
+    """Push ONLY this instance's usage-count ledger to GitHub.
+
+    Each running instance owns a distinct ledger file
+    (``datastore/usage/usage_<INSTANCE_ID>.json``), so pushing just this
+    instance's file is conflict-free — no other session ever writes it, and no
+    increment can be lost. Wired to end-game / reset-game, since use counts are
+    the only thing that changes during play. Question files are NOT pushed here.
+    """
+    try:
+        from questionmanagement.usage_ledger import this_ledger_relpath, this_ledger_path
+    except Exception as e:  # pragma: no cover
+        return False, f"usage_ledger unavailable: {e}"
+    if not os.path.isfile(this_ledger_path()):
+        return True, "No usage ledger to push yet."
+    return push_files_async([this_ledger_relpath()],
+                            commit_message=commit_message or "Update usage counts",
+                            detach=detach)
+
 # Convenient alias so it can be triggered from anywhere with an obvious name.
 def push_to_github(commit_message: Optional[str] = None,
                    detach: bool = False) -> Tuple[bool, str]:

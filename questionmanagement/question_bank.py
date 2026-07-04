@@ -282,6 +282,20 @@ class QuestionBank:
                     except (json.JSONDecodeError, IOError) as e:
                         print(f"Error loading questions from {filename}: {e}")
 
+        # Apply usage-ledger totals on top of the base counts stored in the
+        # question files (effective use_count = file base + sum of all
+        # per-instance ledgers). The files themselves are left untouched.
+        try:
+            from questionmanagement.usage_ledger import get_totals
+            _totals = get_totals()
+            if _totals:
+                for _qid, _q in self.questions.items():
+                    _add = _totals.get(_qid)
+                    if _add:
+                        _q["use_count"] = int(_q.get("use_count", 0) or 0) + int(_add)
+        except Exception as _e:
+            print(f"usage ledger overlay skipped: {_e}")
+
         return count
 
     def _generate_question_id(self):
@@ -360,23 +374,28 @@ class QuestionBank:
         if question_id not in self.questions:
             return False
 
-        # Get the question
         question = self.questions[question_id]
 
-        # Initialize use_count if it doesn't exist
-        if "use_count" not in question:
-            question["use_count"] = 0
-
-        # Increment the use_count
-        question["use_count"] += 1
-
-        # Update the last modified timestamp
-        question["updated_at"] = datetime.now().isoformat()
-
-        # Save the updated question
-        self._save_question(question_id, question)
-
-        return True
+        # Record the use in THIS instance's usage ledger instead of rewriting the
+        # question file. Keeps use_count mergeable across sessions (each instance
+        # owns its own ledger) and stops the category files from churning on every
+        # play. Effective use_count = file base + sum of ledgers (applied on load).
+        try:
+            from questionmanagement.usage_ledger import increment as _ledger_increment
+            _ledger_increment(question_id, 1)
+            # Reflect the increment in the in-memory effective count for live
+            # question selection (NOT written back to the question file).
+            question["use_count"] = int(question.get("use_count", 0) or 0) + 1
+            return True
+        except Exception as e:
+            # Fallback to the legacy inline behavior so a use is never lost.
+            print(f"usage ledger unavailable, writing use_count inline: {e}")
+            if "use_count" not in question:
+                question["use_count"] = 0
+            question["use_count"] += 1
+            question["updated_at"] = datetime.now().isoformat()
+            self._save_question(question_id, question)
+            return True
 
 # Create a singleton instance
 question_bank = QuestionBank()

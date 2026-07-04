@@ -12,7 +12,7 @@ set -e
 
 REGION="${REGION:-us-central1}"
 TRIGGER="$1"
-PATTERNS="${2:-contents/questions/**,questionmanagement/reported_questions/**}"
+PATTERNS="${2:-contents/questions/**,questionmanagement/reported_questions/**,datastore/usage/**}"
 
 if [ -z "$TRIGGER" ]; then
   echo "Usage: ./configure-deploy-trigger.sh <TRIGGER_NAME> [comma,separated,globs]"
