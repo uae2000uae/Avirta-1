@@ -18,7 +18,7 @@ from questionmanagement.question_bank import question_bank
 
 # ------------------------- Generation progress tracking -------------------------
 # Thread-safe progress slot the AI Generator UI polls while questions are being
-# generated. Mirrors the polling pattern used by github_integration.py. This is a
+# generated. Mirrors the polling pattern used by git_push_helper.py. This is a
 # single-admin tool, so a single module-level slot is sufficient.
 _gen_progress_lock = threading.Lock()
 _gen_progress = {

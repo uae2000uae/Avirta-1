@@ -399,7 +399,7 @@
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
                         <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
                         <br><br><!-- Upload to GitHub button -->
-                        <form id="github-sync-form" action="{{ url_for('admin_github_sync') }}" method="POST" class="form-group clear">
+                        <form id="git-push-form" action="{{ url_for('admin_github_sync') }}" method="POST" class="form-group clear">
                             <button type="submit" class="success-button" title="Upload question files to GitHub in background">Upload Changes to GitHub</button>
                         </form>
 
@@ -409,26 +409,26 @@
                         </form>
 
                         <!-- GitHub Sync Progress Modal -->
-                        <div id="github-sync-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
+                        <div id="git-push-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
                             <div class="modal-container" style="background-color: var(--bg-color, #ffffff); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 500px; max-width: 90%; padding: 20px; display: flex; flex-direction: column; color: var(--text-color, #333);">
                                 <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color-light); padding-bottom: 10px;">
-                                    <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--primary-color);">GitHub Sync Progress</h3>
-                                    <button type="button" id="close-sync-modal-btn" class="modal-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color-light, #666); display: none;">&times;</button>
+                                    <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--primary-color);">Git Push Progress</h3>
+                                    <button type="button" id="close-push-modal-btn" class="modal-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color-light, #666); display: none;">&times;</button>
                                 </div>
                                 <div class="modal-body" style="padding: 10px 0;">
-                                    <p id="sync-status-text" style="font-weight: bold; margin-bottom: 10px; text-align: left;">Initialising synchronization...</p>
+                                    <p id="push-status-text" style="font-weight: bold; margin-bottom: 10px; text-align: left;">Initialising synchronization...</p>
                                     <div class="progress-bar-container" style="width: 100%; background-color: var(--border-color-light, #eee); border-radius: 10px; height: 16px; overflow: hidden; margin-top: 10px; border: 1px solid var(--border-color, #ddd);">
-                                        <div id="sync-progress-bar" class="progress-bar" style="background-color: var(--success-color, #28a745); height: 100%; transition: width 0.3s ease; width: 0%;"></div>
+                                        <div id="push-progress-bar" class="progress-bar" style="background-color: var(--success-color, #28a745); height: 100%; transition: width 0.3s ease; width: 0%;"></div>
                                     </div>
-                                    <div id="sync-progress-percent" style="text-align: right; font-weight: bold; margin-top: 5px; font-size: 14px; color: var(--text-color);">0%</div>
-                                    <p id="sync-current-file-text" style="font-style: italic; margin-top: 10px; font-size: 13px; color: var(--text-color-light); word-break: break-all; min-height: 18px; text-align: left;"></p>
+                                    <div id="push-progress-percent" style="text-align: right; font-weight: bold; margin-top: 5px; font-size: 14px; color: var(--text-color);">0%</div>
+                                    <p id="push-message-text" style="font-style: italic; margin-top: 10px; font-size: 13px; color: var(--text-color-light); word-break: break-all; min-height: 18px; text-align: left;"></p>
                                     
-                                    <div class="sync-logs-container" style="margin-top: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; height: 150px; overflow-y: auto; background: #fafafa; font-family: monospace; font-size: 12px; text-align: left;">
-                                        <div id="sync-logs-list" style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0;"></div>
+                                    <div class="push-logs-container" style="margin-top: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; height: 150px; overflow-y: auto; background: #fafafa; font-family: monospace; font-size: 12px; text-align: left;">
+                                        <div id="push-logs-list" style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0;"></div>
                                     </div>
                                 </div>
-                                <div class="modal-footer" id="sync-modal-footer" style="display: none; justify-content: flex-end; margin-top: 15px;">
-                                    <button type="button" id="ok-sync-modal-btn" class="button">Close</button>
+                                <div class="modal-footer" id="push-modal-footer" style="display: none; justify-content: flex-end; margin-top: 15px;">
+                                    <button type="button" id="ok-push-modal-btn" class="button">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -1056,153 +1056,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // GitHub Sync Progress Interceptor
-    const githubSyncForm = document.getElementById('github-sync-form');
-    const syncModal = document.getElementById('github-sync-modal');
-    const syncProgressBar = document.getElementById('sync-progress-bar');
-    const syncProgressPercent = document.getElementById('sync-progress-percent');
-    const syncStatusText = document.getElementById('sync-status-text');
-    const syncCurrentFileText = document.getElementById('sync-current-file-text');
-    const syncLogsList = document.getElementById('sync-logs-list');
-    const closeSyncModalBtn = document.getElementById('close-sync-modal-btn');
-    const okSyncModalBtn = document.getElementById('ok-sync-modal-btn');
-    const syncModalFooter = document.getElementById('sync-modal-footer');
-
-    if (githubSyncForm) {
-        githubSyncForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Stop normal form post
-
-            // Reset Modal elements
-            syncProgressBar.style.width = '0%';
-            syncProgressPercent.textContent = '0%';
-            syncStatusText.textContent = 'Preparing GitHub repository upload...';
-            syncCurrentFileText.textContent = '';
-            syncLogsList.innerHTML = '';
-            closeSyncModalBtn.style.display = 'none';
-            syncModalFooter.style.display = 'none';
-
-            // Show modal
-            syncModal.style.display = 'flex';
-
-            // Log entry helper
-            function addLog(text, isError=false, isSuccess=false) {
-                const div = document.createElement('div');
-                div.className = 'sync-log-entry';
-                div.style.lineHeight = '1.4';
-                div.style.margin = '0';
-                div.style.padding = '2px 0';
-                if (isError) {
-                    div.style.color = 'var(--error-color, #dc3545)';
-                    div.style.fontWeight = 'bold';
-                } else if (isSuccess) {
-                    div.style.color = 'var(--success-color, #28a745)';
-                    div.style.fontWeight = 'bold';
-                } else {
-                    div.style.color = 'var(--text-color, #333)';
-                }
-                div.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
-                syncLogsList.appendChild(div);
-                // scroll to bottom
-                const logsContainer = document.querySelector('.sync-logs-container');
-                if (logsContainer) {
-                    logsContainer.scrollTop = logsContainer.scrollHeight;
-                }
-            }
-
-            addLog('Sending start signal to server...');
-
-            // Trigger sync via fetch POST with XMLHttpRequest header
-            fetch(githubSyncForm.action, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    addLog('Upload thread spawned successfully on server.');
-                    // Start polling
-                    pollStatus();
-                } else {
-                    addLog(`Server rejected upload request: ${data.message}`, true);
-                    syncStatusText.textContent = 'Failed to start upload.';
-                    closeSyncModalBtn.style.display = 'block';
-                    syncModalFooter.style.display = 'flex';
-                }
-            })
-            .catch(err => {
-                addLog(`Network error starting upload: ${err}`, true);
-                syncStatusText.textContent = 'Connection error.';
-                closeSyncModalBtn.style.display = 'block';
-                syncModalFooter.style.display = 'flex';
-            });
-
-            let pollInterval;
-            let lastProcessed = -1;
-            const processedSet = new Set();
-
-            function pollStatus() {
-                pollInterval = setInterval(() => {
-                    fetch('/admin/github_sync_status')
-                    .then(res => res.json())
-                    .then(status => {
-                        // Update progress bar
-                        const total = status.total || 0;
-                        const current = status.current || 0;
-                        const current_file = status.current_file || '';
-                        const state = status.status;
-                        const msg = status.message || '';
-                        const errors = status.errors || [];
-
-                        let percent = 0;
-                        if (total > 0) {
-                            percent = Math.round((current / total) * 100);
-                        }
-                        syncProgressBar.style.width = `${percent}%`;
-                        syncProgressPercent.textContent = `${percent}% (${current}/${total})`;
-
-                        if (current_file) {
-                            syncCurrentFileText.textContent = `Processing file: ${current_file}`;
-                            if (!processedSet.has(current_file)) {
-                                processedSet.add(current_file);
-                                addLog(`Uploading file to repo: ${current_file}`);
-                            }
-                        }
-
-                        // Log errors dynamically as they appear
-                        if (errors && errors.length > 0) {
-                            for (let i = lastProcessed + 1; i < errors.length; i++) {
-                                addLog(`ERROR: ${errors[i]}`, true);
-                            }
-                            lastProcessed = errors.length - 1;
-                        }
-
-                        if (state === 'running') {
-                           syncStatusText.textContent = msg || 'Uploading files to GitHub...';
-                        } else if (state === 'success') {
-                           clearInterval(pollInterval);
-                           syncProgressBar.style.width = '100%';
-                           syncProgressPercent.textContent = '100%';
-                           syncStatusText.textContent = 'Sync completed successfully!';
-                           addLog('SUCCESS: All files synchronized successfully!', false, true);
-                           closeSyncModalBtn.style.display = 'block';
-                           syncModalFooter.style.display = 'flex';
-                        } else if (state === 'failed') {
-                           clearInterval(pollInterval);
-                           syncStatusText.textContent = 'Sync failed.';
-                           addLog(`FAILURE: ${msg}`, true);
-                           closeSyncModalBtn.style.display = 'block';
-                           syncModalFooter.style.display = 'flex';
-                        }
-                    })
-                    .catch(err => {
-                        addLog(`Connection error during polling: ${err}`, true);
-                    });
-                }, 1000);
-            }
-        });
-    }
-
     // Git Push Form Handler
     const gitPushForm = document.getElementById('git-push-form');
     const gitPushModal = document.getElementById('git-push-modal');
