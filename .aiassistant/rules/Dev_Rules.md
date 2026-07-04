@@ -521,6 +521,7 @@ This document defines the core specifications, design guidelines, and system cod
 * **Public interface** (import from `contents.admin_controls.github_integration`):
   * `push_all_amended_questions_async(commit_message=None, detach=True)` — push all `contents/questions/*.json` via the API. Fire-and-forget when `detach=True`.
   * `push_files_async(rel_paths, commit_message=None, detach=True)` — push an explicit list of files.
+  * `push_reports_async(commit_message=None, detach=True, include_questions=True)` — push all `questionmanagement/reported_questions/*.json` (plus the question files carrying the `reported` flag).
   * `push_to_github(commit_message=None, detach=False)` — one-call convenience helper.
   * `GitHubIntegration` — client class; always check `.token` before pushing.
   * `get_push_progress()` — thread-safe progress dict used for status polling.
@@ -543,6 +544,7 @@ This document defines the core specifications, design guidelines, and system cod
   | Auto | `/bulk_import` | `bulk_import_page` | questions bulk-imported |
   | Auto | `/save_ai_questions` | `save_ai_questions` | AI-generated questions saved (guarded by `GitHubIntegration().token`) |
   | Auto | `/save_processed_files_to_database` | `save_processed_files_to_database` | AI-validated files saved |
+  | Auto | `/report_question` | `report_question` | a player reports a question (pushes the report record + the `reported` flag) |
   | Manual | `/admin/git_push` | `admin_git_push` | "Sync Questions to GitHub" button |
   | Status | `/admin/git_push_status` | `admin_git_push_status` | modal polls question-sync progress |
   | CLI/Code | — | `python -m contents.admin_controls.github_integration` or direct import | scripts, schedulers, other modules |

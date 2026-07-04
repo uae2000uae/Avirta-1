@@ -318,6 +318,19 @@ def _list_question_files(repo_root: Optional[str] = None) -> List[str]:
     return out
 
 
+def _list_report_files(repo_root: Optional[str] = None) -> List[str]:
+    """Return repo-relative paths of all reported-question JSON files."""
+    root = repo_root or _repo_root()
+    rdir = os.path.join(root, "questionmanagement", "reported_questions")
+    out: List[str] = []
+    if not os.path.isdir(rdir):
+        return out
+    for name in sorted(os.listdir(rdir)):
+        if name.lower().endswith(".json"):
+            out.append(f"questionmanagement/reported_questions/{name}")
+    return out
+
+
 def _run_push(rel_paths: List[str], commit_message: Optional[str],
               gh: Optional[GitHubIntegration] = None) -> Tuple[bool, str]:
     """Perform a push while updating the shared progress state."""
@@ -372,6 +385,24 @@ def push_all_amended_questions_async(commit_message: Optional[str] = None,
         return True, "No question files found to push."
     return push_files_async(files, commit_message=commit_message, detach=detach)
 
+
+def push_reports_async(commit_message: Optional[str] = None, detach: bool = True,
+                       repo_root: Optional[str] = None,
+                       include_questions: bool = True) -> Tuple[bool, str]:
+    """Push reported-question records to GitHub.
+
+    Sends every `questionmanagement/reported_questions/*.json` file and, by
+    default (``include_questions=True``), the question files too so the
+    `reported` flag set on the original question is captured in the same commit.
+    Safe to call fire-and-forget; unchanged files produce no commit.
+    """
+    files = _list_report_files(repo_root)
+    if include_questions:
+        files = files + _list_question_files(repo_root)
+    if not files:
+        return True, "No report files found to push."
+    return push_files_async(files, commit_message=commit_message or "Update reported questions",
+                            detach=detach)
 
 # Convenient alias so it can be triggered from anywhere with an obvious name.
 def push_to_github(commit_message: Optional[str] = None,

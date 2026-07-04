@@ -1178,6 +1178,18 @@ def report_question():
     # Report the question
     success, report_id = reported_question_manager.report_question(question_data, reporter=player_name)
 
+    # Best-effort: push the new report record (and the 'reported' flag on the
+    # question) to GitHub. Fire-and-forget; never blocks the report flow.
+    if success:
+        try:
+            from contents.admin_controls.github_integration import push_reports_async
+            push_reports_async(detach=True)
+        except Exception as e:
+            try:
+                current_app.logger.warning(f"GitHub auto-push after report skipped: {e}")
+            except Exception:
+                pass
+
     message = 'Question reported successfully. Thank you for your feedback!' if success else 'Failed to report question. Please try again.'
 
     if wants_json:

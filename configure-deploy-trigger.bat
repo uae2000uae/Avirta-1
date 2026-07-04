@@ -7,7 +7,7 @@ rem Usage:  configure-deploy-trigger.bat <TRIGGER_NAME> [comma,separated,globs]
 if "%REGION%"=="" set REGION=us-central1
 set TRIGGER=%1
 set PATTERNS=%2
-if "%PATTERNS%"=="" set PATTERNS=contents/questions/**
+if "%PATTERNS%"=="" set PATTERNS=contents/questions/**,questionmanagement/reported_questions/**
 
 if "%TRIGGER%"=="" (
   echo Usage: configure-deploy-trigger.bat ^<TRIGGER_NAME^> [comma,separated,globs]
