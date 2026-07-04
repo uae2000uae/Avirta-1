@@ -167,6 +167,13 @@ DEFAULT_DISTRIBUTION = {100: 2, 200: 2, 300: 2, 400: 2, 500: 2}
 # Map the admin difficulty labels to point values (shared by generation + validation).
 DIFFICULTY_TO_POINTS = {"easiest": 100, "easy": 200, "medium": 300, "hard": 400, "hardest": 500}
 
+# Grounding mode. When False (default), retrieved facts are treated as OPTIONAL
+# supporting context: the model may also use reliable general knowledge to stay
+# on-topic and reach the requested count. When True, generation is hard-limited
+# to the retrieved facts (one question per fact, source fields required) - which
+# produces off-topic/too-few questions whenever retrieval is weak, so it is off.
+ENFORCE_STRICT_GROUNDING = False
+
 
 def fetch_wikipedia_summary(topic: str, lang: str = "en") -> dict:
     """Fetch a short encyclopedic summary from Wikipedia (best-effort).
@@ -706,6 +713,16 @@ class AIQuestionGenerator:
         include_explanations = options.get('include_explanations', True)
         language = options.get('language', 'arabic')
         reference_categories = options.get('reference_categories', [])
+        # Dedicated retrieval/framing topic, separate from free-text instructions
+        # in `prompt`. Falls back to the prompt when no explicit topic is given.
+        instructions = (prompt or '').strip()
+        search_topic = (options.get('topic') or '').strip() or instructions
+        # Effective generation prompt: anchor firmly on the topic, then append
+        # any free-text focus/style so the model stays on-subject.
+        if instructions and instructions != search_topic:
+            gen_prompt = f"{search_topic}. {instructions}"
+        else:
+            gen_prompt = search_topic
         # Enhanced flow toggles (default on; degrade gracefully when disabled/failed)
         use_source_grounding = bool(options.get('use_source_grounding', True))
         use_validation = bool(options.get('use_validation', True))
@@ -814,7 +831,7 @@ class AIQuestionGenerator:
                 try:
                     wiki_lang = 'ar' if str(language).lower() == 'arabic' else 'en'
                     _set_generation_progress(percent=12, message="Retrieving online sources…")
-                    source_facts = build_source_facts(prompt, lang=wiki_lang)
+                    source_facts = build_source_facts(search_topic, lang=wiki_lang)
                     n_src = len(source_facts.get("sources", []))
                     n_facts = len(source_facts.get("facts", []))
                     if n_facts:
@@ -826,10 +843,12 @@ class AIQuestionGenerator:
                     print(f"Source-fact retrieval failed (continuing ungrounded): {e}")
                     source_facts = None
 
-            # When we have a fact pool we enforce source-grounding (fact_id /
-            # source_url required, one question per fact). Otherwise we fall back
-            # to ungrounded generation with text/answer dedup only.
+            # We may have a fact pool to offer as context. Whether we HARD-enforce
+            # it (one question per fact, source fields required) is controlled by
+            # ENFORCE_STRICT_GROUNDING - off by default so facts are optional
+            # context and the model stays on-topic / reaches the requested count.
             grounded = bool(source_facts and source_facts.get('facts'))
+            enforce_grounding = grounded and ENFORCE_STRICT_GROUNDING
             fact_pool = list(source_facts.get('facts', [])) if grounded else []
 
             # Preserve original start index and adjust per batch to conceptually skip earlier candidates
@@ -854,10 +873,11 @@ class AIQuestionGenerator:
                 except Exception:
                     pass
 
-                # Grounded mode: only generate from facts not already used by prior
-                # questions (memory + this batch) so we never repeat a fact.
+                # Strict-grounding only: restrict to unused facts and cap the batch
+                # by how many remain (one question per fact). In soft mode we pass
+                # all facts as optional context and never cap by fact count.
                 chunk_source_facts = source_facts
-                if grounded:
+                if enforce_grounding:
                     used_ids = collect_used_fact_ids(existing_questions + total_questions)
                     unused_facts = [f for f in fact_pool if f.get('fact_id') not in used_ids]
                     if not unused_facts:
@@ -873,7 +893,7 @@ class AIQuestionGenerator:
                 chunk_distribution = build_difficulty_distribution(per_call, difficulty)
 
                 batch = self._generate_questions_with_openai(
-                    prompt,
+                    gen_prompt,
                     question_type,
                     difficulty,
                     per_call,
@@ -895,8 +915,9 @@ class AIQuestionGenerator:
                         review_summary = round_summary
 
                 # Code-level (deterministic) validation. Source fields are required
-                # only when grounded so the ungrounded fallback still yields questions.
-                code_valid, code_rej = code_filter_valid_questions(batch, require_source=grounded)
+                # only under strict grounding; in soft mode questions may come from
+                # general knowledge, so we don't require citations.
+                code_valid, code_rej = code_filter_valid_questions(batch, require_source=enforce_grounding)
                 code_rejected_total += len(code_rej)
 
                 # Backend duplicate rejection against memory + everything accepted so far.
@@ -950,7 +971,8 @@ class AIQuestionGenerator:
 
                 # Create metadata
                 metadata = {
-                    'prompt': prompt,
+                    'prompt': gen_prompt,
+                    'topic': search_topic,
                     'question_type': question_type,
                     'difficulty': difficulty,
                     'num_questions': len(questions),
@@ -1325,10 +1347,10 @@ OUTPUT FORMAT: return ONLY a JSON array of question objects (no markdown, no com
         except Exception:
             grounding_facts = []
 
-        if grounding_facts:
-            # Grounded mode: each fact has a fact_id / source_title / source_url.
-            # Require every question to cite exactly the fact it was built from so
-            # the backend can enforce one-question-per-fact and full traceability.
+        if grounding_facts and ENFORCE_STRICT_GROUNDING:
+            # Strict-grounding mode: each fact has a fact_id / source_title /
+            # source_url. Require every question to cite exactly the fact it was
+            # built from so the backend can enforce one-question-per-fact.
             facts_json = json.dumps(grounding_facts, ensure_ascii=False, separators=(',', ':'))
             sections.append(
                 'SOURCE FACTS (verified) - each has "fact_id", "fact", "source_title", "source_url".\n'
@@ -1342,10 +1364,23 @@ OUTPUT FORMAT: return ONLY a JSON array of question objects (no markdown, no com
                 '"correct_answer":"...","explanation":"...","points":100,"fact_id":"<id>",'
                 '"source_fact_used":"<fact text>","source_title":"<title>","source_url":"<url>","confidence":"high"}'
             )
+        elif grounding_facts:
+            # Soft-grounding mode: facts are OPTIONAL context. The model may also
+            # use its own reliable knowledge to stay on-topic and reach the count.
+            facts_json = json.dumps(grounding_facts, ensure_ascii=False, separators=(',', ':'))
+            sections.append(
+                "SUPPORTING FACTS (optional context retrieved from reference sources). "
+                "Use them when relevant and correct, but you are NOT limited to them - draw on your own "
+                "reliable general knowledge to cover the requested topic fully and reach the requested count. "
+                "IGNORE any supporting fact that is not about the requested topic; never let these facts pull "
+                "questions off-topic.\n"
+                f"FACTS: {facts_json}\n"
+                'If a question happens to be based on one of these facts, you may include its "fact_id" and "source_url".'
+            )
         else:
             sections.append(
-                "There are no retrieved source facts; rely on widely-accepted general knowledge "
-                "and only state facts you are confident are correct."
+                "Rely on your own reliable, widely-accepted general knowledge about the requested topic; "
+                "only state facts you are confident are correct."
             )
 
         # Avoid re-asking questions that already exist in the referenced categories.
@@ -1645,7 +1680,7 @@ GENERATED QUESTIONS:
 {json.dumps(questions, ensure_ascii=False, separators=(',', ':'))}
 
 Review each question for:
-1. Factual accuracy (and, when source facts are provided, support by those facts).
+1. Factual accuracy and staying on the requested topic. Source facts (when provided) are OPTIONAL supporting context - do NOT reject a correct, on-topic question merely because it is not covered by them; reject only off-topic or factually wrong questions.
 2. Exactly one correct answer.
 3. Clear, unambiguous wording.
 4. For multiple_choice: plausible-but-incorrect distractors and a correct_answer matching one option.

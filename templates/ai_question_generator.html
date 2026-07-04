@@ -21,8 +21,13 @@
     <p>Enter a prompt and customize options to generate questions using AI.</p>
 		<form id="generatorForm" action="{{ url_for('ai_question_generator') }}" method="POST" class="form">
         <div class="form-group-inline">
-            <h3 for="prompt">Prompt:</h3>
-            <textarea id="prompt" name="prompt" rows="2" required placeholder="Enter a topic, subject, or specific instructions for generating questions..."></textarea>
+            <h3 for="topic">Topic:</h3>
+            <input type="text" id="topic" name="topic" required placeholder="The subject, e.g. Cars, Ancient Egypt, World Cup football">
+            <small class="field-hint">The actual subject. Used to keep every question on-topic (and to fetch reference sources).</small>
+            </div>
+        <div class="form-group-inline">
+            <h3 for="prompt">Focus / Instructions <small>(optional)</small>:</h3>
+            <textarea id="prompt" name="prompt" rows="2" placeholder="Optional angle or style, e.g. the engineering, mechanisms, and history of the industry"></textarea>
             </div>
 		<div class="fill-stack"><h3>Generation Options:</h3>
         <div class="form-group equal-md">

@@ -169,8 +169,16 @@ def _type_instruction(question_type):
 
 def build_generation_prompt(topic, category, source_facts, question_count,
                             distribution, question_type="mixed",
-                            language="arabic", include_explanations=True):
-    """Return (system_prompt, user_prompt) for the generation call."""
+                            language="arabic", include_explanations=True,
+                            instructions=""):
+    """Return (system_prompt, user_prompt) for the generation call.
+
+    Grounding is SOFT: retrieved facts are offered as optional supporting
+    context, but the model may (and should) use its own reliable general
+    knowledge to stay strictly on the requested topic and produce the full
+    requested count. This avoids the failure mode where weak/irrelevant
+    retrieval dragged every question off-topic.
+    """
     facts = (source_facts or {}).get("facts") or []
     grounded = bool(facts)
     lang_line = (
@@ -187,7 +195,11 @@ def build_generation_prompt(topic, category, source_facts, question_count,
     sections = [
         f"TOPIC: {topic}",
         f"CATEGORY: {category}",
-        f"Generate exactly {question_count} trivia questions.",
+    ]
+    if instructions and instructions.strip() and instructions.strip() != str(topic).strip():
+        sections.append(f"FOCUS / STYLE (from the requester): {instructions.strip()}")
+    sections += [
+        f"Generate exactly {question_count} trivia questions, and EVERY question must be strictly about the TOPIC above.",
         _DIFFICULTY_SPEC,
         "TARGET DIFFICULTY DISTRIBUTION (points: count): "
         + json.dumps(distribution, separators=(",", ":")),
@@ -196,19 +208,21 @@ def build_generation_prompt(topic, category, source_facts, question_count,
     if grounded:
         facts_json = json.dumps(facts, ensure_ascii=False, separators=(",", ":"))
         sections.append(
-            'SOURCE FACTS (verified) - each has "fact_id", "fact", "source_title", "source_url".\n'
-            "Build questions using ONLY these facts. Do not invent facts. Use each fact for at most one question.\n"
-            f"FACT POOL: {facts_json}\n"
-            'For EVERY question, copy from the single fact you used: "fact_id", '
-            '"source_fact_used" (that fact\'s exact text), "source_title", "source_url".'
+            "SUPPORTING FACTS (optional context retrieved from reference sources). "
+            "Use them when relevant and correct, but you are NOT limited to them - draw on your own "
+            "reliable general knowledge to cover the TOPIC fully and reach the requested count. "
+            "IGNORE any supporting fact that is not about the TOPIC; never let these facts pull questions off-topic.\n"
+            f"FACTS: {facts_json}\n"
+            'If a question happens to be based on one of these facts, you may include its "fact_id" and "source_url".'
         )
     else:
         sections.append(
-            "There are no retrieved source facts; rely on widely-accepted general knowledge "
-            "and only state facts you are confident are correct."
+            "Rely on your own reliable, widely-accepted general knowledge about the TOPIC; "
+            "only state facts you are confident are correct."
         )
 
     rules = [
+        "Every question MUST be about the TOPIC - do not drift to adjacent or unrelated subjects.",
         "Each question has exactly one correct answer.",
         "Avoid ambiguous wording and near-duplicate questions.",
         "Mix question styles; do not repeatedly ask the same kind of fact.",
@@ -255,24 +269,31 @@ def build_generation_prompt(topic, category, source_facts, question_count,
     return system_prompt, "\n\n".join(sections) + "\n\n" + user_prompt
 
 
-def build_validation_prompt(source_facts, generated_questions):
-    """Return (system_prompt, user_prompt) for the validation/review call."""
+def build_validation_prompt(source_facts, generated_questions, topic=""):
+    """Return (system_prompt, user_prompt) for the validation/review call.
+
+    Grounding is soft, so a correct, on-topic question is fine even if it is not
+    covered by the retrieved facts - do NOT reject purely for lack of source
+    support. Off-topic or factually wrong questions should still be rejected.
+    """
     facts = (source_facts or {}).get("facts") or []
     system_prompt = (
         "You are a strict trivia quality-control reviewer. "
         "You always return strict, valid JSON only - no markdown, no commentary."
     )
     user_prompt = (
-        "Review the generated trivia questions" + (" against the source facts" if facts else "") + ".\n\n"
-        + ("SOURCE FACTS: " + json.dumps(facts, ensure_ascii=False, separators=(",", ":")) + "\n\n" if facts else "")
+        "Review the generated trivia questions for quality and accuracy.\n\n"
+        + (f"TOPIC (every question must be about this): {topic}\n\n" if topic else "")
+        + ("REFERENCE FACTS (optional context - support by these is a bonus, NOT required): "
+           + json.dumps(facts, ensure_ascii=False, separators=(",", ":")) + "\n\n" if facts else "")
         + "GENERATED QUESTIONS: "
         + json.dumps(generated_questions, ensure_ascii=False, separators=(",", ":"))
-        + "\n\nFor each question check: factual accuracy; the answer is fully supported"
-        + (" by the source facts" if facts else "")
-        + "; exactly one correct answer; clear and unambiguous; distractors plausible but wrong; "
+        + "\n\nFor each question check: it is on-topic; factual accuracy (use your own knowledge, "
+        "do NOT reject a correct on-topic question merely because it is absent from the reference facts); "
+        "exactly one correct answer; clear and unambiguous; distractors plausible but wrong; "
         "the points value fits the 100/200/300/400/500 scale; not a duplicate; explanation correct.\n\n"
         "Fix minor issues in place and mark such questions 'needs_revision'. Approve good ones. "
-        "Reject questions that are wrong or unfixable.\n\n"
+        "Reject only questions that are off-topic, factually wrong, or unfixable.\n\n"
         "Return ONLY this JSON object:\n"
         "{\n"
         '  "review_summary": {"total_questions": 0, "approved": 0, "rejected": 0, "needs_revision": 0},\n'
@@ -401,9 +422,13 @@ class AnthropicQuestionGenerator:
         if not self.api_key:
             raise ValueError("No Anthropic API key configured. Set the ANTHROPIC_API_KEY secret.")
 
-        topic = (prompt or "").strip()
+        # Separate the retrieval/framing TOPIC from the free-text instructions.
+        # A dedicated topic keeps source retrieval and on-topic framing accurate
+        # even when the prompt box contains verbose style instructions.
+        instructions = (prompt or "").strip()
+        topic = (options.get("topic") or "").strip() or instructions
         if not topic:
-            raise ValueError("A topic/prompt is required.")
+            raise ValueError("A topic is required.")
         category = (options.get("category") or topic).strip()
         num_questions = int(options.get("num_questions", 20) or 20)
         question_type = options.get("question_type", "mixed")
@@ -431,7 +456,7 @@ class AnthropicQuestionGenerator:
         gen_system, gen_user = build_generation_prompt(
             topic, category, source_facts, num_questions, distribution,
             question_type=question_type, language=language,
-            include_explanations=include_explanations,
+            include_explanations=include_explanations, instructions=instructions,
         )
         gen_data = _call_claude(
             self.api_key, self.model, gen_system, gen_user,
@@ -440,14 +465,15 @@ class AnthropicQuestionGenerator:
         raw_questions = gen_data.get("questions", gen_data) if isinstance(gen_data, dict) else gen_data
         questions = _normalize_questions(raw_questions)
 
-        # Deterministic structural validation (source required only when grounded).
-        questions, _rejected = code_filter_valid_questions(questions, require_source=grounded)
+        # Deterministic structural validation. Source citation is NOT required
+        # (grounding is soft - questions may come from general knowledge).
+        questions, _rejected = code_filter_valid_questions(questions, require_source=False)
 
         # 3) AI validation pass.
         if use_validation and questions:
             _set_generation_progress(percent=65, message="Validating questions with Claude…")
             try:
-                val_system, val_user = build_validation_prompt(source_facts, questions)
+                val_system, val_user = build_validation_prompt(source_facts, questions, topic=topic)
                 val_data = _call_claude(
                     self.api_key, self.model, val_system, val_user,
                     self.max_output_tokens, 0.2, 1.0, self.request_timeout,
@@ -474,7 +500,8 @@ class AnthropicQuestionGenerator:
         # 5) Save batch (same folder/format as the OpenAI generator).
         batch_id = str(uuid.uuid4())
         metadata = {
-            "prompt": topic,
+            "prompt": (f"{topic}. {instructions}" if instructions and instructions != topic else topic),
+            "topic": topic,
             "question_type": question_type if question_type else "mixed",
             "difficulty": difficulty,
             "num_questions": len(questions),

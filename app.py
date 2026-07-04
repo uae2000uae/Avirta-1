@@ -2120,8 +2120,10 @@ def ai_question_generator():
             generated_questions = get_batch(batch_id)
 
     if request.method == 'POST':
-        # Get form data
-        prompt = request.form.get('prompt')
+        # Get form data. `topic` is the subject used for on-topic framing and
+        # source retrieval; `prompt` now holds optional focus/style instructions.
+        prompt = request.form.get('prompt') or ''
+        topic = (request.form.get('topic') or '').strip()
         # Question types come from checkboxes (multiple_choice, true_false, text).
         # All/none selected => 'mixed'; otherwise pass the selected subset as a
         # comma-separated string the generator understands.
@@ -2155,6 +2157,7 @@ def ai_question_generator():
         if provider == 'anthropic':
             ai_opts = load_anthropic_settings(admin_setup)
             options = {
+                'topic': topic,
                 'question_type': question_type,
                 'difficulty': difficulty,
                 'num_questions': num_questions,
@@ -2177,6 +2180,7 @@ def ai_question_generator():
             # Load centralized AI settings (env overrides file values)
             ai_opts = load_ai_settings(admin_setup)
             options = {
+                'topic': topic,
                 'question_type': question_type,
                 'difficulty': difficulty,
                 'num_questions': num_questions,
