@@ -403,6 +403,11 @@
                             <button type="submit" class="success-button" title="Upload question files to GitHub in background">Upload Changes to GitHub</button>
                         </form>
 
+                        <!-- Push All Amended Files to GitHub button -->
+                        <form id="git-push-form" action="{{ url_for('admin_git_push') }}" method="POST" class="form-group clear">
+                            <button type="submit" class="success-button" title="Push ALL amended files to GitHub in background" style="background-color: #20c997;">Push All Files to GitHub</button>
+                        </form>
+
                         <!-- GitHub Sync Progress Modal -->
                         <div id="github-sync-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
                             <div class="modal-container" style="background-color: var(--bg-color, #ffffff); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 500px; max-width: 90%; padding: 20px; display: flex; flex-direction: column; color: var(--text-color, #333);">
@@ -424,6 +429,27 @@
                                 </div>
                                 <div class="modal-footer" id="sync-modal-footer" style="display: none; justify-content: flex-end; margin-top: 15px;">
                                     <button type="button" id="ok-sync-modal-btn" class="button">Close</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Git Push Progress Modal -->
+                        <div id="git-push-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
+                            <div class="modal-container" style="background-color: var(--bg-color, #ffffff); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 500px; max-width: 90%; padding: 20px; display: flex; flex-direction: column; color: var(--text-color, #333);">
+                                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color-light); padding-bottom: 10px;">
+                                    <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--primary-color);">Git Push Progress</h3>
+                                    <button type="button" id="close-push-modal-btn" class="modal-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color-light, #666); display: none;">&times;</button>
+                                </div>
+                                <div class="modal-body" style="padding: 10px 0;">
+                                    <p id="push-status-text" style="font-weight: bold; margin-bottom: 10px; text-align: left;">Initialising push...</p>
+                                    <div class="progress-bar-container" style="width: 100%; background-color: var(--border-color-light, #eee); border-radius: 10px; height: 16px; overflow: hidden; margin-top: 10px; border: 1px solid var(--border-color, #ddd);">
+                                        <div id="push-progress-bar" class="progress-bar" style="background-color: #20c997; height: 100%; transition: width 0.3s ease; width: 0%;"></div>
+                                    </div>
+                                    <p id="push-message-text" style="font-style: italic; margin-top: 10px; font-size: 13px; color: var(--text-color-light); word-break: break-all; min-height: 18px; text-align: left;"></p>
+                                    <p id="push-branch-text" style="margin-top: 8px; font-size: 12px; color: var(--text-color); text-align: left;"></p>
+                                </div>
+                                <div class="modal-footer" id="push-modal-footer" style="display: none; justify-content: flex-end; margin-top: 15px;">
+                                    <button type="button" id="ok-push-modal-btn" class="button">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -1174,6 +1200,119 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }, 1000);
             }
+        });
+    }
+
+    // Git Push Form Handler
+    const gitPushForm = document.getElementById('git-push-form');
+    const gitPushModal = document.getElementById('git-push-modal');
+    const gitPushProgressBar = document.getElementById('push-progress-bar');
+    const gitPushStatusText = document.getElementById('push-status-text');
+    const gitPushMessageText = document.getElementById('push-message-text');
+    const gitPushBranchText = document.getElementById('push-branch-text');
+    const closePushModalBtn = document.getElementById('close-push-modal-btn');
+    const okPushModalBtn = document.getElementById('ok-push-modal-btn');
+    const pushModalFooter = document.getElementById('push-modal-footer');
+
+    if (gitPushForm) {
+        gitPushForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Reset Modal elements
+            gitPushProgressBar.style.width = '0%';
+            gitPushStatusText.textContent = 'Initialising git push...';
+            gitPushMessageText.textContent = '';
+            gitPushBranchText.textContent = '';
+            closePushModalBtn.style.display = 'none';
+            pushModalFooter.style.display = 'none';
+
+            // Show modal
+            gitPushModal.style.display = 'flex';
+
+            gitPushStatusText.textContent = 'Sending start signal to server...';
+
+            // Trigger push via fetch POST with XMLHttpRequest header
+            fetch(gitPushForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    gitPushStatusText.textContent = 'Push thread started on server.';
+                    gitPushProgressBar.style.width = '25%';
+                    // Start polling
+                    pollPushStatus();
+                } else {
+                    gitPushStatusText.textContent = `Failed: ${data.message}`;
+                    gitPushProgressBar.style.width = '100%';
+                    gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
+                    closePushModalBtn.style.display = 'block';
+                    pushModalFooter.style.display = 'flex';
+                }
+            })
+            .catch(err => {
+                gitPushStatusText.textContent = `Connection error: ${err}`;
+                gitPushProgressBar.style.width = '100%';
+                gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
+                closePushModalBtn.style.display = 'block';
+                pushModalFooter.style.display = 'flex';
+            });
+
+            let pollInterval;
+
+            function pollPushStatus() {
+                pollInterval = setInterval(() => {
+                    fetch('/admin/git_push_status')
+                    .then(res => res.json())
+                    .then(status => {
+                        const state = status.status;
+                        const msg = status.message || '';
+                        const branch = status.current_branch || 'main';
+
+                        gitPushStatusText.textContent = msg || 'Processing...';
+                        gitPushBranchText.textContent = `Branch: ${branch}`;
+
+                        if (state === 'running') {
+                            gitPushProgressBar.style.width = '50%';
+                            gitPushProgressBar.style.backgroundColor = '#20c997';
+                        } else if (state === 'success') {
+                            clearInterval(pollInterval);
+                            gitPushProgressBar.style.width = '100%';
+                            gitPushProgressBar.style.backgroundColor = '#20c997';
+                            gitPushStatusText.textContent = 'Push completed successfully!';
+                            gitPushMessageText.textContent = msg;
+                            closePushModalBtn.style.display = 'block';
+                            pushModalFooter.style.display = 'flex';
+                        } else if (state === 'failed') {
+                            clearInterval(pollInterval);
+                            gitPushProgressBar.style.width = '100%';
+                            gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
+                            gitPushStatusText.textContent = 'Push failed.';
+                            gitPushMessageText.textContent = msg;
+                            closePushModalBtn.style.display = 'block';
+                            pushModalFooter.style.display = 'flex';
+                        }
+                    })
+                    .catch(err => {
+                        gitPushStatusText.textContent = `Polling error: ${err}`;
+                    });
+                }, 1000);
+            }
+        });
+    }
+
+    // Git Push Modal close buttons
+    if (closePushModalBtn) {
+        closePushModalBtn.addEventListener('click', () => {
+            gitPushModal.style.display = 'none';
+        });
+    }
+    if (okPushModalBtn) {
+        okPushModalBtn.addEventListener('click', () => {
+            gitPushModal.style.display = 'none';
         });
     }
 

@@ -2872,6 +2872,66 @@ def admin_github_sync_status():
     return jsonify(get_upload_progress())
 
 
+@app.route('/admin/git_push', methods=['POST'])
+def admin_git_push():
+    """Trigger background push of all amended files to GitHub.
+    
+    Admin-only. Starts a non-blocking background job to commit and push all
+    changed files using native git commands.
+    """
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('ajax') == '1' or request.is_json
+    
+    # Authentication check
+    if not session.get('admin_authenticated', False):
+        if is_ajax:
+            return jsonify({"success": False, "message": "You must be logged in as an admin."}), 403
+        flash('You must be logged in as an admin to perform this action.', 'error')
+        return redirect(url_for('admin_controls'))
+    
+    try:
+        from contents.admin_controls.git_push_helper import (
+            push_all_amended_files_async,
+            get_current_branch,
+        )
+        
+        commit_msg = request.form.get('commit_message', '').strip() or "Update amended files"
+        
+        # Fire-and-forget push
+        ok, msg = push_all_amended_files_async(commit_message=commit_msg, detach=True)
+        if not ok:
+            if is_ajax:
+                return jsonify({"success": False, "message": msg}), 400
+            flash(msg, 'error')
+            return redirect(url_for('admin_controls'))
+        
+        if is_ajax:
+            return jsonify({"success": True, "message": "Push to GitHub started in the background."})
+        flash('Push to GitHub started in the background. Changes will appear in the repository shortly.')
+    except Exception as e:
+        try:
+            current_app.logger.warning(f"Failed to start git push: {e}")
+        except Exception:
+            pass
+        if is_ajax:
+            return jsonify({"success": False, "message": f"Failed to start git push: {e}"}), 500
+        flash(f'Failed to start git push: {e}', 'error')
+    
+    return redirect(url_for('admin_controls'))
+
+
+@app.route('/admin/git_push_status', methods=['GET'])
+def admin_git_push_status():
+    """Get the current progress of the git push operation.
+    
+    Admin-only. Returns JSON containing progress details.
+    """
+    if not session.get('admin_authenticated', False):
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    from contents.admin_controls.git_push_helper import get_push_progress
+    return jsonify(get_push_progress())
+
+
 @app.route('/aivalidator', methods=['GET'])
 def aivalidator():
     """AI Question Validator page with authentication."""
