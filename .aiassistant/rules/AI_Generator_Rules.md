@@ -1,3 +1,7 @@
+---
+apply: always
+---
+
 Below is a **full end-to-end upgraded version** of your AI trivia generation flow, redesigned around:
 
 * **RAG / source-grounded generation**
@@ -46,15 +50,15 @@ DIFFICULTY_LEVELS = {
 }
 ```
 
-Example distribution for 10 questions:
+Example distribution for 25 questions:
 
 ```python
 DEFAULT_DISTRIBUTION = {
-    100: 2,
-    200: 2,
-    300: 2,
-    400: 2,
-    500: 2
+    100: 6,
+    200: 6,
+    300: 5,
+    400: 4,
+    500: 4
 }
 ```
 

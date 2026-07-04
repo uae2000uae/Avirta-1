@@ -1,6 +1,5 @@
 .venv
 .junie
-/contents/questions/
 # Secrets and local config
 contents/admin_controls/game_settings.json
 contents/admin_controls/saved_api_settings.json
@@ -8,7 +7,7 @@ contents/admin_controls/model_param_settings.json
 .env
 .env.*
 # IDE files (may contain cached secrets)
-.idea/
-/.junie/
-!/.aiassistant/
+.idea
+!.aiassistant
 !/Direct deploy.bat
+!.claude
