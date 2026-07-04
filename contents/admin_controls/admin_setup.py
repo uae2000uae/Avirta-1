@@ -248,22 +248,60 @@ class AdminSetup:
         self.log_event(f"Updated game setting {setting_name} from {old_value} to {value}")
         return True
 
+    def _make_settings_store(self):
+        """Return a SettingsStore for persistence, or None to use legacy file I/O."""
+        try:
+            from datastore import get_backend_name, get_settings_store
+            from datastore.json_backend import JsonSettingsStore
+        except Exception:
+            return None
+        try:
+            if get_backend_name() == "json":
+                # Point the JSON store at the admin_controls directory.
+                return JsonSettingsStore(os.path.dirname(__file__))
+            return get_settings_store()
+        except Exception:
+            return None
+
+    def _apply_loaded_settings(self, loaded_settings):
+        """Merge loaded settings into game_settings, applying legacy migrations."""
+        for key, value in loaded_settings.items():
+            self.game_settings[key] = value
+        # Migration: the old "JSON Response Mode" checkbox was removed and
+        # folded into the Response Format Override field. Preserve prior
+        # forced-JSON behavior for installs that had the checkbox on with
+        # no explicit override already set.
+        if 'openai_json_mode' in loaded_settings:
+            if loaded_settings.get('openai_json_mode') and not str(self.game_settings.get('openai_response_format') or '').strip():
+                self.game_settings['openai_response_format'] = 'json_object'
+            self.game_settings.pop('openai_json_mode', None)
+
     def save_game_settings(self):
         """
-        Save the game settings to a JSON file for persistence.
+        Save the game settings to persistent storage.
+
+        Persistence is delegated to the datastore layer (JSON files by default,
+        Firestore when STATE_BACKEND=firestore), falling back to direct file I/O
+        if the datastore package is unavailable.
 
         Returns:
             tuple: (success, message)
         """
-        try:
-            # Path to the settings file
-            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
-                                             'admin_controls', 'game_settings.json')
+        store = self._make_settings_store()
+        if store is not None:
+            try:
+                store.replace('game', self.game_settings)
+                self.log_event("Game settings saved to store")
+                return True, "Game settings saved successfully"
+            except Exception as e:
+                self.log_event(f"Error saving game settings via store: {str(e)}")
+                # fall through to legacy file write
 
-            # Save the settings to the file
+        try:
+            settings_file_path = os.path.join(
+                os.path.dirname(__file__), 'game_settings.json')
             with open(settings_file_path, 'w', encoding="utf-8") as f:
                 json.dump(self.game_settings, f, indent=4, ensure_ascii=False)
-
             self.log_event("Game settings saved to file")
             return True, "Game settings saved successfully"
         except Exception as e:
@@ -272,38 +310,34 @@ class AdminSetup:
 
     def load_game_settings(self):
         """
-        Load game settings from a JSON file.
+        Load game settings from persistent storage.
 
         Returns:
             tuple: (success, message)
         """
-        try:
-            # Path to the settings file
-            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
-                                             'admin_controls', 'game_settings.json')
+        store = self._make_settings_store()
+        if store is not None:
+            try:
+                loaded_settings = store.get_all('game')
+                if not loaded_settings:
+                    self.log_event("Game settings not found in store, using defaults")
+                    return False, "Game settings file not found, using defaults"
+                self._apply_loaded_settings(loaded_settings)
+                self.log_event("Game settings loaded from store")
+                return True, "Game settings loaded successfully"
+            except Exception as e:
+                self.log_event(f"Error loading game settings via store: {str(e)}")
+                # fall through to legacy file load
 
-            # Check if the file exists
+        try:
+            settings_file_path = os.path.join(
+                os.path.dirname(__file__), 'game_settings.json')
             if not os.path.exists(settings_file_path):
                 self.log_event("Game settings file not found, using defaults")
                 return False, "Game settings file not found, using defaults"
-
-            # Load the settings from the file
             with open(settings_file_path, 'r') as f:
                 loaded_settings = json.load(f)
-
-            # Update the game_settings with the loaded settings
-            for key, value in loaded_settings.items():
-                self.game_settings[key] = value
-
-            # Migration: the old "JSON Response Mode" checkbox was removed and
-            # folded into the Response Format Override field. Preserve prior
-            # forced-JSON behavior for installs that had the checkbox on with
-            # no explicit override already set.
-            if 'openai_json_mode' in loaded_settings:
-                if loaded_settings.get('openai_json_mode') and not str(self.game_settings.get('openai_response_format') or '').strip():
-                    self.game_settings['openai_response_format'] = 'json_object'
-                self.game_settings.pop('openai_json_mode', None)
-
+            self._apply_loaded_settings(loaded_settings)
             self.log_event("Game settings loaded from file")
             return True, "Game settings loaded successfully"
         except Exception as e:

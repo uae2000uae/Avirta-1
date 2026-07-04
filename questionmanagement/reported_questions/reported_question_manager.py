@@ -31,6 +31,27 @@ class ReportedQuestionManager:
         # Create storage directory if it doesn't exist
         os.makedirs(storage_path, exist_ok=True)
 
+        # Persistence is delegated to the datastore layer so the storage
+        # backend (JSON files today, Firestore when STATE_BACKEND=firestore)
+        # can be swapped without changing this manager's logic. Falls back to
+        # direct file I/O if the datastore package is unavailable.
+        self._store = self._make_store()
+
+    def _make_store(self):
+        """Return a ReportStore for persistence, or None to use legacy file I/O."""
+        try:
+            from datastore import get_backend_name, get_report_store
+            from datastore.json_backend import JsonReportStore
+        except Exception:
+            return None
+        try:
+            if get_backend_name() == "json":
+                # Point the JSON store at this manager's storage path.
+                return JsonReportStore(self.storage_path)
+            return get_report_store()
+        except Exception:
+            return None
+
     def report_question(self, question_data, reporter=None):
         """
         Report a question for review.
@@ -158,6 +179,13 @@ class ReportedQuestionManager:
         del self.reported_questions[report_id]
 
         # Remove from storage
+        if self._store is not None:
+            try:
+                self._store.delete(report_id)
+                return True
+            except Exception as e:
+                print(f"Error deleting report {report_id} via store: {e}")
+                # fall through to legacy file removal
         file_path = os.path.join(self.storage_path, f"{report_id}.json")
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -174,6 +202,20 @@ class ReportedQuestionManager:
         count = 0
         # Clear existing reports to ensure a clean load
         self.reported_questions = {}
+
+        if self._store is not None:
+            try:
+                for report_data in self._store.list_reports():
+                    report_id = report_data.get("report_id")
+                    if report_id:
+                        self.reported_questions[report_id] = report_data
+                        count += 1
+                return count
+            except Exception as e:
+                print(f"Error loading reports via store: {e}")
+                self.reported_questions = {}
+                count = 0
+                # fall through to legacy file load
 
         if os.path.exists(self.storage_path):
             for filename in os.listdir(self.storage_path):
@@ -222,6 +264,13 @@ class ReportedQuestionManager:
             report_id (str): ID of the report
             report_data (dict): Report data
         """
+        if self._store is not None:
+            try:
+                self._store.upsert(report_data)
+                return
+            except Exception as e:
+                print(f"Error saving report {report_id} via store: {e}")
+                # fall through to legacy file write
         file_path = os.path.join(self.storage_path, f"{report_id}.json")
         try:
             with open(file_path, "w", encoding="utf-8") as f:
