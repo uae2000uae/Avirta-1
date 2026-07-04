@@ -30,7 +30,7 @@ steps:
         # To sign session cookies with a stable key, create a "SECRET_KEY"
         # secret in Secret Manager and append it below, e.g.:
         #   SECRET_KEY=SECRET_KEY:latest
-        "--set-secrets=AI_Token=AI_Token:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest"
+        "--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest"
       ]
 
   # 2) Ensure public (unauthenticated) access (roles/run.invoker)
