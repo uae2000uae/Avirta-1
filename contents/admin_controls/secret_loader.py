@@ -49,6 +49,59 @@ def _gsm_access_secret(project_id: str, secret_name: str) -> Optional[str]:
 
 essential_placeholders = {"", None, "SET_IN_ENV"}
 
+# Cache the resolved project id (including a negative "" result) so we don't
+# re-hit google.auth / the metadata server on every secret lookup.
+_PROJECT_ID_CACHE = {"value": None, "resolved": False}
+
+
+def _detect_project_id() -> Optional[str]:
+    """Best-effort discovery of the GCP project id.
+
+    Cloud Run does NOT set GOOGLE_CLOUD_PROJECT by default, so relying on env
+    vars alone means the Secret Manager fallback never runs unless a secret was
+    also injected as an env var via --set-secrets. This resolves the project id
+    from, in order:
+      1) env vars (GOOGLE_CLOUD_PROJECT / GCP_PROJECT / GCLOUD_PROJECT)
+      2) Application Default Credentials (google.auth.default)
+      3) the GCE/Cloud Run metadata server
+    Result (including failure) is cached for the process lifetime.
+    """
+    if _PROJECT_ID_CACHE["resolved"]:
+        return _PROJECT_ID_CACHE["value"]
+
+    project_id = (
+        os.environ.get("GOOGLE_CLOUD_PROJECT")
+        or os.environ.get("GCP_PROJECT")
+        or os.environ.get("GCLOUD_PROJECT")
+    )
+
+    # 2) Application Default Credentials
+    if not project_id:
+        try:
+            import google.auth  # type: ignore
+            _creds, adc_project = google.auth.default()
+            if adc_project:
+                project_id = adc_project
+        except Exception:
+            pass
+
+    # 3) Metadata server (available on Cloud Run / GCE)
+    if not project_id:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+                headers={"Metadata-Flavor": "Google"},
+            )
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                project_id = resp.read().decode("utf-8").strip() or None
+        except Exception:
+            pass
+
+    _PROJECT_ID_CACHE["value"] = project_id or None
+    _PROJECT_ID_CACHE["resolved"] = True
+    return _PROJECT_ID_CACHE["value"]
+
 
 def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
     """Return secret value for key from env or Google Secret Manager.
@@ -80,8 +133,10 @@ def get_secret(key: str, default: Optional[str] = None) -> Optional[str]:
     if val:
         return val
 
-    # 2) Google Secret Manager (only if project id is available)
-    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+    # 2) Google Secret Manager (only if project id is available). Auto-detect
+    #    the project id so this works on Cloud Run even when the secret was not
+    #    injected as an env var via --set-secrets.
+    project_id = _detect_project_id()
     if project_id:
         # Allow custom secret resource name via SECRET_<KEY>_NAME (no legacy name fallbacks)
         override_env_name = f"SECRET_{key}_NAME"
