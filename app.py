@@ -2826,7 +2826,7 @@ def admin_git_push():
     """Trigger background push of all amended files to GitHub.
     
     Admin-only. Starts a non-blocking background job to commit and push all
-    changed files using native git commands.
+    question files via the GitHub REST API (token-based, independent of the git binary).
     """
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('ajax') == '1' or request.is_json
     
@@ -2838,15 +2838,17 @@ def admin_git_push():
         return redirect(url_for('admin_controls'))
     
     try:
-        from contents.admin_controls.git_push_helper import (
-            push_all_amended_files_async,
-            get_current_branch,
+        # Use the token-based GitHub REST API integration. This is fully
+        # independent of the local git binary/credentials, so it works on
+        # Cloud Run and can be triggered from anywhere in the app.
+        from contents.admin_controls.github_integration import (
+            push_all_amended_questions_async,
         )
         
         commit_msg = request.form.get('commit_message', '').strip() or "Update amended files"
         
         # Fire-and-forget push
-        ok, msg = push_all_amended_files_async(commit_message=commit_msg, detach=True)
+        ok, msg = push_all_amended_questions_async(commit_message=commit_msg, detach=True)
         if not ok:
             if is_ajax:
                 return jsonify({"success": False, "message": msg}), 400
@@ -2877,8 +2879,49 @@ def admin_git_push_status():
     if not session.get('admin_authenticated', False):
         return jsonify({"error": "Unauthorized"}), 403
     
-    from contents.admin_controls.git_push_helper import get_push_progress
+    from contents.admin_controls.github_integration import get_push_progress
     return jsonify(get_push_progress())
+
+
+@app.route('/admin/git_push_all', methods=['POST'])
+def admin_git_push_all():
+    """Push ALL amended source files to GitHub using native git commands.
+
+    Admin-only. This is the full-source push (source code, config, everything),
+    separate from the question-sync API push in /admin/git_push. Best used in
+    local/dev environments where git is installed and credentialed.
+    """
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('ajax') == '1' or request.is_json
+
+    if not session.get('admin_authenticated', False):
+        if is_ajax:
+            return jsonify({"success": False, "message": "You must be logged in as an admin."}), 403
+        flash('You must be logged in as an admin to perform this action.', 'error')
+        return redirect(url_for('admin_controls'))
+
+    try:
+        from contents.admin_controls.git_push_helper import push_all_amended_files_async
+
+        commit_msg = request.form.get("commit_message", "").strip() or "Update amended files"
+        ok, msg = push_all_amended_files_async(commit_message=commit_msg, detach=True)
+        if not ok:
+            if is_ajax:
+                return jsonify({"success": False, "message": msg}), 400
+            flash(msg, 'error')
+            return redirect(url_for('admin_controls'))
+        if is_ajax:
+            return jsonify({"success": True, "message": "Full source push to GitHub started in the background."})
+        flash('Full source push to GitHub started in the background (native git).')
+    except Exception as e:
+        try:
+            current_app.logger.warning(f"Failed to start full git push: {e}")
+        except Exception:
+            pass
+        if is_ajax:
+            return jsonify({"success": False, "message": f"Failed to start full git push: {e}"}), 500
+        flash(f'Failed to start full git push: {e}', 'error')
+
+    return redirect(url_for('admin_controls'))
 
 
 @app.route('/aivalidator', methods=['GET'])
