@@ -556,6 +556,7 @@ This document defines the core specifications, design guidelines, and system cod
   3. Commits are attributed to `Copilot <223556219+Copilot@users.noreply.github.com>` and land as a single atomic commit (blobs → tree → commit → ref); unchanged files must produce no commit.
   4. Question-sync and full-source pushes must keep separate progress state and separate status endpoints.
   5. This Trigger Map must be updated whenever a call site is added or removed.
+  6. Every commit this module makes carries a `[skip ci]` token so question-data syncs never trigger a Cloud Run redeploy — defense-in-depth alongside the Cloud Build `ignoredFiles` filter for `contents/questions/**`. The native full-source push (`git_push_helper.py`) intentionally omits it so code pushes still deploy.
 * **Rationale**:
   * The token-based REST API works on Cloud Run, where the `git` binary and credentials are unavailable.
   * A single, independent module keeps the integration testable and callable from anywhere in the app.

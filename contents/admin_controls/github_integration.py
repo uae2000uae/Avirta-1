@@ -73,6 +73,11 @@ _COMMIT_AUTHOR_NAME = "Copilot"
 _COMMIT_AUTHOR_EMAIL = "223556219+Copilot@users.noreply.github.com"
 _REQUEST_TIMEOUT = 30
 
+# Token that tells Cloud Build to skip the build for a commit, so question-data
+# syncs never trigger a Cloud Run redeploy. Appended to every commit this module
+# makes. (The full-source push in git_push_helper.py intentionally omits it.)
+_SKIP_CI_TOKEN = "[skip ci]"
+
 
 def _repo_root() -> str:
     """Absolute path to the Avirta project root (…/contents/admin_controls/..)."""
@@ -266,6 +271,9 @@ class GitHubIntegration:
 
             # 5) Create the commit.
             msg = commit_message or "Update amended question files"
+            # Ensure Cloud Build skips deploying for this data-only commit.
+            if _SKIP_CI_TOKEN not in msg and "[ci skip]" not in msg:
+                msg = f"{msg} {_SKIP_CI_TOKEN}"
             now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             author = {"name": _COMMIT_AUTHOR_NAME, "email": _COMMIT_AUTHOR_EMAIL, "date": now}
             cr = self._post("git/commits", {
