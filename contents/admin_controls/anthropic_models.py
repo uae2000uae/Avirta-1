@@ -66,14 +66,19 @@ PARAM_INFO: Dict[str, Dict[str, Any]] = {
 # Best model first - used as the default when nothing has been chosen yet.
 DEFAULT_MODEL = 'claude-opus-4-8'
 
+# NOTE on 'sampling_deprecated':
+# Claude Opus 4.7 and later (incl. Opus 4.8) retired the temperature/top_p/top_k
+# sampling knobs - sending any of them returns HTTP 400 "temperature is
+# deprecated for this model". These models self-manage sampling via their
+# adaptive reasoning, so we must NOT send those params (and the admin UI hides
+# them). Sonnet 5 and Haiku 4.5 still accept them.
 MODELS: Dict[str, Dict[str, Any]] = {
     'claude-opus-4-8': {
         'display_name': 'Claude Opus 4.8',
-        'description': 'Most capable Claude model. Best quality and reasoning for high-stakes question generation. Highest cost/latency. Recommended default.',
+        'description': 'Most capable Claude model. Best quality and reasoning for high-stakes question generation. Highest cost/latency. Recommended default. (Manages sampling automatically - no temperature/top-p.)',
         'max_output_tokens_cap': 32000,
+        'sampling_deprecated': True,
         'defaults': {
-            'anthropic_temperature': 0.7,
-            'anthropic_top_p': 1.0,
             'anthropic_max_tokens': 8192,
         },
     },
@@ -81,6 +86,7 @@ MODELS: Dict[str, Dict[str, Any]] = {
         'display_name': 'Claude Sonnet 5',
         'description': 'Balanced flagship model. Excellent quality at lower cost/latency than Opus. Great everyday choice for large batches.',
         'max_output_tokens_cap': 32000,
+        'sampling_deprecated': False,
         'defaults': {
             'anthropic_temperature': 0.7,
             'anthropic_top_p': 1.0,
@@ -91,6 +97,7 @@ MODELS: Dict[str, Dict[str, Any]] = {
         'display_name': 'Claude Haiku 4.5',
         'description': 'Fastest and lowest-cost Claude model. Best for simple/short question batches or high-volume generation on a budget.',
         'max_output_tokens_cap': 16000,
+        'sampling_deprecated': False,
         'defaults': {
             'anthropic_temperature': 0.7,
             'anthropic_top_p': 1.0,
@@ -124,12 +131,25 @@ def get_max_output_tokens(model_id: str) -> int:
     return get_model_config(model_id).get('max_output_tokens_cap', 8192)
 
 
+def sampling_is_deprecated(model_id: str) -> bool:
+    """Whether temperature/top_p/top_k are rejected by this model (Opus 4.7+)."""
+    return bool(get_model_config(model_id).get('sampling_deprecated', False))
+
+
 def get_model_params(model_id: str) -> List[Dict[str, Any]]:
-    """Return the ordered param definitions (with per-model max/default filled in)."""
+    """Return the ordered param definitions (with per-model max/default filled in).
+
+    Models that deprecate sampling (Opus 4.7+) only expose Max Output Tokens -
+    temperature/top_p are hidden because the API rejects them.
+    """
     cfg = get_model_config(model_id)
     defaults = cfg['defaults']
+    if sampling_is_deprecated(model_id):
+        param_order = ['anthropic_max_tokens']
+    else:
+        param_order = PARAM_ORDER
     params = []
-    for key in PARAM_ORDER:
+    for key in param_order:
         info = dict(PARAM_INFO[key])
         info['key'] = key
         if key == 'anthropic_max_tokens':

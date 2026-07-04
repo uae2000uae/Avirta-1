@@ -54,6 +54,7 @@ from questionmanagement.ai_question_generator import (
 from contents.admin_controls.anthropic_models import (
     is_known_model,
     get_max_output_tokens,
+    sampling_is_deprecated,
     DEFAULT_MODEL,
 )
 
@@ -118,11 +119,14 @@ def _call_claude(api_key, model, system_prompt, user_prompt, max_tokens,
     body = {
         "model": model,
         "max_tokens": int(max_tokens),
-        "temperature": max(0.0, min(float(temperature), 1.0)),
-        "top_p": max(0.0, min(float(top_p), 1.0)),
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_prompt}],
     }
+    # Opus 4.7+ retired temperature/top_p/top_k and returns HTTP 400 if they are
+    # sent. Only include sampling params for models that still accept them.
+    if not sampling_is_deprecated(model):
+        body["temperature"] = max(0.0, min(float(temperature), 1.0))
+        body["top_p"] = max(0.0, min(float(top_p), 1.0))
 
     resp = _post_with_retries(
         ANTHROPIC_API_URL, headers, body,

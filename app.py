@@ -2683,10 +2683,13 @@ def admin_controls():
                 return max(lo, min(val, hi))
 
             values = {
-                'anthropic_temperature': _num('anthropic_temperature', defaults['anthropic_temperature'], 0.0, 1.0),
-                'anthropic_top_p': _num('anthropic_top_p', defaults['anthropic_top_p'], 0.0, 1.0),
-                'anthropic_max_tokens': _num('anthropic_max_tokens', defaults['anthropic_max_tokens'], 1, cap, as_int=True),
+                'anthropic_max_tokens': _num('anthropic_max_tokens', defaults.get('anthropic_max_tokens', 8192), 1, cap, as_int=True),
             }
+            # Only persist sampling params for models that still accept them
+            # (Opus 4.7+ deprecates temperature/top_p and hides these fields).
+            if not anthropic_models.sampling_is_deprecated(model_id):
+                values['anthropic_temperature'] = _num('anthropic_temperature', defaults.get('anthropic_temperature', 0.7), 0.0, 1.0)
+                values['anthropic_top_p'] = _num('anthropic_top_p', defaults.get('anthropic_top_p', 1.0), 0.0, 1.0)
             success, message = admin_setup.set_anthropic_model_settings(model_id, values)
             flash(message if success else message, 'success' if success else 'error')
 
