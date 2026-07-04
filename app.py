@@ -2616,7 +2616,7 @@ def admin_controls():
             api_key_value = request.form.get('openai_api_key')
             if not api_key_value or not str(api_key_value).strip() or str(api_key_value).strip() == 'SET_IN_ENV':
                 admin_setup.update_game_setting('openai_api_key', 'SET_IN_ENV')
-                flash('Using AI_Token from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
+                flash('Using OPENAI_API_KEY from environment/Secret Manager. Leave this field blank to continue using runtime secret.', 'info')
             else:
                 from questionmanagement.ai_question_generator import verify_api_connection
                 cleaned = str(api_key_value).strip()

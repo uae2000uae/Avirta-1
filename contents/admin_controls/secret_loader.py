@@ -7,11 +7,11 @@ Resolves secrets from (in order):
 
 Usage:
     from contents.admin_controls.secret_loader import get_secret
-    api_key = get_secret("AI_Token")
+    api_key = get_secret("ANTHROPIC_API_KEY")
 
 Notes:
 - To override the secret name in GSM, set an env var named
-  SECRET_<SECRETNAME>_NAME. Example: SECRET_AI_Token_NAME=MyOpenAIKey
+  SECRET_<SECRETNAME>_NAME. Example: SECRET_OPENAI_API_KEY_NAME=MyOpenAIKey
 - Requires google-cloud-secret-manager at runtime on GCP. Falls back gracefully
   if not installed or if permissions are missing.
 """

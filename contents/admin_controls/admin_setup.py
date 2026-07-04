@@ -702,7 +702,7 @@ class AdminSetup:
             }
 
         # Saved presets never store the real API key - only the runtime
-        # AI_Token (env/Secret Manager) is used to actually call OpenAI.
+        # OPENAI_API_KEY (env/Secret Manager) is used to actually call OpenAI.
         api_settings['openai_api_key'] = ''
 
         # Save the settings with the given name
