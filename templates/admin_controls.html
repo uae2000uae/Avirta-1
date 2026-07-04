@@ -398,40 +398,10 @@
                         <a href="{{ url_for('aivalidator') }}" class="button">AI Question Validator</a>
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
                         <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
-                        <br><br><!-- Upload to GitHub button -->
-                        <form id="git-push-form" action="{{ url_for('admin_github_sync') }}" method="POST" class="form-group clear">
-                            <button type="submit" class="success-button" title="Upload question files to GitHub in background">Upload Changes to GitHub</button>
-                        </form>
-
-                        <!-- Push All Amended Files to GitHub button -->
+                        <br><br><!-- Upload Changes to GitHub button -->
                         <form id="git-push-form" action="{{ url_for('admin_git_push') }}" method="POST" class="form-group clear">
-                            <button type="submit" class="success-button" title="Push ALL amended files to GitHub in background" style="background-color: #20c997;">Push All Files to GitHub</button>
+                            <button type="submit" class="success-button" title="Push ALL amended files to GitHub in background" style="background-color: #20c997;">Upload Changes to GitHub</button>
                         </form>
-
-                        <!-- GitHub Sync Progress Modal -->
-                        <div id="git-push-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
-                            <div class="modal-container" style="background-color: var(--bg-color, #ffffff); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 500px; max-width: 90%; padding: 20px; display: flex; flex-direction: column; color: var(--text-color, #333);">
-                                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color-light); padding-bottom: 10px;">
-                                    <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--primary-color);">Git Push Progress</h3>
-                                    <button type="button" id="close-push-modal-btn" class="modal-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color-light, #666); display: none;">&times;</button>
-                                </div>
-                                <div class="modal-body" style="padding: 10px 0;">
-                                    <p id="push-status-text" style="font-weight: bold; margin-bottom: 10px; text-align: left;">Initialising synchronization...</p>
-                                    <div class="progress-bar-container" style="width: 100%; background-color: var(--border-color-light, #eee); border-radius: 10px; height: 16px; overflow: hidden; margin-top: 10px; border: 1px solid var(--border-color, #ddd);">
-                                        <div id="push-progress-bar" class="progress-bar" style="background-color: var(--success-color, #28a745); height: 100%; transition: width 0.3s ease; width: 0%;"></div>
-                                    </div>
-                                    <div id="push-progress-percent" style="text-align: right; font-weight: bold; margin-top: 5px; font-size: 14px; color: var(--text-color);">0%</div>
-                                    <p id="push-message-text" style="font-style: italic; margin-top: 10px; font-size: 13px; color: var(--text-color-light); word-break: break-all; min-height: 18px; text-align: left;"></p>
-                                    
-                                    <div class="push-logs-container" style="margin-top: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; height: 150px; overflow-y: auto; background: #fafafa; font-family: monospace; font-size: 12px; text-align: left;">
-                                        <div id="push-logs-list" style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0;"></div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer" id="push-modal-footer" style="display: none; justify-content: flex-end; margin-top: 15px;">
-                                    <button type="button" id="ok-push-modal-btn" class="button">Close</button>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Git Push Progress Modal -->
                         <div id="git-push-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
