@@ -20,6 +20,7 @@
     <h2>AI Generator</h2>
     <p>Enter a prompt and customize options to generate questions using AI.</p>
 		<form id="generatorForm" action="{{ url_for('ai_question_generator') }}" method="POST" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="form-group-inline">
             <h3 for="topic">Topic:</h3>
             <input type="text" id="topic" name="topic" required placeholder="The subject, e.g. Cars, Ancient Egypt, World Cup football">
@@ -120,6 +121,7 @@
     <p>Review the generated questions before adding them to your question bank.</p>
 
     <form action="{{ url_for('save_ai_questions') }}" method="POST" class="form-group-grid1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="batch_id" value="{{ batch_id }}">
 
 

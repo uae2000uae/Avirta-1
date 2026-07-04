@@ -76,11 +76,42 @@ def _redact(text: str) -> str:
         return str(text)
 
 
+def _salvage_question_objects(s: str) -> list:
+    """Recover as many complete question objects as possible from a (possibly
+    truncated) response.
+
+    When a large batch overruns max_tokens, the JSON is cut off mid-array and a
+    normal parse fails. Rather than lose the whole batch, we walk the array and
+    decode each complete ``{...}`` object, stopping at the first incomplete one.
+    """
+    idx = s.find('"questions"')
+    bracket = s.find('[', idx) if idx != -1 else s.find('[')
+    if bracket == -1:
+        return []
+    decoder = json.JSONDecoder()
+    i, n = bracket + 1, len(s)
+    objs = []
+    while i < n:
+        while i < n and s[i] in ' \t\r\n,':
+            i += 1
+        if i >= n or s[i] != '{':
+            break
+        try:
+            obj, end = decoder.raw_decode(s, i)
+        except Exception:
+            break  # incomplete final object -> stop
+        if isinstance(obj, dict):
+            objs.append(obj)
+        i = end
+    return objs
+
+
 def _extract_json(text: str):
     """Best-effort parse of a JSON object/array from a model reply.
 
-    Claude is instructed to return raw JSON, but we still tolerate stray prose or
-    ```json fences by stripping fences and slicing to the outermost braces/brackets.
+    Claude is instructed to return raw JSON, but we tolerate stray prose or
+    ```json fences (stripped/sliced), and - crucially - salvage complete question
+    objects when the response was truncated at max_tokens.
     """
     if not text:
         raise ValueError("Empty response from Claude.")
@@ -102,6 +133,11 @@ def _extract_json(text: str):
                 return json.loads(s[start:end + 1])
             except Exception:
                 continue
+    # Last resort: salvage complete question objects from a truncated array.
+    salvaged = _salvage_question_objects(s)
+    if salvaged:
+        print(f"[anthropic] response was truncated/malformed; salvaged {len(salvaged)} question object(s).")
+        return {"questions": salvaged}
     raise ValueError("Could not parse JSON from Claude response.")
 
 
@@ -170,7 +206,7 @@ def _type_instruction(question_type):
 def build_generation_prompt(topic, category, source_facts, question_count,
                             distribution, question_type="mixed",
                             language="arabic", include_explanations=True,
-                            instructions=""):
+                            instructions="", avoid_questions=None):
     """Return (system_prompt, user_prompt) for the generation call.
 
     Grounding is SOFT: retrieved facts are offered as optional supporting
@@ -219,6 +255,15 @@ def build_generation_prompt(topic, category, source_facts, question_count,
         sections.append(
             "Rely on your own reliable, widely-accepted general knowledge about the TOPIC; "
             "only state facts you are confident are correct."
+        )
+
+    # Cross-chunk de-duplication: show questions already produced so the model
+    # generates genuinely new ones instead of repeating.
+    if avoid_questions:
+        shown = [str(q) for q in avoid_questions][:60]
+        sections.append(
+            "ALREADY GENERATED - do NOT repeat or closely paraphrase any of these; produce different questions:\n"
+            + "\n".join(f"- {q}" for q in shown)
         )
 
     rules = [
@@ -451,51 +496,85 @@ class AnthropicQuestionGenerator:
                 print(f"[anthropic] source fact retrieval failed, continuing ungrounded: {e}")
         grounded = bool(source_facts.get("facts"))
 
-        # 2) Generate.
-        _set_generation_progress(percent=35, message="Generating questions with Claude…")
-        gen_system, gen_user = build_generation_prompt(
-            topic, category, source_facts, num_questions, distribution,
-            question_type=question_type, language=language,
-            include_explanations=include_explanations, instructions=instructions,
-        )
-        gen_data = _call_claude(
-            self.api_key, self.model, gen_system, gen_user,
-            self.max_output_tokens, self.temperature, self.top_p, self.request_timeout,
-        )
-        raw_questions = gen_data.get("questions", gen_data) if isinstance(gen_data, dict) else gen_data
-        questions = _normalize_questions(raw_questions)
-
-        # Deterministic structural validation. Source citation is NOT required
-        # (grounding is soft - questions may come from general knowledge).
-        questions, _rejected = code_filter_valid_questions(questions, require_source=False)
-
-        # 3) AI validation pass.
-        if use_validation and questions:
-            _set_generation_progress(percent=65, message="Validating questions with Claude…")
-            try:
-                val_system, val_user = build_validation_prompt(source_facts, questions, topic=topic)
-                val_data = _call_claude(
-                    self.api_key, self.model, val_system, val_user,
-                    self.max_output_tokens, 0.2, 1.0, self.request_timeout,
-                )
-                approved = extract_approved_questions(val_data)
-                approved = _normalize_questions(approved)
-                approved, _ = code_filter_valid_questions(approved, require_source=False)
-                if approved:
-                    questions = approved
-            except Exception as e:
-                print(f"[anthropic] validation pass failed, keeping generated set: {e}")
-
-        # 4) Remove duplicates (within batch + against recent batches).
-        _set_generation_progress(percent=85, message="Removing duplicates…")
+        # Duplicate memory from recent batches (loaded once).
         try:
             existing = collect_existing_questions_from_bank()
         except Exception:
             existing = []
-        questions, _dupes = filter_duplicates(questions, existing)
+
+        # 2) Generate in CHUNKS. A single call for many questions overruns
+        # max_tokens and truncates the JSON, so we generate a handful per call and
+        # loop until we reach the target (or run out of attempts). Smaller chunks
+        # for Arabic, which tends to be more token-heavy.
+        per_call = 8 if str(language).lower() == "arabic" else 12
+        max_batches = max(6, (num_questions + per_call - 1) // per_call + 4)
+        questions = []
+        batches_done = 0
+
+        while len(questions) < num_questions and batches_done < max_batches:
+            need = num_questions - len(questions)
+            this_call = min(per_call, need)
+            chunk_distribution = build_difficulty_distribution(this_call, difficulty)
+            avoid = [q.get("question", "") for q in questions][-60:]
+
+            _set_generation_progress(
+                percent=min(90, 20 + int(70 * len(questions) / max(1, num_questions))),
+                generated=len(questions),
+                message=f"Generating questions with Claude… ({len(questions)}/{num_questions})",
+            )
+
+            gen_system, gen_user = build_generation_prompt(
+                topic, category, source_facts, this_call, chunk_distribution,
+                question_type=question_type, language=language,
+                include_explanations=include_explanations, instructions=instructions,
+                avoid_questions=avoid,
+            )
+            try:
+                gen_data = _call_claude(
+                    self.api_key, self.model, gen_system, gen_user,
+                    self.max_output_tokens, self.temperature, self.top_p, self.request_timeout,
+                )
+            except Exception as e:
+                print(f"[anthropic] generation call failed for a chunk: {e}")
+                batches_done += 1
+                continue
+
+            raw_questions = gen_data.get("questions", gen_data) if isinstance(gen_data, dict) else gen_data
+            chunk = _normalize_questions(raw_questions)
+            # Source citation is NOT required (grounding is soft).
+            chunk, _rejected = code_filter_valid_questions(chunk, require_source=False)
+
+            # Per-chunk AI validation (best-effort; keep the chunk on failure).
+            if use_validation and chunk:
+                try:
+                    val_system, val_user = build_validation_prompt(source_facts, chunk, topic=topic)
+                    val_data = _call_claude(
+                        self.api_key, self.model, val_system, val_user,
+                        self.max_output_tokens, 0.2, 1.0, self.request_timeout,
+                    )
+                    approved = _normalize_questions(extract_approved_questions(val_data))
+                    approved, _ = code_filter_valid_questions(approved, require_source=False)
+                    if approved:
+                        chunk = approved
+                except Exception as e:
+                    print(f"[anthropic] validation pass failed for a chunk, keeping it: {e}")
+
+            # Dedup against memory + everything accepted so far, then append.
+            unique, _dupes = filter_duplicates(chunk, existing + questions)
+            for q in unique:
+                questions.append(q)
+                if len(questions) >= num_questions:
+                    break
+
+            batches_done += 1
+            # Stop early if a chunk yielded nothing usable (avoid spinning).
+            if not unique and batches_done >= 3 and not questions:
+                break
 
         if not questions:
             raise ValueError("No valid questions were produced. Try a broader topic or fewer constraints.")
+
+        _set_generation_progress(percent=92, message="Finalizing…")
 
         # 5) Save batch (same folder/format as the OpenAI generator).
         batch_id = str(uuid.uuid4())

@@ -10,6 +10,7 @@
 <h1>{% if editing %}Edit Question{% else %}Add New Question{% endif %}</h1>
 
 <form action="{{ url_for('add_question_page', question_id=question.id if editing else None) }}" method="POST" class="form-group-xx">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% if editing %}
     <input type="hidden" name="question_id" value="{{ question.id }}">
     <div class="form-group-equal-sm">

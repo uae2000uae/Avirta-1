@@ -23,6 +23,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('bulk_import_page') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="form-group">
             <label for="file">Select File:</label>
             <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" required>

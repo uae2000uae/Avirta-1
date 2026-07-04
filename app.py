@@ -93,12 +93,22 @@ if not _resolved_secret_key:
 app.secret_key = _resolved_secret_key
 
 # Harden session cookies.
+# Only mark the session cookie "Secure" when we're actually served over HTTPS
+# (i.e. running on Cloud Run, which sets K_SERVICE). A Secure cookie is dropped
+# by browsers over plain HTTP, which silently breaks sessions — and therefore
+# CSRF validation — during local development on http://localhost. Basing this on
+# the real environment (rather than FLASK_DEBUG) means local dev works without
+# any extra env vars, while production stays secure. Force-disable with
+# SESSION_COOKIE_INSECURE=1 or when FLASK_DEBUG=1.
+_on_cloud_run = bool(os.environ.get('K_SERVICE'))
+_force_insecure = (
+    os.environ.get('SESSION_COOKIE_INSECURE', '0') == '1'
+    or os.environ.get('FLASK_DEBUG', '0') == '1'
+)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    # Cloud Run serves over HTTPS; only send the cookie over secure connections
-    # in production. Allow HTTP locally when FLASK_DEBUG is enabled.
-    SESSION_COOKIE_SECURE=os.environ.get('FLASK_DEBUG', '0') != '1',
+    SESSION_COOKIE_SECURE=_on_cloud_run and not _force_insecure,
 )
 
 
