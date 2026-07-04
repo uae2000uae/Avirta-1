@@ -756,8 +756,8 @@
     "points": 400,
     "question": "من هو العالم الذي اخترع أول مفاعل نووي؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-19T00:42:54.843514",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:04:36.128345",
+    "use_count": 1
   },
   {
     "active": true,
@@ -775,8 +775,8 @@
     "points": 400,
     "question": "من هو العالم الذي اكتشف طبيعة الكوازار لأول مرة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-19T00:43:09.600291",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:05:03.901653",
+    "use_count": 1
   },
   {
     "active": true,
@@ -794,8 +794,8 @@
     "points": 300,
     "question": "من هو المخترع الذي استخدم الورق المثقب في النول الآلي لأول مرة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-19T00:43:09.600291",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:05:12.248527",
+    "use_count": 1
   },
   {
     "active": true,
