@@ -53,8 +53,8 @@
     "points": 100,
     "question": "في أي دولة تقع أهرامات الجيزة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:46:32.784527",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:54:20.159977",
+    "use_count": 2
   },
   {
     "active": true,
@@ -642,8 +642,8 @@
     "points": 300,
     "question": "في أي دولة يقع وادي رم؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:47:28.589033",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:54:37.015063",
+    "use_count": 1
   },
   {
     "active": true,
@@ -997,8 +997,8 @@
     "points": 200,
     "question": "يقع جبل كليمنجارو في تنزانيا.",
     "type": "true_false",
-    "updated_at": "2025-09-21T16:48:03.115271",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:54:28.560763",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1334,8 +1334,8 @@
     "points": 400,
     "question": "في أي دولة تقع قلعة نويشفانشتاين التي ألهمت قصص ديزني؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-21T16:48:41.520717",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:54:49.411414",
+    "use_count": 1
   },
   {
     "active": true,
@@ -1455,8 +1455,8 @@
     "points": 500,
     "question": "في أي دولة يقع متنزه بحيرات بليتفيس الوطني؟",
     "type": "multiple_choice",
-    "updated_at": "2025-09-26T20:20:59.515646",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:55:01.055526",
+    "use_count": 2
   },
   {
     "active": true,

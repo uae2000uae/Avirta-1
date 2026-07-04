@@ -104,8 +104,8 @@
     "points": 100,
     "question": "ما هي العملة الرسمية في الإمارات العربية المتحدة؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:19:34.249184",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:48:26.980698",
+    "use_count": 2
   },
   {
     "active": true,
@@ -142,8 +142,8 @@
     "points": 200,
     "question": "ما هو اسم العاصمة المغربية؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:26:22.518660",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:48:37.588712",
+    "use_count": 2
   },
   {
     "active": true,
@@ -570,8 +570,9 @@
     "points": 400,
     "question": "أي من الدول التالية لها حدود مع كل من السعودية والأردن والعراق؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-14T18:27:26.673418",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:49:24.231757",
+    "use_count": 1,
+    "reported": true
   },
   {
     "active": true,
@@ -819,8 +820,8 @@
     "points": 300,
     "question": "ما هي عاصمة جزر القمر؟",
     "type": "text",
-    "updated_at": "2025-11-14T18:28:19.374325",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:48:46.826547",
+    "use_count": 1
   },
   {
     "active": true,
@@ -838,8 +839,8 @@
     "points": 500,
     "question": "ما اسم أقدم جامعة في العالم وتقع في دولة عربية؟",
     "type": "multiple_choice",
-    "updated_at": "2026-07-04T17:33:43.284328",
-    "use_count": 2,
+    "updated_at": "2026-07-04T17:49:37.264950",
+    "use_count": 3,
     "reported": true
   },
   {

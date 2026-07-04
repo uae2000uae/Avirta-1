@@ -273,8 +273,8 @@
     "points": 200,
     "question": "جامعة الإمارات العربية المتحدة هي أول جامعة في الدولة.",
     "type": "true_false",
-    "updated_at": "2025-11-16T23:43:41.660240",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:52:37.664654",
+    "use_count": 1
   },
   {
     "active": true,
@@ -307,8 +307,8 @@
     "question": "ما هو تاريخ الاتحاد الإماراتي، والمعروف باسم يوم الاتحاد؟",
     "reported": true,
     "type": "text",
-    "updated_at": "2025-11-16T23:43:41.660240",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:52:59.474918",
+    "use_count": 1
   },
   {
     "active": true,
@@ -320,8 +320,9 @@
     "points": 100,
     "question": "تقع حديقة الحيوانات في مدينة العين بإمارة أبوظبي.",
     "type": "true_false",
-    "updated_at": "2025-11-16T23:43:50.321209",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:52:26.983013",
+    "use_count": 0,
+    "reported": true
   },
   {
     "active": true,
@@ -422,8 +423,8 @@
     "points": 300,
     "question": "ما اسم الجزيرة التي تحتوي على متحف اللوفر في الإمارات؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-16T23:43:59.429846",
-    "use_count": 0
+    "updated_at": "2026-07-04T17:52:48.240895",
+    "use_count": 1
   },
   {
     "active": true,
@@ -672,8 +673,8 @@
     "points": 500,
     "question": "ما هو اسم المتحف الذي يُعرف باسم المتحف الوطني لدولة الإمارات ويقع في أبوظبي؟",
     "type": "multiple_choice",
-    "updated_at": "2025-11-16T23:44:26.464189",
-    "use_count": 1
+    "updated_at": "2026-07-04T17:53:15.196502",
+    "use_count": 2
   },
   {
     "active": true,
