@@ -400,6 +400,7 @@
                         <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
                         <br><br><!-- Upload Changes to GitHub button -->
                         <form id="git-push-form" action="{{ url_for('admin_git_push') }}" method="POST" class="form-group clear">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="success-button" title="Push ALL amended files to GitHub in background" style="background-color: #20c997;">Upload Changes to GitHub</button>
                         </form>
 
