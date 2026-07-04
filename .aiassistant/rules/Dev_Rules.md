@@ -32,6 +32,8 @@ This document defines the core specifications, design guidelines, and system cod
    - [PRJ-009: Dynamic Game Board Updates](#prj-009-dynamic-game-board-updates)
    - [PRJ-010: Real-time Polling Mechanisms](#prj-010-real-time-polling-mechanisms)
    - [PRJ-015: Modal Handling and User Interface Messaging](#prj-015-modal-handling-and-user-interface-messaging)
+6. [Version Control & GitHub Integration Rules](#6-version-control--github-integration-rules)
+   - [PRJ-016: GitHub Integration & Auto-Sync of Question Data](#prj-016-github-integration--auto-sync-of-question-data)
 
 ---
 
@@ -508,3 +510,54 @@ This document defines the core specifications, design guidelines, and system cod
   * Template safety measures prevent JavaScript errors while maintaining security.
   * Centralized modal handling reduces code duplication and ensures consistent behavior across the application.
   * Sequential modal display maintains user focus and prevents information overload.
+
+---
+
+## 6. Version Control & GitHub Integration Rules
+
+### PRJ-016: GitHub Integration & Auto-Sync of Question Data
+
+* **Rule**: Persisting question-bank content back to the GitHub repository must go through the self-contained `contents/admin_controls/github_integration.py` module, which uses the GitHub REST API (token-based) and is independent of the local `git` binary, git credentials, SSH keys, and any other module. It must be callable from anywhere in the app (Flask routes, background threads, or the CLI) and must degrade gracefully (never crash a request) when `GITHUB_TOKEN` is missing. Full source-code pushes (all changed files) are a separate concern handled by `contents/admin_controls/git_push_helper.py` (native git) and must not be conflated with question sync.
+* **Public interface** (import from `contents.admin_controls.github_integration`):
+  * `push_all_amended_questions_async(commit_message=None, detach=True)` — push all `contents/questions/*.json` via the API. Fire-and-forget when `detach=True`.
+  * `push_files_async(rel_paths, commit_message=None, detach=True)` — push an explicit list of files.
+  * `push_to_github(commit_message=None, detach=False)` — one-call convenience helper.
+  * `GitHubIntegration` — client class; always check `.token` before pushing.
+  * `get_push_progress()` — thread-safe progress dict used for status polling.
+* **Configuration** (resolved by `secret_loader.get_secret` from env var or Google Secret Manager):
+  * `GITHUB_TOKEN` (required) — PAT with `repo` / contents:write scope.
+  * `GITHUB_REPO` — `owner/repo` (defaults to `.git/config` origin, else `uae2000uae/Avirta-1`).
+  * `GITHUB_BRANCH` — target branch (defaults to `.git/HEAD`, else `Avirta-1`).
+  * `GITHUB_API_URL` — API base for GitHub Enterprise (defaults to `https://api.github.com`).
+* **Trigger Map** (every place the integration fires — keep this in sync when routes change):
+
+  | Type | Route | Function | When |
+  |------|-------|----------|------|
+  | Auto | `/end_game/<room_id>` | `end_game` | a host ends a game |
+  | Auto | `/reset_game` | `reset_game` | starting a new game |
+  | Auto | `/edit_category/<id>` | `edit_category` | category ID changed |
+  | Auto | `/edit_category/<id>` | `edit_category` | category updated |
+  | Auto | `/question_bank/delete/<id>` | `delete_question` | a question deleted |
+  | Auto | `/question_bank/delete_category_questions/<id>` | `delete_category_questions` | all questions in a category deleted |
+  | Auto | `/question_bank/add` | `add_question_page` | question added or edited |
+  | Auto | `/bulk_import` | `bulk_import_page` | questions bulk-imported |
+  | Auto | `/save_ai_questions` | `save_ai_questions` | AI-generated questions saved (guarded by `GitHubIntegration().token`) |
+  | Auto | `/save_processed_files_to_database` | `save_processed_files_to_database` | AI-validated files saved |
+  | Manual | `/admin/git_push` | `admin_git_push` | "Sync Questions to GitHub" button |
+  | Status | `/admin/git_push_status` | `admin_git_push_status` | modal polls question-sync progress |
+  | CLI/Code | — | `python -m contents.admin_controls.github_integration` or direct import | scripts, schedulers, other modules |
+
+* **Related (native git, NOT this module)**:
+  * `/admin/git_push_all` → `admin_git_push_all` — "Push All Source Files" button (all changed files via `git_push_helper.py`).
+  * `/admin/git_push_all_status` → `admin_git_push_all_status` — progress for the full source push.
+* **Implementation Requirements**:
+  1. All question-data pushes must call the `github_integration` module — never shell out to `git` for question sync.
+  2. Auto-push hooks must be best-effort: wrapped in `try/except` so a failed or missing-token push never breaks the originating request.
+  3. Commits are attributed to `Copilot <223556219+Copilot@users.noreply.github.com>` and land as a single atomic commit (blobs → tree → commit → ref); unchanged files must produce no commit.
+  4. Question-sync and full-source pushes must keep separate progress state and separate status endpoints.
+  5. This Trigger Map must be updated whenever a call site is added or removed.
+* **Rationale**:
+  * The token-based REST API works on Cloud Run, where the `git` binary and credentials are unavailable.
+  * A single, independent module keeps the integration testable and callable from anywhere in the app.
+  * Best-effort auto-sync keeps the repository current without risking the user-facing request path.
+  * Note: game end/reset (first two rows) fire on the normal game flow, so question files sync frequently on a live instance — restrict to admin/editing routes if that volume is undesirable.

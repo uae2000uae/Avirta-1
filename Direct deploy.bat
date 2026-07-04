@@ -45,19 +45,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo.
-echo Ensuring public (unauthenticated) access to the service...
-gcloud beta run services add-iam-policy-binding %SERVICE_NAME% ^
-  --region=%REGION% ^
-  --member=allUsers ^
-  --role=roles/run.invoker >NUL 2>&1
+rem NOTE: Public access is already granted by the --allow-unauthenticated flag on
+rem 'gcloud run deploy' above, which sets the allUsers roles/run.invoker binding as
+rem part of the deploy. A separate 'add-iam-policy-binding' call is redundant and,
+rem when it runs concurrently with another deploy, causes:
+rem   ERROR: (gcloud.beta.run.services.add-iam-policy-binding) ABORTED: There were
+rem   concurrent policy changes ... ETag ... did not match the current policy's ETag
+rem It has therefore been removed. If you ever deploy WITHOUT --allow-unauthenticated
+rem and need to (re)grant public access as a one-time setup, run this manually:
+rem   gcloud run services add-iam-policy-binding %SERVICE_NAME% --region=%REGION% ^
+rem     --member=allUsers --role=roles/run.invoker
 
-if errorlevel 1 (
-  echo Warning: failed to set IAM policy binding for public access (you may need additional permissions).
-) else (
-  echo Public access (roles/run.invoker) ensured.
-)
-
-echo.
-echo Deployment completed successfully.
-endlocal

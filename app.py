@@ -2924,6 +2924,15 @@ def admin_git_push_all():
     return redirect(url_for('admin_controls'))
 
 
+@app.route('/admin/git_push_all_status', methods=['GET'])
+def admin_git_push_all_status():
+    """Progress for the native-git full-source push (separate from question sync)."""
+    if not session.get('admin_authenticated', False):
+        return jsonify({"error": "Unauthorized"}), 403
+    from contents.admin_controls.git_push_helper import get_push_progress
+    return jsonify(get_push_progress())
+
+
 @app.route('/aivalidator', methods=['GET'])
 def aivalidator():
     """AI Question Validator page with authentication."""

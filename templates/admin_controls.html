@@ -403,11 +403,21 @@
                         <a href="{{ url_for('aivalidator') }}" class="button">AI Question Validator</a>
                         <a href="{{ url_for('reported_questions') }}" class="button">Reported Questions</a>
                         <a href="{{ url_for('question_bank_page') }}" class="button">Question Bank</a>
-                        <br><br><!-- Upload Changes to GitHub button -->
-                        <form id="git-push-form" action="{{ url_for('admin_git_push') }}" method="POST" class="form-group clear">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="success-button" title="Push ALL amended files to GitHub in background" style="background-color: #20c997;">Upload Changes to GitHub</button>
-                        </form>
+                        <br><br><!-- GitHub sync buttons (two distinct actions) -->
+                        <div class="github-actions" style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+                            <!-- 1) Question sync via GitHub REST API (works on Cloud Run, no git binary) -->
+                            <form id="git-push-questions-form" action="{{ url_for('admin_git_push') }}" method="POST" class="form-group clear" style="margin:0;" data-status-url="/admin/git_push_status" data-title="question sync">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="success-button" title="Push question bank JSON files to GitHub via the REST API. Works on Cloud Run." style="background-color: #20c997;">Sync Questions to GitHub</button>
+                                <div style="font-size:11px; color: var(--text-color-light); margin-top:4px; max-width:230px; text-align:left;">Question files only &middot; GitHub API &middot; works on Cloud Run</div>
+                            </form>
+                            <!-- 2) Full source push via native git (local/dev with git credentials) -->
+                            <form id="git-push-all-form" action="{{ url_for('admin_git_push_all') }}" method="POST" class="form-group clear" style="margin:0;" data-status-url="/admin/git_push_all_status" data-title="full source push">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="success-button" title="Commit and push ALL amended source files using native git. Requires git + credentials." style="background-color: #3b7dd8;">Push All Source Files</button>
+                                <div style="font-size:11px; color: var(--text-color-light); margin-top:4px; max-width:230px; text-align:left;">All changed files &middot; native git &middot; local/dev with git creds</div>
+                            </form>
+                        </div>
 
                         <!-- Git Push Progress Modal -->
                         <div id="git-push-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
@@ -1032,9 +1042,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // GitHub Sync Progress Interceptor
-    // Git Push Form Handler
-    const gitPushForm = document.getElementById('git-push-form');
+    // GitHub Sync Progress Interceptor (shared by both push buttons)
     const gitPushModal = document.getElementById('git-push-modal');
     const gitPushProgressBar = document.getElementById('push-progress-bar');
     const gitPushStatusText = document.getElementById('push-status-text');
@@ -1044,97 +1052,92 @@ document.addEventListener('DOMContentLoaded', function() {
     const okPushModalBtn = document.getElementById('ok-push-modal-btn');
     const pushModalFooter = document.getElementById('push-modal-footer');
 
-    if (gitPushForm) {
-        gitPushForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    function runGitPush(form) {
+        const statusUrl = form.getAttribute('data-status-url') || '/admin/git_push_status';
+        const title = form.getAttribute('data-title') || 'git push';
 
-            // Reset Modal elements
-            gitPushProgressBar.style.width = '0%';
-            gitPushStatusText.textContent = 'Initialising git push...';
-            gitPushMessageText.textContent = '';
-            gitPushBranchText.textContent = '';
-            closePushModalBtn.style.display = 'none';
-            pushModalFooter.style.display = 'none';
+        gitPushProgressBar.style.width = '0%';
+        gitPushProgressBar.style.backgroundColor = '#20c997';
+        gitPushStatusText.textContent = 'Initialising ' + title + '...';
+        gitPushMessageText.textContent = '';
+        gitPushBranchText.textContent = '';
+        closePushModalBtn.style.display = 'none';
+        pushModalFooter.style.display = 'none';
+        gitPushModal.style.display = 'flex';
+        gitPushStatusText.textContent = 'Sending start signal to server...';
 
-            // Show modal
-            gitPushModal.style.display = 'flex';
+        const csrfInput = form.querySelector('input[name="csrf_token"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
 
-            gitPushStatusText.textContent = 'Sending start signal to server...';
+        let pollInterval;
+        function pollPushStatus() {
+            pollInterval = setInterval(() => {
+                fetch(statusUrl)
+                .then(res => res.json())
+                .then(status => {
+                    const state = status.status;
+                    const msg = status.message || '';
+                    const branch = status.current_branch || 'main';
+                    gitPushStatusText.textContent = msg || 'Processing...';
+                    gitPushBranchText.textContent = 'Branch: ' + branch;
+                    if (state === 'running') {
+                        gitPushProgressBar.style.width = '50%';
+                        gitPushProgressBar.style.backgroundColor = '#20c997';
+                    } else if (state === 'success') {
+                        clearInterval(pollInterval);
+                        gitPushProgressBar.style.width = '100%';
+                        gitPushProgressBar.style.backgroundColor = '#20c997';
+                        gitPushStatusText.textContent = 'Push completed successfully!';
+                        gitPushMessageText.textContent = msg;
+                        closePushModalBtn.style.display = 'block';
+                        pushModalFooter.style.display = 'flex';
+                    } else if (state === 'failed') {
+                        clearInterval(pollInterval);
+                        gitPushProgressBar.style.width = '100%';
+                        gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
+                        gitPushStatusText.textContent = 'Push failed.';
+                        gitPushMessageText.textContent = msg;
+                        closePushModalBtn.style.display = 'block';
+                        pushModalFooter.style.display = 'flex';
+                    }
+                })
+                .catch(err => { gitPushStatusText.textContent = 'Polling error: ' + err; });
+            }, 1000);
+        }
 
-            // Trigger push via fetch POST with XMLHttpRequest header
-            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-            fetch(gitPushForm.action, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    gitPushStatusText.textContent = 'Push thread started on server.';
-                    gitPushProgressBar.style.width = '25%';
-                    // Start polling
-                    pollPushStatus();
-                } else {
-                    gitPushStatusText.textContent = `Failed: ${data.message}`;
-                    gitPushProgressBar.style.width = '100%';
-                    gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
-                    closePushModalBtn.style.display = 'block';
-                    pushModalFooter.style.display = 'flex';
-                }
-            })
-            .catch(err => {
-                gitPushStatusText.textContent = `Connection error: ${err}`;
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                gitPushStatusText.textContent = 'Push thread started on server.';
+                gitPushProgressBar.style.width = '25%';
+                pollPushStatus();
+            } else {
+                gitPushStatusText.textContent = 'Failed: ' + data.message;
                 gitPushProgressBar.style.width = '100%';
                 gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
                 closePushModalBtn.style.display = 'block';
                 pushModalFooter.style.display = 'flex';
-            });
-
-            let pollInterval;
-
-            function pollPushStatus() {
-                pollInterval = setInterval(() => {
-                    fetch('/admin/git_push_status')
-                    .then(res => res.json())
-                    .then(status => {
-                        const state = status.status;
-                        const msg = status.message || '';
-                        const branch = status.current_branch || 'main';
-
-                        gitPushStatusText.textContent = msg || 'Processing...';
-                        gitPushBranchText.textContent = `Branch: ${branch}`;
-
-                        if (state === 'running') {
-                            gitPushProgressBar.style.width = '50%';
-                            gitPushProgressBar.style.backgroundColor = '#20c997';
-                        } else if (state === 'success') {
-                            clearInterval(pollInterval);
-                            gitPushProgressBar.style.width = '100%';
-                            gitPushProgressBar.style.backgroundColor = '#20c997';
-                            gitPushStatusText.textContent = 'Push completed successfully!';
-                            gitPushMessageText.textContent = msg;
-                            closePushModalBtn.style.display = 'block';
-                            pushModalFooter.style.display = 'flex';
-                        } else if (state === 'failed') {
-                            clearInterval(pollInterval);
-                            gitPushProgressBar.style.width = '100%';
-                            gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
-                            gitPushStatusText.textContent = 'Push failed.';
-                            gitPushMessageText.textContent = msg;
-                            closePushModalBtn.style.display = 'block';
-                            pushModalFooter.style.display = 'flex';
-                        }
-                    })
-                    .catch(err => {
-                        gitPushStatusText.textContent = `Polling error: ${err}`;
-                    });
-                }, 1000);
             }
+        })
+        .catch(err => {
+            gitPushStatusText.textContent = 'Connection error: ' + err;
+            gitPushProgressBar.style.width = '100%';
+            gitPushProgressBar.style.backgroundColor = 'var(--error-color, #dc3545)';
+            closePushModalBtn.style.display = 'block';
+            pushModalFooter.style.display = 'flex';
         });
     }
+
+    ['git-push-questions-form', 'git-push-all-form'].forEach(function(fid) {
+        const f = document.getElementById(fid);
+        if (f) {
+            f.addEventListener('submit', function(e) { e.preventDefault(); runGitPush(f); });
+        }
+    });
 
     // Git Push Modal close buttons
     if (closePushModalBtn) {
