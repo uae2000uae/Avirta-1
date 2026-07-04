@@ -1056,10 +1056,12 @@ document.addEventListener('DOMContentLoaded', function() {
             gitPushStatusText.textContent = 'Sending start signal to server...';
 
             // Trigger push via fetch POST with XMLHttpRequest header
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
             fetch(gitPushForm.action, {
                 method: 'POST',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
                 }
             })
             .then(response => response.json())
