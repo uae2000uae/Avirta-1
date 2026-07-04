@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "prompt": "world capitals",
+    "question_type": "mixed",
+    "difficulty": "mixed",
+    "num_questions": 2,
+    "include_explanations": true,
+    "language": "english",
+    "timestamp": "2026-07-04T16:03:48.935623",
+    "provider": "anthropic",
+    "model": "claude-opus-4-8",
+    "difficulty_distribution": {
+      "100": 1,
+      "200": 1,
+      "300": 0,
+      "400": 0,
+      "500": 0
+    },
+    "grounded": false
+  },
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "Capital of France?",
+      "options": [
+        "Paris",
+        "Rome",
+        "Berlin",
+        "Madrid"
+      ],
+      "correct_answer": "Paris",
+      "explanation": "",
+      "points": 100
+    },
+    {
+      "type": "true_false",
+      "question": "The sun is a star.",
+      "options": [],
+      "correct_answer": "True",
+      "explanation": "",
+      "points": 200
+    }
+  ]
+}

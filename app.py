@@ -34,13 +34,19 @@ from contents.fastest.fastest import register_fastest_routes
 from questionmanagement.question_bank import QuestionBank, increment_use_count, set_question_bank_instance
 from questionmanagement.question_import_export import export_template
 from questionmanagement.ai_question_generator import generate_questions, get_batch, get_batch_metadata, get_all_batches, start_generation_async, get_generation_progress
-from contents.admin_controls.ai_settings import load_ai_settings
+from contents.admin_controls.ai_settings import (
+    load_ai_settings,
+    load_anthropic_settings,
+    get_active_provider,
+)
 from contents.admin_controls.openai_models import (
     get_model_params,
     is_known_model,
     DEFAULT_MODEL,
     get_registry_for_frontend,
 )
+from contents.admin_controls import anthropic_models
+from questionmanagement import anthropic_question_generator
 
 # --- Global progress tracking for AI validation (server-side, not session-based) ---
 from threading import Lock
@@ -2142,48 +2148,74 @@ def ai_question_generator():
         except ValueError:
             start_index = 0
 
-        # Load centralized AI settings (env overrides file values)
-        ai_opts = load_ai_settings(admin_setup)
+        # Which provider is active? This picks both the settings source and the
+        # generator implementation (OpenAI/ChatGPT vs Anthropic/Claude).
+        provider = get_active_provider(admin_setup)
 
-        # Generate questions
-        options = {
-            'question_type': question_type,
-            'difficulty': difficulty,
-            'num_questions': num_questions,
-            'include_explanations': include_explanations,
-            'language': language,
-            'reference_categories': reference_categories,
-            # Centralized AI options
-            'api_key': ai_opts.get('api_key'),
-            'model': ai_opts.get('model'),
-            'temperature': ai_opts.get('temperature'),
-            'max_output_tokens': ai_opts.get('max_output_tokens'),
-            'top_p': ai_opts.get('top_p'),
-            'frequency_penalty': ai_opts.get('frequency_penalty'),
-            'presence_penalty': ai_opts.get('presence_penalty'),
-            'reasoning_effort': ai_opts.get('reasoning_effort'),
-            'verbosity': ai_opts.get('verbosity'),
-            'stop': ai_opts.get('stop'),
-            'response_format': ai_opts.get('response_format'),
-            'request_timeout': ai_opts.get('request_timeout'),
-            'base_url': ai_opts.get('base_url'),
-            'organization': ai_opts.get('organization'),
-            'user': ai_opts.get('user'),
-            'seed': ai_opts.get('seed'),
-            'start_index': start_index,
-            # Enhanced flow toggles (RAG grounding + AI validation pass)
-            'use_source_grounding': ai_opts.get('use_source_grounding', True),
-            'use_validation': ai_opts.get('use_validation', True),
-        }
+        if provider == 'anthropic':
+            ai_opts = load_anthropic_settings(admin_setup)
+            options = {
+                'question_type': question_type,
+                'difficulty': difficulty,
+                'num_questions': num_questions,
+                'include_explanations': include_explanations,
+                'language': language,
+                'reference_categories': reference_categories,
+                'api_key': ai_opts.get('api_key'),
+                'model': ai_opts.get('model'),
+                'temperature': ai_opts.get('temperature'),
+                'top_p': ai_opts.get('top_p'),
+                'max_output_tokens': ai_opts.get('max_output_tokens'),
+                'request_timeout': ai_opts.get('request_timeout'),
+                'start_index': start_index,
+                'use_source_grounding': ai_opts.get('use_source_grounding', True),
+                'use_validation': ai_opts.get('use_validation', True),
+            }
+            gen_start_async = anthropic_question_generator.start_generation_async
+            gen_generate = anthropic_question_generator.generate_questions
+        else:
+            # Load centralized AI settings (env overrides file values)
+            ai_opts = load_ai_settings(admin_setup)
+            options = {
+                'question_type': question_type,
+                'difficulty': difficulty,
+                'num_questions': num_questions,
+                'include_explanations': include_explanations,
+                'language': language,
+                'reference_categories': reference_categories,
+                # Centralized AI options
+                'api_key': ai_opts.get('api_key'),
+                'model': ai_opts.get('model'),
+                'temperature': ai_opts.get('temperature'),
+                'max_output_tokens': ai_opts.get('max_output_tokens'),
+                'top_p': ai_opts.get('top_p'),
+                'frequency_penalty': ai_opts.get('frequency_penalty'),
+                'presence_penalty': ai_opts.get('presence_penalty'),
+                'reasoning_effort': ai_opts.get('reasoning_effort'),
+                'verbosity': ai_opts.get('verbosity'),
+                'stop': ai_opts.get('stop'),
+                'response_format': ai_opts.get('response_format'),
+                'request_timeout': ai_opts.get('request_timeout'),
+                'base_url': ai_opts.get('base_url'),
+                'organization': ai_opts.get('organization'),
+                'user': ai_opts.get('user'),
+                'seed': ai_opts.get('seed'),
+                'start_index': start_index,
+                # Enhanced flow toggles (RAG grounding + AI validation pass)
+                'use_source_grounding': ai_opts.get('use_source_grounding', True),
+                'use_validation': ai_opts.get('use_validation', True),
+            }
+            gen_start_async = start_generation_async
+            gen_generate = generate_questions
 
         # AJAX submissions kick off generation in the background and let the
         # client poll /api/ai/generation_progress to drive the progress bar.
         if request.form.get('ajax') == '1':
-            started = start_generation_async(prompt, options)
+            started = gen_start_async(prompt, options)
             return jsonify({"started": started})
 
         try:
-            batch_id, generated_questions = generate_questions(prompt, options)
+            batch_id, generated_questions = gen_generate(prompt, options)
             flash(f'Successfully generated {len(generated_questions)} questions.')
         except Exception as e:
             flash(f'Error generating questions: {str(e)}', 'error')
@@ -2606,6 +2638,62 @@ def admin_controls():
             for fld, val in advanced_values.items():
                 admin_setup.update_game_setting(fld, val)
 
+        # Handle switching the active AI provider (OpenAI <-> Anthropic/Claude)
+        elif action == 'update_ai_provider' and is_authenticated:
+            provider = (request.form.get('ai_provider') or 'openai').strip().lower()
+            if provider not in ('openai', 'anthropic'):
+                provider = 'openai'
+            admin_setup.update_game_setting('ai_provider', provider)
+            label = 'Anthropic (Claude)' if provider == 'anthropic' else 'OpenAI (ChatGPT)'
+            flash(f'Active AI provider set to {label}.')
+            return redirect(url_for('admin_controls'))
+
+        # Handle Anthropic (Claude) API settings update
+        elif action == 'update_anthropic_settings' and is_authenticated:
+            model_id = (request.form.get('anthropic_model') or '').strip()
+            if not anthropic_models.is_known_model(model_id):
+                model_id = anthropic_models.DEFAULT_MODEL
+
+            # API key is global; verify only if a real key was pasted.
+            api_key_value = request.form.get('anthropic_api_key')
+            if not api_key_value or not str(api_key_value).strip() or str(api_key_value).strip() == 'SET_IN_ENV':
+                admin_setup.update_game_setting('anthropic_api_key', 'SET_IN_ENV')
+                flash('Using ANTHROPIC_API_KEY from environment/Secret Manager. Leave this field blank to keep using the runtime secret.', 'info')
+            else:
+                cleaned = str(api_key_value).strip()
+                success, message = anthropic_question_generator.verify_api_connection(cleaned, model_id)
+                if success:
+                    flash(f'Anthropic API connection successful: {message}')
+                    admin_setup.update_game_setting('anthropic_api_key', cleaned)
+                else:
+                    flash(f'Anthropic API connection failed: {message}', 'error')
+
+            # Parse + clamp the per-model params.
+            cap = anthropic_models.get_max_output_tokens(model_id)
+            defaults = anthropic_models.get_model_defaults(model_id)
+
+            def _num(field, fallback, lo, hi, as_int=False):
+                raw = request.form.get(field)
+                if raw is None or str(raw).strip() == '':
+                    return fallback
+                try:
+                    val = int(float(raw)) if as_int else float(raw)
+                except (TypeError, ValueError):
+                    return fallback
+                return max(lo, min(val, hi))
+
+            values = {
+                'anthropic_temperature': _num('anthropic_temperature', defaults['anthropic_temperature'], 0.0, 1.0),
+                'anthropic_top_p': _num('anthropic_top_p', defaults['anthropic_top_p'], 0.0, 1.0),
+                'anthropic_max_tokens': _num('anthropic_max_tokens', defaults['anthropic_max_tokens'], 1, cap, as_int=True),
+            }
+            success, message = admin_setup.set_anthropic_model_settings(model_id, values)
+            flash(message if success else message, 'success' if success else 'error')
+
+            timeout_val = _num('anthropic_request_timeout', 60, 1, 300, as_int=True)
+            admin_setup.update_game_setting('anthropic_request_timeout', timeout_val)
+            return redirect(url_for('admin_controls'))
+
         # Handle "Save Current Settings" (save the on-screen values as a new named preset)
         elif action == 'save_api_settings' and is_authenticated:
             settings_name = (request.form.get('settings_name') or '').strip()
@@ -2695,6 +2783,10 @@ def admin_controls():
     if not is_known_model(current_model):
         current_model = DEFAULT_MODEL
 
+    current_anthropic_model = admin_setup.game_settings.get('anthropic_model', anthropic_models.DEFAULT_MODEL)
+    if not anthropic_models.is_known_model(current_anthropic_model):
+        current_anthropic_model = anthropic_models.DEFAULT_MODEL
+
     return render_template(
         'admin_controls.html',
         is_authenticated=is_authenticated,
@@ -2702,7 +2794,11 @@ def admin_controls():
         admin_setup=admin_setup,
         openai_model_registry=get_registry_for_frontend(),
         current_openai_model=current_model,
-        current_model_settings=admin_setup.get_model_settings(current_model)
+        current_model_settings=admin_setup.get_model_settings(current_model),
+        active_ai_provider=get_active_provider(admin_setup),
+        anthropic_model_registry=anthropic_models.get_registry_for_frontend(),
+        current_anthropic_model=current_anthropic_model,
+        current_anthropic_settings=admin_setup.get_anthropic_model_settings(current_anthropic_model),
     )
 
 

@@ -62,6 +62,32 @@
     font-weight: 600;
     margin: var(--spacing-sm, 10px) 0;
 }
+.provider-switch {
+    display: flex;
+    gap: var(--spacing-md, 15px);
+    flex-wrap: wrap;
+    margin: var(--spacing-sm, 10px) 0;
+}
+.provider-option {
+    flex: 1 1 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--spacing-md, 15px);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: var(--border-radius, 4px);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.provider-option:hover { border-color: var(--primary-color-light, #2d828a); }
+.provider-option.active {
+    border-color: var(--primary-color, #1e595e);
+    background: var(--bg-color-light, #f8f8f8);
+}
+.provider-option input[type="radio"] { margin-right: 6px; }
+.provider-option .provider-title { font-weight: 700; }
+.provider-option .provider-desc { color: var(--text-color-light, #666); font-size: .9em; }
+.active-provider-badge { margin-left: var(--spacing-md, 15px); color: var(--text-color-light, #666); }
 </style>
 <div class="back-navigation">
     <a href="{{ url_for('index') }}" class="button"><i class="fas fa-arrow-left"></i> Back to Homepage</a>
@@ -157,6 +183,32 @@
                 <div class="inner-section">
                     <h2>API Settings</h2>
                     <p>These settings are used for various API integrations. You need to provide your own API keys to use these features.</p>
+
+                    <!-- AI Provider Switch -->
+                    <div class="section">
+                        <h3>AI Question Generator Engine</h3>
+                        <p class="field-hint">Choose which AI service generates questions. The active engine is used by the AI Question Generator page. Settings for each engine are configured in the panels below.</p>
+                        <form action="{{ url_for('admin_controls') }}" method="POST">
+                            <input type="hidden" name="action" value="update_ai_provider">
+                            <div class="provider-switch">
+                                <label class="provider-option {% if active_ai_provider == 'openai' %}active{% endif %}">
+                                    <input type="radio" name="ai_provider" value="openai" {% if active_ai_provider == 'openai' %}checked{% endif %}>
+                                    <span class="provider-title">OpenAI (ChatGPT)</span>
+                                    <span class="provider-desc">GPT-4o / GPT-4.1 / GPT-5.x models</span>
+                                </label>
+                                <label class="provider-option {% if active_ai_provider == 'anthropic' %}active{% endif %}">
+                                    <input type="radio" name="ai_provider" value="anthropic" {% if active_ai_provider == 'anthropic' %}checked{% endif %}>
+                                    <span class="provider-title">Anthropic (Claude)</span>
+                                    <span class="provider-desc">Claude Opus 4.8 / Sonnet 5 / Haiku 4.5</span>
+                                </label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="button">Set Active Engine</button>
+                                <span class="active-provider-badge">Active: <strong>{{ 'Anthropic (Claude)' if active_ai_provider == 'anthropic' else 'OpenAI (ChatGPT)' }}</strong></span>
+                            </div>
+                        </form>
+                    </div>
+                    <br>
 
                     <!-- Saved Settings Dropdown -->
                     <!-- These controls submit into #ai-settings-form (defined below) via the
@@ -283,6 +335,55 @@
                         </form>
                     </div>
 					</div>
+
+                    <!-- Anthropic (Claude) API Settings -->
+                    <div class="section">
+                        <h3>Anthropic (Claude) API Settings</h3>
+                        <script type="application/json" id="anthropic-model-registry-data">{{ anthropic_model_registry|tojson }}</script>
+                        <script type="application/json" id="current-anthropic-settings-data">{{ current_anthropic_settings|tojson }}</script>
+                        <div class="form-group-grid1">
+                        <form action="{{ url_for('admin_controls') }}" method="POST" class="form-group equal-md" id="anthropic-settings-form">
+                            <input type="hidden" name="action" value="update_anthropic_settings">
+
+                            <h4 class="fill">Claude Question Generator</h4>
+                            <div>
+                                <label for="anthropic_api_key">Anthropic API Key
+                                    <span class="info-icon" tabindex="0" data-tooltip="Your Anthropic secret key. Leave blank to keep using the ANTHROPIC_API_KEY value from Secret Manager/env. Paste a new key here to verify and store it locally.">?</span>
+                                </label>
+                                <input type="text" id="anthropic_api_key" name="anthropic_api_key" value="" placeholder="Set via ANTHROPIC_API_KEY in Secret Manager/env, or paste a key to verify and save locally">
+                            </div>
+                            <div>
+                                <label for="anthropic_model">Claude Model
+                                    <span class="info-icon" tabindex="0" data-tooltip="Choose which Claude model to use for question generation. Opus 4.8 is the most capable; Sonnet 5 balances cost/quality; Haiku 4.5 is fastest/cheapest. The fields below switch to each model's recommended defaults.">?</span>
+                                </label>
+                                <select id="anthropic_model" name="anthropic_model">
+                                    {% for model_id, cfg in anthropic_model_registry.models.items() %}
+                                    <option value="{{ model_id }}" {% if model_id == current_anthropic_model %}selected{% endif %}>{{ cfg.display_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="field-hint" id="anthropic-model-description">{{ anthropic_model_registry.models[current_anthropic_model].description }}</p>
+                            </div>
+
+                            <div id="anthropic-model-params-fields" class="form-group-grid1 fill"></div>
+
+                            <details class="advanced-settings fill">
+                                <summary>Advanced Settings</summary>
+                                <div class="form-group-equal-md">
+                                    <div>
+                                        <label for="anthropic_request_timeout">Request Timeout (sec)
+                                            <span class="info-icon" tabindex="0" data-tooltip="How long to wait for a response before giving up. Recommended maximum: 300 seconds.">?</span>
+                                        </label>
+                                        <input type="number" id="anthropic_request_timeout" name="anthropic_request_timeout" value="{{ admin_setup.game_settings.get('anthropic_request_timeout',60) }}" step="1" min="1" max="300">
+                                    </div>
+                                </div>
+                            </details>
+
+                            <div class="form-actions">
+                                <button type="submit" class="button">Update Claude Settings</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
                     </div></div>
 
             <!-- Question Management Tab -->
@@ -845,6 +946,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     }
+
+    // ---- Anthropic (Claude) per-model dynamic fields ----
+    // Self-contained: renders temperature/top_p/max_tokens for the selected
+    // Claude model from the embedded registry. No server fetch needed - a model
+    // change just loads that model's registry defaults.
+    (function () {
+        const modelSelect = document.getElementById('anthropic_model');
+        const paramsContainer = document.getElementById('anthropic-model-params-fields');
+        const descEl = document.getElementById('anthropic-model-description');
+        const registryEl = document.getElementById('anthropic-model-registry-data');
+        const currentEl = document.getElementById('current-anthropic-settings-data');
+        if (!modelSelect || !paramsContainer || !registryEl) return;
+
+        let REGISTRY = null;
+        try { REGISTRY = JSON.parse(registryEl.textContent); } catch (e) { return; }
+
+        function renderParams(modelId, values) {
+            const cfg = REGISTRY.models[modelId];
+            if (!cfg) return;
+            values = values || {};
+            paramsContainer.innerHTML = '';
+            cfg.params.forEach(function (param) {
+                const wrapper = document.createElement('div');
+                const label = document.createElement('label');
+                label.setAttribute('for', param.key);
+                label.appendChild(document.createTextNode(param.label + ' '));
+                const info = document.createElement('span');
+                info.className = 'info-icon';
+                info.tabIndex = 0;
+                info.textContent = '?';
+                let tooltip = param.help;
+                if (param.key === 'anthropic_max_tokens') {
+                    tooltip += ` Maximum for ${cfg.display_name}: ${param.max.toLocaleString()} tokens.`;
+                }
+                info.setAttribute('data-tooltip', tooltip);
+                label.appendChild(info);
+                wrapper.appendChild(label);
+
+                const rawValue = (values[param.key] !== undefined) ? values[param.key] : param.default;
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = param.key;
+                input.name = param.key;
+                input.step = param.step;
+                if (param.min !== null && param.min !== undefined) input.min = param.min;
+                if (param.max !== null && param.max !== undefined) input.max = param.max;
+                input.value = rawValue;
+                wrapper.appendChild(input);
+                paramsContainer.appendChild(wrapper);
+            });
+            if (descEl) descEl.textContent = cfg.description;
+        }
+
+        let initialValues = {};
+        if (currentEl) { try { initialValues = JSON.parse(currentEl.textContent); } catch (e) {} }
+        renderParams(modelSelect.value, initialValues);
+
+        modelSelect.addEventListener('change', function () {
+            const cfg = REGISTRY.models[this.value];
+            renderParams(this.value, cfg ? cfg.defaults : {});
+        });
+    })();
 
 
     // Add click event listeners to tab buttons

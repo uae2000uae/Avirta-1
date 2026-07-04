@@ -13,6 +13,7 @@ from contents.admin_controls.openai_models import (
     is_known_model,
     DEFAULT_MODEL,
 )
+from contents.admin_controls import anthropic_models
 
 class AdminSetup:
     """
@@ -51,6 +52,19 @@ class AdminSetup:
             'max_players_per_room': 8,
             'max_categories_per_room': 7,  # Maximum number of categories per game room (3-7)
             'questions_per_category': 10,  # Number of questions per category (5-10)
+
+            # Active AI provider for question generation: 'openai' or 'anthropic'
+            'ai_provider': 'openai',
+
+            # Anthropic (Claude) settings - used when ai_provider == 'anthropic'.
+            # The API key is normally supplied via the ANTHROPIC_API_KEY secret;
+            # leave 'anthropic_api_key' as a placeholder to use the runtime secret.
+            'anthropic_api_key': 'SET_IN_ENV',
+            'anthropic_model': 'claude-opus-4-8',
+            'anthropic_temperature': 0.7,
+            'anthropic_top_p': 1.0,
+            'anthropic_max_tokens': 8192,
+            'anthropic_request_timeout': 60,
 
             # OpenAI settings
             'openai_api_key': '',
@@ -824,6 +838,37 @@ class AdminSetup:
         self.save_game_settings()
 
         self.log_event(f"Saved AI parameter settings for model '{model_id}'")
+        return True, f"Settings for '{model_id}' saved successfully"
+
+    # ------------------------------------------------------------------ #
+    # Anthropic (Claude) model settings
+    # ------------------------------------------------------------------ #
+    def get_anthropic_model_settings(self, model_id):
+        """Return effective Claude parameter values: registry defaults merged
+        with whatever is currently active in game_settings for that model."""
+        if not anthropic_models.is_known_model(model_id):
+            model_id = anthropic_models.DEFAULT_MODEL
+        values = anthropic_models.get_model_defaults(model_id)
+        # If this is the active Claude model, prefer the live saved values.
+        if self.game_settings.get('anthropic_model') == model_id:
+            for key in list(values.keys()):
+                if key in self.game_settings:
+                    values[key] = self.game_settings[key]
+        return values
+
+    def set_anthropic_model_settings(self, model_id, values):
+        """Make ``model_id`` the active Claude model and persist its params.
+
+        Anthropic params live directly in game_settings (single active model),
+        keeping the flow simple - no separate per-model memory file.
+        """
+        if not anthropic_models.is_known_model(model_id):
+            return False, f"Unknown Claude model '{model_id}'"
+        self.game_settings['anthropic_model'] = model_id
+        for key, value in (values or {}).items():
+            self.game_settings[key] = value
+        self.save_game_settings()
+        self.log_event(f"Saved Anthropic parameter settings for model '{model_id}'")
         return True, f"Settings for '{model_id}' saved successfully"
 
     def get_available_themes(self):

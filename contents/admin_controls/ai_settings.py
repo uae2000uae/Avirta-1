@@ -11,6 +11,7 @@ import os
 from typing import Dict, Any, Optional
 from contents.admin_controls.secret_loader import get_secret
 from contents.admin_controls.openai_models import is_known_model, get_max_output_tokens, get_model_config
+from contents.admin_controls import anthropic_models
 
 
 PLACEHOLDER_VALUES = {"SET_IN_ENV", "set_in_env", "", None}
@@ -142,4 +143,58 @@ def load_ai_settings(admin_setup) -> Dict[str, Any]:
         "user": user,
         "use_source_grounding": use_source_grounding,
         "use_validation": use_validation,
+    }
+
+
+def get_active_provider(admin_setup) -> str:
+    """Return the active AI provider ('openai' or 'anthropic')."""
+    gs = getattr(admin_setup, "game_settings", {}) or {}
+    provider = str(gs.get("ai_provider", "openai") or "openai").strip().lower()
+    return provider if provider in ("openai", "anthropic") else "openai"
+
+
+def load_anthropic_settings(admin_setup) -> Dict[str, Any]:
+    """Return a normalized dict of Anthropic (Claude) settings for the app.
+
+    Resolution order for API key:
+    - ANTHROPIC_API_KEY secret / env var
+    - admin_setup.game_settings['anthropic_api_key'] if not a placeholder
+
+    Shared toggles (source grounding, validation) reuse the same openai_* game
+    settings so the enhanced-flow switches apply to both providers.
+    """
+    gs = getattr(admin_setup, "game_settings", {}) or {}
+
+    # Prefer the dedicated secret; ignore file placeholders.
+    api_key = get_secret("ANTHROPIC_API_KEY")
+    if not api_key:
+        file_key = gs.get("anthropic_api_key")
+        if file_key and str(file_key).strip() not in PLACEHOLDER_VALUES:
+            api_key = str(file_key).strip()
+
+    model = str(gs.get("anthropic_model", anthropic_models.DEFAULT_MODEL)).strip() or anthropic_models.DEFAULT_MODEL
+    if not anthropic_models.is_known_model(model):
+        model = anthropic_models.DEFAULT_MODEL
+
+    temperature = float(gs.get("anthropic_temperature", 0.7))
+    top_p = float(gs.get("anthropic_top_p", 1.0))
+    max_tokens_cfg = int(gs.get("anthropic_max_tokens", 8192))
+    cap = anthropic_models.get_max_output_tokens(model)
+    max_tokens = max(1, min(max_tokens_cfg, cap))
+
+    request_timeout = gs.get("anthropic_request_timeout", 60)
+    try:
+        request_timeout = float(request_timeout) if request_timeout is not None else 60.0
+    except Exception:
+        request_timeout = 60.0
+
+    return {
+        "api_key": api_key or "",
+        "model": model,
+        "temperature": temperature,
+        "top_p": top_p,
+        "max_output_tokens": max_tokens,
+        "request_timeout": request_timeout,
+        "use_source_grounding": _coerce_bool(gs.get("openai_use_source_grounding", True), default=True),
+        "use_validation": _coerce_bool(gs.get("openai_use_validation", True), default=True),
     }
