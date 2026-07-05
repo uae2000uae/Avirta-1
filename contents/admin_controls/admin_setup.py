@@ -890,4 +890,290 @@ class AdminSetup:
             name (str): Name to identify the saved settings
             values (dict, optional): openai_* values to snapshot (e.g. the
                 admin's unsaved on-screen edits). If omitted, falls back to
-                snapshotting the live game_
+                snapshotting the live game_settings.
+
+        Returns:
+            tuple: (success, message)
+        """
+        if not name or not name.strip():
+            return False, "Settings name cannot be empty"
+
+        if values is not None:
+            api_settings = dict(values)
+        else:
+            # Snapshot every current OpenAI setting (model, per-model params,
+            # and advanced/global fields) so loading this preset later
+            # restores everything, not just a hardcoded subset.
+            api_settings = {
+                key: value for key, value in self.game_settings.items()
+                if key.startswith('openai_')
+            }
+
+        # Saved presets never store the real API key - only the runtime
+        # OPENAI_API_KEY (env/Secret Manager) is used to actually call OpenAI.
+        api_settings['openai_api_key'] = ''
+
+        # Save the settings with the given name
+        self.saved_api_settings[name.strip()] = api_settings
+
+        # Save to file to make changes permanent
+        success, message = self.save_api_settings_to_file()
+        if not success:
+            return False, f"Failed to save settings permanently: {message}"
+
+        self.log_event(f"API settings saved as '{name}'")
+        return True, f"API settings saved as '{name}'"
+
+    def get_saved_api_settings(self):
+        """
+        Get all saved API settings.
+
+        Returns:
+            dict: Dictionary of saved API settings
+        """
+        return self.saved_api_settings
+
+    def delete_api_settings(self, name):
+        """
+        Delete saved API settings by name.
+
+        Args:
+            name (str): Name of the saved settings to delete
+
+        Returns:
+            tuple: (success, message)
+        """
+        if name not in self.saved_api_settings:
+            return False, f"No saved settings found with name '{name}'"
+
+        # Delete the saved settings
+        del self.saved_api_settings[name]
+
+        # Save to file to make changes permanent
+        success, message = self.save_api_settings_to_file()
+        if not success:
+            return False, f"Failed to save changes permanently: {message}"
+
+        self.log_event(f"Deleted API settings '{name}'")
+        return True, f"Deleted API settings '{name}'"
+
+    def save_model_param_settings_to_file(self):
+        """
+        Save the per-model AI parameter memory to a JSON file for persistence.
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                             'admin_controls', 'model_param_settings.json')
+
+            with open(settings_file_path, 'w', encoding="utf-8") as f:
+                json.dump(self.model_param_settings, f, indent=4, ensure_ascii=False)
+
+            self.log_event("Model parameter settings saved to file")
+            return True, "Model parameter settings saved successfully"
+        except Exception as e:
+            self.log_event(f"Error saving model parameter settings: {str(e)}")
+            return False, f"Error saving model parameter settings: {str(e)}"
+
+    def load_model_param_settings_from_file(self):
+        """
+        Load the per-model AI parameter memory from a JSON file.
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                             'admin_controls', 'model_param_settings.json')
+
+            if not os.path.exists(settings_file_path):
+                self.log_event("Model parameter settings file not found, using defaults")
+                return False, "Model parameter settings file not found, using defaults"
+
+            with open(settings_file_path, 'r') as f:
+                self.model_param_settings = json.load(f)
+
+            self.log_event("Model parameter settings loaded from file")
+            return True, "Model parameter settings loaded successfully"
+        except Exception as e:
+            self.log_event(f"Error loading model parameter settings: {str(e)}")
+            return False, f"Error loading model parameter settings: {str(e)}"
+
+    def get_model_settings(self, model_id):
+        """
+        Get the effective parameter values for a model: registry defaults
+        overridden by anything previously saved for that model.
+
+        Args:
+            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
+
+        Returns:
+            dict: Effective openai_* parameter values for the model
+        """
+        if not is_known_model(model_id):
+            model_id = DEFAULT_MODEL
+
+        values = get_model_defaults(model_id)
+        values.update(self.model_param_settings.get(model_id, {}))
+        return values
+
+    def set_model_settings(self, model_id, values):
+        """
+        Save parameter overrides for a model, make it the active model, and
+        mirror the values into the live game_settings used at generation time.
+
+        Args:
+            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
+            values (dict): openai_* parameter values to store for this model
+
+        Returns:
+            tuple: (success, message)
+        """
+        if not is_known_model(model_id):
+            return False, f"Unknown model '{model_id}'"
+
+        self.model_param_settings[model_id] = dict(values)
+        success, message = self.save_model_param_settings_to_file()
+        if not success:
+            return False, f"Failed to save model settings permanently: {message}"
+
+        # Make this the active model and apply its values immediately.
+        self.game_settings['openai_model'] = model_id
+        for key, value in values.items():
+            self.game_settings[key] = value
+        self.save_game_settings()
+
+        self.log_event(f"Saved AI parameter settings for model '{model_id}'")
+        return True, f"Settings for '{model_id}' saved successfully"
+
+    # ------------------------------------------------------------------ #
+    # Anthropic (Claude) model settings
+    # ------------------------------------------------------------------ #
+    def get_anthropic_model_settings(self, model_id):
+        """Return effective Claude parameter values: registry defaults merged
+        with whatever is currently active in game_settings for that model."""
+        if not anthropic_models.is_known_model(model_id):
+            model_id = anthropic_models.DEFAULT_MODEL
+        values = anthropic_models.get_model_defaults(model_id)
+        # If this is the active Claude model, prefer the live saved values.
+        if self.game_settings.get('anthropic_model') == model_id:
+            for key in list(values.keys()):
+                if key in self.game_settings:
+                    values[key] = self.game_settings[key]
+        return values
+
+    def set_anthropic_model_settings(self, model_id, values):
+        """Make ``model_id`` the active Claude model and persist its params.
+
+        Anthropic params live directly in game_settings (single active model),
+        keeping the flow simple - no separate per-model memory file.
+        """
+        if not anthropic_models.is_known_model(model_id):
+            return False, f"Unknown Claude model '{model_id}'"
+        self.game_settings['anthropic_model'] = model_id
+        for key, value in (values or {}).items():
+            self.game_settings[key] = value
+        self.save_game_settings()
+        self.log_event(f"Saved Anthropic parameter settings for model '{model_id}'")
+        return True, f"Settings for '{model_id}' saved successfully"
+
+    def get_available_themes(self):
+        """
+        Get a list of available CSS themes from the themes directory.
+
+        Returns:
+            list: List of theme dictionaries with name and path
+        """
+        themes = []
+
+        # Path to the themes directory
+        themes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                                'static', 'css', 'themes')
+
+        # Check if the directory exists
+        if not os.path.exists(themes_dir):
+            # Try to create the directory if it doesn't exist
+            try:
+                os.makedirs(themes_dir)
+                self.log_event(f"Created themes directory at {themes_dir}")
+            except Exception as e:
+                self.log_event(f"Error creating themes directory: {str(e)}")
+            return themes
+
+        # Get all CSS files in the themes directory
+        theme_files = glob.glob(os.path.join(themes_dir, '*.css'))
+
+        for theme_file in theme_files:
+            # Get the theme name from the filename (without extension)
+            theme_name = os.path.splitext(os.path.basename(theme_file))[0]
+
+            # Format the theme name for display (replace underscores with spaces and capitalize)
+            display_name = theme_name.replace('_', ' ').title()
+
+            themes.append({
+                'name': theme_name,
+                'display_name': display_name,
+                'path': theme_file
+            })
+
+        # If no themes were found, log a warning
+        if not themes:
+            self.log_event("No theme files found in the themes directory")
+
+        return themes
+
+    def apply_theme(self, theme_name):
+        """
+        Apply a CSS theme immediately.
+
+        Args:
+            theme_name (str): Name of the theme to apply
+
+        Returns:
+            tuple: (success, message)
+        """
+        # Log the current directory and theme name for debugging
+        current_dir = os.getcwd()
+        self.log_event(f"Current directory: {current_dir}")
+        self.log_event(f"Applying theme: {theme_name}")
+
+        # Path to the themes directory
+        themes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                                'static', 'css', 'themes')
+        self.log_event(f"Themes directory: {themes_dir}")
+
+        # Path to the theme file
+        theme_file = os.path.join(themes_dir, f"{theme_name}.css")
+        self.log_event(f"Theme file path: {theme_file}")
+
+        # Check if the theme file exists
+        if not os.path.exists(theme_file):
+            self.log_event(f"Theme file not found: {theme_file}")
+            return False, f"Theme '{theme_name}' not found"
+
+        try:
+            # Read the theme file
+            with open(theme_file, 'r') as f:
+                theme_content = f.read()
+            self.log_event(f"Successfully read theme file: {len(theme_content)} bytes")
+
+            # Path to the custom CSS file
+            custom_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                                        'static', 'css', 'custom.css')
+            self.log_event(f"Custom CSS path: {custom_css_path}")
+
+            # Save the theme content to the custom CSS file
+            with open(custom_css_path, 'w') as f:
+                f.write(theme_content)
+            self.log_event(f"Successfully wrote to custom CSS file")
+
+            # Store the selected theme in game_settings (for session only)
+            self.game_settings['selected_theme'] = theme_name
+
+            self.log_event(f"Applied theme '{theme_name}'")
+            return True, f"Theme '{theme_name}' applied successfully"
+        except Exception as e:
+            self.log_event(f"Error applying theme '{theme_name}': {str(e)}")
+            return False, f"Error applying theme '{theme_name}': {str(e)}"

@@ -33,19 +33,14 @@ steps:
         "--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,GITHUB_TOKEN=GITHUB_TOKEN:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest"
       ]
 
-  # 2) Ensure public (unauthenticated) access (roles/run.invoker)
-  - name: "gcr.io/cloud-builders/gcloud"
-    args:
-      [
-        "beta",
-        "run",
-        "services",
-        "add-iam-policy-binding",
-        "${_SERVICE_NAME}",
-        "--region=${_REGION}",
-        "--member=allUsers",
-        "--role=roles/run.invoker"
-      ]
+  # NOTE: A second "add-iam-policy-binding" step was REMOVED. Public access is
+  # already granted by --allow-unauthenticated on the deploy above, so the extra
+  # IAM read-modify-write was redundant AND caused, when two builds overlapped:
+  #   ERROR: (gcloud.beta.run.services.add-iam-policy-binding) ABORTED: There were
+  #   concurrent policy changes ... ETag ... did not match the current policy's ETag
+  # allUsers/roles/run.invoker only needs to be granted once. To (re)grant manually:
+  #   gcloud run services add-iam-policy-binding ${_SERVICE_NAME} \
+  #     --region=${_REGION} --member=allUsers --role=roles/run.invoker
 
 timeout: "1600s"
 

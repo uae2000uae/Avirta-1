@@ -51,10 +51,15 @@ ERROR: (gcloud.beta.run.services.add-iam-policy-binding) ABORTED: There were
 concurrent policy changes ... ETag ... did not match the current policy's ETag
 ```
 
-This came from `Direct deploy.bat` calling `add-iam-policy-binding` on every
-deploy. That binding is **already applied** by the `--allow-unauthenticated` flag
-on `gcloud run deploy`, so the extra call was redundant and collided with
-concurrent deploys. It has been removed from `Direct deploy.bat`.
+This came from an explicit `add-iam-policy-binding` call that ran on every deploy
+— in **two** places: `Direct deploy.bat` (manual deploys) and, more importantly,
+`cloudbuild.yaml` step 2 (the Cloud Build trigger, i.e. every push-triggered
+deploy). That binding is **already applied** by the `--allow-unauthenticated`
+flag on `gcloud run deploy`, so the extra call was redundant and, when two builds
+overlapped, raced on the IAM policy and ABORTed. The redundant step has been
+removed from **both** `Direct deploy.bat` and `cloudbuild.yaml`. Because the
+trigger reads `cloudbuild.yaml` from the pushed commit, the fix applies on the
+next build.
 
 If you ever deploy **without** `--allow-unauthenticated` and need to grant public
 access once, run manually:

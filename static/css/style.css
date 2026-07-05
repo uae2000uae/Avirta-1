@@ -15,13 +15,40 @@
     font-style: oblique;
 }
 
-/* Color Theme Variables */
+/* ==========================================================================
+   DESIGN TOKENS  —  single source of truth for every colour and size.
+   Change a value here and it updates everywhere it is referenced below.
+   NOTE: the theme files (custom.css / themes/*.css) override a subset of
+   these tokens at runtime to switch themes, so names are kept in sync
+   with those files. Tokens added here that themes do not touch resolve to
+   the exact values shown.
+   --------------------------------------------------------------------------
+   Section index for the rules that follow:
+     1.  Fonts
+     2.  Design tokens (this block)
+     3.  Base / reset
+     4.  Layout  (container, header, nav, main, footer)
+     5.  Typography
+     6.  Forms & buttons
+     7.  Form groups & layout helpers
+     8.  Game board & play
+     9.  Timer
+     10. Messages, flash & live status
+     11. Tables (data, leaderboard, questions, stats)
+     12. Cards, boxes & badges
+     13. Modals
+     14. Page sections (import, category, question, result, home, room)
+     15. Admin & host controls
+     16. System-stats dashboard & logs
+     17. Utilities
+     18. Keyframes
+   ========================================================================== */
 :root {
     /* Hide scrollbar for the entire document */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
 
-    /* Primary Colors */
+    /* ---- Brand / Primary ---- */
     --primary-color-light: #346176;
     --primary-color: #1e3644;
     --primary-color-dark: #0e212e;
@@ -29,60 +56,94 @@
     --primary-color2: #e2c695;
     --primary-color2-dark: #c58e3f;
 
-    /* Secondary Colors */
+    /* ---- Secondary ---- */
     --secondary-color-dark: #87949a;
     --secondary-color: #6c757d;
     --secondary-color-hover: #4f565c;
     --secondary-color-light: #363639;
 
-    /* Background Colors */
+    /* ---- Backgrounds (lightest -> darkest) ---- */
     --bg-color-lightest: #B6CEDA;
     --bg-color-lighter: #346176;
     --bg-color-light: #1e3745;
     --bg-color: #0f202d;
+    --bg-color-dark: #0a1a24;
+    --bg-color-darker: #061218;
+    --bg-color-darkest: #030a0e;
 
-    /* Text Colors */
+    /* ---- Text ---- */
     --text-color2: #7B9EAE;
     --text-color2-dark: #B6CEDA;
     --text-color: #e0c494;
-    --text-color-dark: #c78f40;
+    --text-color-light: #c78f40;
     --text-color-white: #ffffff;
+    --text-color-black: #000000;
+    --text-color-muted: lightgray;
 
-    /* Status Colors */
+    /* ---- Status: success ---- */
     --success-color-light: #d4edda;
     --success-color: #489e5c;
     --success-color-dark: #155724;
     --success-bg: #243c1e;
     --success-text: #a1d2a7;
 
+    /* ---- Status: error ---- */
     --error-color-light: #f8d7da;
     --error-color: #dc3545;
     --error-color-dark: #721c24;
     --error-bg: #8c0000;
     --error-text: #fde9ec;
+    --error-glow: rgba(220, 53, 69, 0.5);
+    --critical-color: #6f0000;
 
+    /* ---- Status: info ---- */
     --info-color-light: #005470;
     --info-color: #0087a6;
     --info-color-dark: #ccf2ff;
 
+    /* ---- Status: warning ---- */
     --warning-bg: #8f5e2b;
     --warning-text: #ffeebe;
     --warning-color: #ff9900;
+    --warning-accent: #e0a800;
+    --warning-accent-text: #4a3b00;
+    --warning-notice-bg: #fff3cd;
+    --warning-notice-text: #856404;
+    --warning-notice-border: #ffeeba;
+    --warning-notice-link: #533f03;
 
-    /* Border Colors */
+    /* ---- Light surfaces (used by the AI-history light cards) ---- */
+    --surface-light: #ffffff;
+    --surface-light-alt: #f9f9f9;
+    --surface-light-alt2: #f5f5f5;
+    --surface-muted: #e0e0e0;
+    --heading-on-light: #333333;
+    --border-on-light: #dddddd;
+    --border-on-light-soft: #eeeeee;
+    --accent-blue: #3498db;
+    --accent-green: #2ecc71;
+    --progress-fill-color: #4CAF50;
+
+    /* ---- Borders ---- */
     --border-color: #e0c494;
     --border-color-light: #eee;
+    --border-color-muted: #888;
 
-    /* Common Styling */
+    /* ---- Overlays & shadows ---- */
+    --overlay-dark: rgba(0, 0, 0, 0.5);
+    --overlay-light: rgba(255, 255, 255, 0.05);
+    --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --box-shadow-soft: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --box-shadow-modal: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    /* ---- Radius ---- */
     --border-radius-small: 3px;
     --border-radius: 4px;
     --border-radius-large: 5px;
     --border-radius-xlarge: 10px;
 
-    --box-shadow: 0 2px 5px rgba(0, 0, 0, 50);
-    --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-    /* Spacing */
+    /* ---- Semantic spacing scale (theme files may override these) ---- */
     --spacing-zero: 0;
     --spacing-xx: 1px;
     --spacing-xs: 3px;
@@ -92,17 +153,42 @@
     --spacing-xl: 20px;
     --spacing-xxl: 60px;
 
-    /* Font Sizes */
+    /* ---- Fixed pixel sizes (never theme-overridden; exact values) ---- */
+    --size-1: 1px;
+    --size-3: 3px;
+    --size-5: 5px;
+    --size-6: 6px;
+    --size-8: 8px;
+    --size-10: 10px;
+    --size-12: 12px;
+    --size-15: 15px;
+    --size-20: 20px;
+    --size-30: 30px;
+    --size-40: 40px;
+
+    /* ---- Font sizes ---- */
+    --font-size-xxs: 10px;
     --font-size-small: 14px;
     --font-size-normal: 16px;
     --font-size-large: 18px;
     --font-size-xl: 24px;
+    --font-size-2xl: 28px;
+    --font-size-3xl: 35px;
+    --font-size-display: 48px;
 
-    /* Grid Breakpoints */
+    /* ---- Grid breakpoints ---- */
     --grid-breakpoint-sm: 150px;
     --grid-breakpoint-md: 200px;
     --grid-breakpoint-lg: 250px;
     --grid-breakpoint-xl: 300px;
+
+    /* ---- Fixed component widths ---- */
+    --width-form-sm: 150px;
+    --width-form-md: 250px;
+    --width-form-lg: 350px;
+    --width-dropdown: 250px;
+    --width-login: 400px;
+    --width-modal: 500px;
 }
 
 /* Base styles */
@@ -159,12 +245,12 @@ header {
 }
 
 h1 {
-    margin: 10px;
+    margin: var(--size-10);
 }
 
 
 h3 {
-    margin: 5px;
+    margin: var(--size-5);
 	border-bottom: solid 1px var(--text-color-white);
 	color: var(--text-color-white);
 
@@ -200,11 +286,11 @@ nav ul li a:hover {
     position: absolute;
     top: 2px;
     left: 2px;
-    font-size: 10px;
-    color: lightgray;
-    background-color: rgba(255,255,255,0.05);
-    padding: 2px 5px;
-    border-radius: 3px;
+    font-size: var(--font-size-xxs);
+    color: var(--text-color-muted);
+    background-color: var(--overlay-light);
+    padding: 2px var(--size-5);
+    border-radius: var(--border-radius-small);
     z-index: 1000;
     max-width: 300px;
     white-space: nowrap;
@@ -238,7 +324,7 @@ input[type="text"],
 input[type="number"],
 select {
     width: 100%;
-    padding: 8px;
+    padding: var(--size-8);
     margin-bottom: var(--spacing-md);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -345,11 +431,11 @@ button:hover, .button:hover {
     width: 100%;
     padding: var(--spacing-zero);
     background-color: var(--primary-color2);
-    color: #000;
+    color: var(--text-color-black);
     border: none;
     border-radius: var(--border-radius-large);
     cursor: pointer;
-    font-size: 16px;
+    font-size: var(--font-size-normal);
 }
 
 .question-button:hover {
@@ -375,7 +461,7 @@ button:hover, .button:hover {
 
 @keyframes textPulse {
     0% { transform: scale(1); text-shadow: 0 0 0 transparent; }
-    50% { transform: scale(1.15); text-shadow: 0 0 10px rgba(220, 53, 69, 0.5); }
+    50% { transform: scale(1.15); text-shadow: 0 0 10px var(--error-glow); }
     100% { transform: scale(1); text-shadow: 0 0 0 transparent; }
 }
 
@@ -1032,7 +1118,7 @@ button:hover, .button:hover {
 
 textarea {
     width: 100%;
-    padding: 8px;
+    padding: var(--size-8);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-sizing: border-box;
@@ -1046,7 +1132,7 @@ textarea {
 
 input[type="file"] {
     width: 100%;
-    padding: 8px;
+    padding: var(--size-8);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-sizing: border-box;
@@ -1136,7 +1222,7 @@ small {
 /* Result page styles */
 .result-section {
     /* Using content-section for consistent styling */
-    margin-bottom: 10px;
+    margin-bottom: var(--size-10);
 }
 
 .result-header {
@@ -1185,7 +1271,7 @@ small {
 }
 
 .result-icon {
-    font-size: 35px;
+    font-size: var(--font-size-3xl);
     margin: var(--spacing-md) 0;
 }
 
@@ -1197,7 +1283,7 @@ small {
 }
 
 .score {
-    font-size: 48px;
+    font-size: var(--font-size-display);
     font-weight: bold;
     color: var(--primary-color-light);
 }
@@ -1211,18 +1297,18 @@ small {
 
 /* Answer display */
 .answer-display {
-    margin: 20px 0;
-    padding: 15px;
+    margin: var(--size-20) 0;
+    padding: var(--size-15);
     background-color: var(--bg-color-light);
-    border-radius: 5px;
+    border-radius: var(--border-radius-large);
 }
 
 /* Report button */
 .report-button {
-    margin-top: 10px;
-    padding: 5px 10px;
+    margin-top: var(--size-10);
+    padding: var(--size-5) var(--size-10);
     background-color: var(--secondary-color);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     cursor: pointer;
     font-size: 0.9em;
     border: 1px solid var(--text-color);
@@ -1234,21 +1320,21 @@ small {
 }
 
 .report-confirmation {
-    margin-top: 10px;
-    padding: 10px;
+    margin-top: var(--size-10);
+    padding: var(--size-10);
     background-color: var(--bg-color-light);
     border: 1px solid var(--text-color);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
 }
 
 .confirm-report {
-    background-color: #dc3545;
-    color: white;
+    background-color: var(--error-color);
+    color: var(--text-color-white);
 }
 
 .cancel-report {
-    background-color: #6c757d;
-    color: white;
+    background-color: var(--secondary-color);
+    color: var(--text-color-white);
 }
 
 /* Modal styles */
@@ -1260,7 +1346,7 @@ small {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--overlay-dark);
     animation: fadeIn 0.3s;
 }
 
@@ -1268,12 +1354,12 @@ small {
     position: relative;
     background-color: var(--bg-color);
     margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
+    padding: var(--size-20);
+    border: 1px solid var(--border-color-muted);
     width: 80%;
     max-width: 500px;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow-modal);
     animation: slideIn 0.3s;
     text-align: center;
 }
@@ -1283,14 +1369,14 @@ small {
     top: 10px;
     right: 15px;
     color: var(--text-color);
-    font-size: 28px;
+    font-size: var(--font-size-2xl);
     font-weight: bold;
     cursor: pointer;
 }
 
 .close-modal:hover,
 .close-modal:focus {
-    color: black;
+    color: var(--text-color-black);
     text-decoration: none;
 }
 
@@ -1322,7 +1408,7 @@ small {
 /* Badge styles - for small labels and indicators */
 .badge {
     display: inline-block;
-    padding: 3px 8px;
+    padding: 3px var(--size-8);
     border-radius: var(--border-radius-small);
     font-weight: bold;
 }
@@ -1335,9 +1421,9 @@ small {
 /* Colored box styles for highlighting content */
 .colored-box {
 	margin: 0;
-	padding: 10px;
+	padding: var(--size-10);
 	background-color: var(--bg-color-light);
-	border-radius: 5px;
+	border-radius: var(--border-radius-large);
 	border-left: 4px solid;
     border-left-color: var(--secondary-color-dark);
 }
@@ -1553,7 +1639,7 @@ small {
 
 .delete-button {
     background-color: var(--error-color) !important;
-    color: white !important;
+    color: var(--text-color-white) !important;
 }
 
 .delete-button:hover {
@@ -1561,7 +1647,7 @@ small {
 }
 .success-button {
     background-color: var(--success-color) !important;
-    color: white !important;
+    color: var(--text-color-white) !important;
 }
 
 .success-button:hover {
@@ -1655,7 +1741,7 @@ footer {
     color: var(--bg-color-darkest);
     font-size: 0.8em;
     text-decoration: none;
-    margin-left: 10px;
+    margin-left: var(--size-10);
     opacity: 0.5;
     transition: opacity 0.3s ease;
 }
@@ -1683,7 +1769,7 @@ footer {
     background-color: var(--primary-color-dark);
     color: var(--text-color-white);
     border: none;
-    padding: 5px 10px;
+    padding: var(--size-5) var(--size-10);
     border-radius: var(--border-radius-small);
     cursor: pointer;
     font-size: 0.8em;
@@ -1701,7 +1787,7 @@ footer {
     background-color: var(--bg-color-dark);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    padding: 15px;
+    padding: var(--size-15);
     width: 250px;
     z-index: 1001;
     display: none;
@@ -1710,15 +1796,15 @@ footer {
 .admin-login-dropdown input[type="text"],
 .admin-login-dropdown input[type="password"] {
     width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
+    padding: var(--size-8);
+    margin-bottom: var(--size-10);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-sizing: border-box;
 }
 
 .admin-login-dropdown .form-group {
-    margin-bottom: 15px;
+    margin-bottom: var(--size-15);
 	color: var(--info-color-dark);
 }
 
@@ -1729,7 +1815,7 @@ footer {
 .admin-welcome {
     color: var(--text-color-white);
     font-size: 0.9em;
-    margin-right: 10px;
+    margin-right: var(--size-10);
 }
 
 .admin-logout-form {
@@ -1743,7 +1829,7 @@ footer {
     background-color: var(--error-color-dark);
     color: var(--text-color-white);
     border: none;
-    padding: 3px 8px;
+    padding: 3px var(--size-8);
     border-radius: var(--border-radius-large);
     cursor: pointer;
     font-size: 0.8em;
@@ -1758,14 +1844,14 @@ footer {
     background-color: var(--primary-color);
     color: var(--text-color-white);
     border: none;
-    padding: 3px 8px;
+    padding: 3px var(--size-8);
     border-radius: var(--border-radius-large);
     cursor: pointer;
     font-size: 0.8em;
     transition: background-color 0.3s ease;
     text-decoration: none;
     display: inline-block;
-    margin-right: 10px;
+    margin-right: var(--size-10);
 }
 
 .admin-controls-link:hover {
@@ -1776,20 +1862,20 @@ footer {
 
 /* Host controls styles */
 .host-controls {
-    margin: 15px 0;
-    padding: 15px;
+    margin: var(--size-15) 0;
+    padding: var(--size-15);
     background-color: var(--bg-color-light);
-    border-radius: 5px;
+    border-radius: var(--border-radius-large);
     border-left: 4px solid var(--success-color);
 }
 
 .host-action-selector {
-    margin-top: 10px;
+    margin-top: var(--size-10);
 }
 
 .host-action-selector select {
-    padding: 5px;
-    border-radius: 3px;
+    padding: var(--size-5);
+    border-radius: var(--border-radius-small);
     border: 1px solid var(--border-color);
 }
 
@@ -1799,15 +1885,15 @@ footer {
     left: 0;
     width: 100%;
     background-color: var(--success-color);
-    color: white;
+    color: var(--text-color-white);
     text-align: center;
-    padding: 10px;
+    padding: var(--size-10);
     z-index: 1000;
     display: none;
 }
 
 .new-game-action {
-    margin-top: 20px;
+    margin-top: var(--size-20);
     text-align: center;
 }
 
@@ -1823,14 +1909,14 @@ footer {
 	width: 100%;
     align-items: center;
     justify-content: center;
-    padding: 5px;
+    padding: var(--size-5);
     background-color: var(--success-color);
-    color: white;
+    color: var(--text-color-white);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--border-radius-xlarge);
     cursor: pointer;
     transition: background-color 0.2s;
-    font-size: 16px;
+    font-size: var(--font-size-normal);
     font-weight: bold;
     text-align: center;
     margin: 0px;
@@ -1846,17 +1932,17 @@ footer {
     max-width: 24%;
     align-items: center;
     justify-content: center;
-    padding: 15px;
+    padding: var(--size-15);
     background-color: var(--success-color);
-    color: white;
+    color: var(--text-color-white);
     border: none;
-    border-radius: 5px;
+    border-radius: var(--border-radius-large);
     cursor: pointer;
     transition: background-color 0.2s;
-    font-size: 16px;
+    font-size: var(--font-size-normal);
     font-weight: bold;
     text-align: center;
-    margin: 5px;
+    margin: var(--size-5);
 }
 
 .option-button:hover {
@@ -1878,10 +1964,10 @@ footer {
 
 /* Host acting info */
 .host-acting-info {
-    margin: 10px 0;
-    padding: 10px;
+    margin: var(--size-10) 0;
+    padding: var(--size-10);
     color: var(--primary-color);
-    border-radius: 5px;
+    border-radius: var(--border-radius-large);
     border: solid;
     border-color: var(--primary-color);
     text-align: center;
@@ -1900,7 +1986,7 @@ footer {
 .login-form {
     max-width: 400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: var(--size-20);
 	color: var(--info-color-dark);
     background-color: var(--bg-color-light);
     border-radius: var(--border-radius);
@@ -1908,12 +1994,12 @@ footer {
 }
 
 .admin-dashboard {
-    margin-top: 20px;
+    margin-top: var(--size-20);
 }
 
 .inner-section {
-    margin-bottom: 5px;
-    padding: 20px;
+    margin-bottom: var(--size-5);
+    padding: var(--size-20);
     background-color: var(--bg-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -1923,11 +2009,11 @@ footer {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 15px;
+    margin-top: var(--size-15);
 }
 
 .logs-container {
-    margin-top: 15px;
+    margin-top: var(--size-15);
     max-height: 300px;
     overflow-y: auto;
 
@@ -1944,19 +2030,19 @@ footer {
     /* Using message class for consistent styling */
     color: var(--error-color);
     background-color: var(--error-color-light);
-    padding: 10px; /* Override default padding */
+    padding: var(--size-10); /* Override default padding */
 }
 
 .warning-message {
     /* Using message class for consistent styling */
-    color: #856404;
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    padding: 10px; /* Override default padding */
+    color: var(--warning-notice-text);
+    background-color: var(--warning-notice-bg);
+    border: 1px solid var(--warning-notice-border);
+    padding: var(--size-10); /* Override default padding */
 }
 
 .warning-message a {
-    color: #533f03;
+    color: var(--warning-notice-link);
     text-decoration: underline;
     font-weight: bold;
 }
@@ -1966,7 +2052,7 @@ footer {
     font-size: 0.9em;
     font-style: italic;
     display: block;
-    margin: 10px 0;
+    margin: var(--size-10) 0;
     text-align: center;
 }
 
@@ -1997,26 +2083,26 @@ footer {
     margin: 0;
 }
 
-.stat-card.stat-warn { border-left-color: #e0a800; }
+.stat-card.stat-warn { border-left-color: var(--warning-accent); }
 .stat-card.stat-error { border-left-color: var(--error-color); }
 .stat-card.stat-ok { border-left-color: var(--success-color); }
 
 /* Log severity + category badges */
 .log-badge {
     display: inline-block;
-    padding: 1px 8px;
-    border-radius: 10px;
+    padding: 1px var(--size-8);
+    border-radius: var(--border-radius-xlarge);
     font-size: 0.72rem;
     font-weight: bold;
     letter-spacing: 0.02em;
-    color: #fff;
+    color: var(--text-color-white);
     white-space: nowrap;
 }
-.log-badge.lvl-INFO { background-color: #6c757d; }
+.log-badge.lvl-INFO { background-color: var(--secondary-color); }
 .log-badge.lvl-SUCCESS { background-color: var(--success-color); }
-.log-badge.lvl-WARNING { background-color: #e0a800; color: #4a3b00; }
+.log-badge.lvl-WARNING { background-color: var(--warning-accent); color: var(--warning-accent-text); }
 .log-badge.lvl-ERROR { background-color: var(--error-color); }
-.log-badge.lvl-CRITICAL { background-color: #6f0000; }
+.log-badge.lvl-CRITICAL { background-color: var(--critical-color); }
 
 .log-cat {
     display: inline-block;
@@ -2035,7 +2121,7 @@ footer {
     margin-bottom: var(--spacing-sm);
 }
 .log-filter-btn {
-    padding: 3px 12px;
+    padding: 3px var(--size-12);
     border: 1px solid var(--border-color);
     background-color: var(--bg-color-light);
     border-radius: var(--border-radius);
@@ -2045,7 +2131,7 @@ footer {
 }
 .log-filter-btn.active {
     background-color: var(--primary-color);
-    color: #fff;
+    color: var(--text-color-white);
     border-color: var(--primary-color);
 }
 
@@ -2063,35 +2149,35 @@ footer {
 /* Progress indicator styles */
 .progress-container {
     width: 75%;
-    margin: 20px 0;
-    padding: 15px;
+    margin: var(--size-20) 0;
+    padding: var(--size-15);
     background-color: var(--bg-color);
     border: 1px solid;
-    border-radius: 5px;
+    border-radius: var(--border-radius-large);
     text-align: center;
 }
 
 .progress-bar-container {
     width: 100%;
     height: 15px;
-    background-color: #e0e0e0;
-    border-radius: 10px;
-    margin: 15px 0;
+    background-color: var(--surface-muted);
+    border-radius: var(--border-radius-xlarge);
+    margin: var(--size-15) 0;
     overflow: hidden;
 }
 
 .progress-bar {
     height: 100%;
     width: 0;
-    background-color: #4CAF50;
-    border-radius: 10px;
+    background-color: var(--progress-fill-color);
+    border-radius: var(--border-radius-xlarge);
     transition: width 0.5s ease;
 }
 
 .progress-status {
-    font-size: 14px;
+    font-size: var(--font-size-small);
     color: var(--secondary-color);
-    margin-top: 10px;
+    margin-top: var(--size-10);
 }
 
 
@@ -2104,10 +2190,10 @@ footer {
 /*from ai_question_history_details.html*/
 
 .batch-navigation {
-    margin: 20px 0;
-    background-color: #f5f5f5;
-    padding: 15px;
-    border-radius: 5px;
+    margin: var(--size-20) 0;
+    background-color: var(--surface-light-alt2);
+    padding: var(--size-15);
+    border-radius: var(--border-radius-large);
 }
 
 .navigation-controls {
@@ -2132,11 +2218,11 @@ footer {
 }
 
 .metadata-section {
-    margin: 20px 0;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-    border-left: 4px solid #3498db;
+    margin: var(--size-20) 0;
+    padding: var(--size-20);
+    background-color: var(--surface-light-alt);
+    border-radius: var(--border-radius-large);
+    border-left: 4px solid var(--accent-blue);
 }
 
 .metadata-grid {
@@ -2146,55 +2232,55 @@ footer {
 }
 
 .metadata-item {
-    margin-bottom: 10px;
+    margin-bottom: var(--size-10);
 }
 
 .metadata-label {
     font-weight: bold;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: var(--size-5);
 	color: var(--text-color-white)
 }
 
 .metadata-value {
     display: block;
-    padding: 5px 10px;
+    padding: var(--size-5) var(--size-10);
     background-color: var(--text-color-white);
 	color: var(--primary-color);
-    border-radius: 3px;
-    border: 1px solid #ddd;
+    border-radius: var(--border-radius-small);
+    border: 1px solid var(--border-on-light);
 }
 
 .questions-section {
-    margin-top: 30px;
+    margin-top: var(--size-30);
 }
 
 .question-card {
-    margin-bottom: 20px;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border-left: 4px solid #2ecc71;
+    margin-bottom: var(--size-20);
+    padding: var(--size-20);
+    background-color: var(--text-color-white);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow-soft);
+    border-left: 4px solid var(--accent-green);
 }
 
 .question-card h3 {
     margin-top: 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    color: #333;
+    padding-bottom: var(--size-10);
+    border-bottom: 1px solid var(--border-on-light-soft);
+    color: var(--heading-on-light);
 }
 
 .question-content {
-    margin-top: 15px;
+    margin-top: var(--size-15);
 }
 
 .question-content p {
-    margin-bottom: 10px;
+    margin-bottom: var(--size-10);
 }
 
 .question-content ul {
-    margin-left: 20px;
+    margin-left: var(--size-20);
 }
 
 /* To fill a line regardless of the containing class */
@@ -2224,7 +2310,7 @@ footer {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--overlay-dark);
     animation: fadeIn 0.3s ease-out;
 }
 
@@ -2251,7 +2337,7 @@ footer {
 .close-modal {
     color: var(--text-color);
     float: right;
-    font-size: 28px;
+    font-size: var(--font-size-2xl);
     font-weight: bold;
     cursor: pointer;
     line-height: 1;
