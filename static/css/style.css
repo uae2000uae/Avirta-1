@@ -1970,6 +1970,85 @@ footer {
     text-align: center;
 }
 
+/* ---- System stats dashboard ---- */
+.stats-group-title {
+    margin: var(--spacing-lg) 0 var(--spacing-sm);
+    font-size: 1.05rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color-light);
+    padding-bottom: var(--spacing-xs);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.stats-grid .stat-card {
+    display: block;
+    border-left-width: 5px;
+}
+
+.stat-card .stat-sub {
+    font-size: 0.8rem;
+    color: var(--text-color-light);
+    margin: 0;
+}
+
+.stat-card.stat-warn { border-left-color: #e0a800; }
+.stat-card.stat-error { border-left-color: var(--error-color); }
+.stat-card.stat-ok { border-left-color: var(--success-color); }
+
+/* Log severity + category badges */
+.log-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    color: #fff;
+    white-space: nowrap;
+}
+.log-badge.lvl-INFO { background-color: #6c757d; }
+.log-badge.lvl-SUCCESS { background-color: var(--success-color); }
+.log-badge.lvl-WARNING { background-color: #e0a800; color: #4a3b00; }
+.log-badge.lvl-ERROR { background-color: var(--error-color); }
+.log-badge.lvl-CRITICAL { background-color: #6f0000; }
+
+.log-cat {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: var(--border-radius-small);
+    font-size: 0.72rem;
+    background-color: var(--bg-color-lighter);
+    color: var(--text-color-light);
+    border: 1px solid var(--border-color-light);
+}
+
+.log-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+}
+.log-filter-btn {
+    padding: 3px 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color-light);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-color);
+}
+.log-filter-btn.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
 .form-container {
 	background-color: var(--bg-color-lighter);
     padding: var(--spacing-lg);

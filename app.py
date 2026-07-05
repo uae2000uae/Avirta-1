@@ -25,7 +25,7 @@ from contents.admin_controls.admin_setup import AdminSetup
 from questionmanagement.categories_questions.category_manager import CategoryManager
 from questionmanagement.categories_questions.question_uploader import QuestionUploader
 from contents.game_room.game_room import GameRoom
-from contents.game_room.game_status_manager import GameStatusManager, add_game_event, set_game_status_manager
+from contents.game_room.game_status_manager import GameStatusManager, add_game_event, set_game_status_manager, set_stats_sink
 from questionmanagement.question_manager import QuestionManager
 from questionmanagement.bulk_upload.bulk_import import BulkImport
 from questionmanagement.reported_questions.reported_question_manager import ReportedQuestionManager
@@ -263,6 +263,9 @@ game_status_manager = GameStatusManager(max_events_per_room=100, persistence_dir
 
 # Set the global GameStatusManager instance
 set_game_status_manager(game_status_manager)
+
+# Feed gameplay events into the admin stats dashboard (in-memory counters/logs)
+set_stats_sink(admin_setup)
 
 # Register The Hive routes in a separate module to keep app.py clean
 register_hive_routes(app, game_rooms, game_status_manager, question_uploader, add_game_event)
@@ -1180,6 +1183,12 @@ def report_question():
     # Report the question
     success, report_id = reported_question_manager.report_question(question_data, reporter=player_name)
 
+    if success:
+        admin_setup.record_stat('questions_reported')
+        admin_setup.log_event(
+            f"Question reported by {player_name or 'a player'} (report {report_id})",
+            level='WARNING', category='CONTENT')
+
     # Best-effort: push the new report record (and the 'reported' flag on the
     # question) to GitHub. Fire-and-forget; never blocks the report flow.
     if success:
@@ -2032,6 +2041,14 @@ def bulk_import_page():
                 # Import the questions
                 import_stats = bulk_import.import_from_file(file_path, default_category, create_categories)
 
+                admin_setup.record_stat('bulk_imports')
+                admin_setup.record_stat('questions_saved', import_stats.get('successful', 0))
+                admin_setup.log_event(
+                    f"Bulk import: {import_stats.get('successful', 0)} added, "
+                    f"{import_stats.get('failed', 0)} failed",
+                    level='SUCCESS' if import_stats.get('successful', 0) else 'WARNING',
+                    category='CONTENT')
+
                 # Remove any duplicate questions that might have been created
                 num_duplicates = question_uploader.remove_duplicate_questions()
                 if num_duplicates > 0:
@@ -2391,6 +2408,12 @@ def save_ai_questions():
     # Reload question_bank to get the updated questions
     question_bank.load_questions()
 
+    if saved_count > 0:
+        admin_setup.record_stat('questions_saved', saved_count)
+        admin_setup.record_stat('ai_generations')
+        admin_setup.log_event(f"Saved {saved_count} AI-generated question(s) to the bank",
+                              level='SUCCESS', category='AI')
+
     # After saving, trigger a background GitHub sync of amended question files
     try:
         from contents.admin_controls.github_integration import (
@@ -2402,6 +2425,7 @@ def save_ai_questions():
             gh = GitHubIntegration()
             if getattr(gh, 'token', None):
                 push_all_amended_questions_async(detach=True)
+                admin_setup.record_stat('github_auto_pushes')
                 flash('Successfully added {} questions. Upload to GitHub started in the background.'.format(saved_count))
             else:
                 # Proceed without blocking; inform admin token is missing
@@ -2804,12 +2828,16 @@ def admin_controls():
             # Check credentials
             if username == 'Admin' and password == '123333':
                 session['admin_authenticated'] = True
-                admin_setup.log_event("Admin user logged in")
+                admin_setup.record_stat('logins')
+                admin_setup.log_event("Admin user logged in", level='SUCCESS', category='AUTH')
                 flash('Login successful.')
                 return redirect(url_for('admin_controls'))
             else:
                 login_error = 'Invalid username or password.'
                 is_authenticated = False
+                admin_setup.record_stat('failed_logins')
+                admin_setup.log_event(f"Failed admin login attempt for username '{username}'",
+                                      level='WARNING', category='AUTH')
 
     current_model = admin_setup.game_settings.get('openai_model', DEFAULT_MODEL)
     if not is_known_model(current_model):
@@ -2831,6 +2859,7 @@ def admin_controls():
         anthropic_model_registry=anthropic_models.get_registry_for_frontend(),
         current_anthropic_model=current_anthropic_model,
         current_anthropic_settings=admin_setup.get_anthropic_model_settings(current_anthropic_model),
+        system_stats=admin_setup.get_stats(),
     )
 
 
@@ -2865,15 +2894,23 @@ def admin_git_push():
         # Fire-and-forget push
         ok, msg = push_all_amended_questions_async(commit_message=commit_msg, detach=True)
         if not ok:
+            admin_setup.record_stat('github_push_failures')
+            admin_setup.log_event(f"Question push to GitHub failed to start: {msg}",
+                                  level='WARNING', category='GITHUB')
             if is_ajax:
                 return jsonify({"success": False, "message": msg}), 400
             flash(msg, 'error')
             return redirect(url_for('admin_controls'))
-        
+
+        admin_setup.record_stat('github_question_pushes')
+        admin_setup.log_event("Question sync push to GitHub started",
+                              level='SUCCESS', category='GITHUB')
         if is_ajax:
             return jsonify({"success": True, "message": "Push to GitHub started in the background."})
         flash('Push to GitHub started in the background. Changes will appear in the repository shortly.')
     except Exception as e:
+        admin_setup.record_stat('github_push_failures')
+        admin_setup.log_event(f"Failed to start git push: {e}", level='ERROR', category='GITHUB')
         try:
             current_app.logger.warning(f"Failed to start git push: {e}")
         except Exception:
@@ -2920,14 +2957,23 @@ def admin_git_push_all():
         commit_msg = request.form.get("commit_message", "").strip() or "Update amended files"
         ok, msg = push_all_amended_files_async(commit_message=commit_msg, detach=True)
         if not ok:
+            admin_setup.record_stat('github_push_failures')
+            admin_setup.log_event(f"Full source push to GitHub failed to start: {msg}",
+                                  level='WARNING', category='GITHUB')
             if is_ajax:
                 return jsonify({"success": False, "message": msg}), 400
             flash(msg, 'error')
             return redirect(url_for('admin_controls'))
+
+        admin_setup.record_stat('github_full_pushes')
+        admin_setup.log_event("Full source push to GitHub started",
+                              level='SUCCESS', category='GITHUB')
         if is_ajax:
             return jsonify({"success": True, "message": "Full source push to GitHub started in the background."})
         flash('Full source push to GitHub started in the background (native git).')
     except Exception as e:
+        admin_setup.record_stat('github_push_failures')
+        admin_setup.log_event(f"Failed to start full git push: {e}", level='ERROR', category='GITHUB')
         try:
             current_app.logger.warning(f"Failed to start full git push: {e}")
         except Exception:

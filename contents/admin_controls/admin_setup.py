@@ -35,6 +35,29 @@ class AdminSetup:
         'VIEWER': 10
     }
 
+    # Recognised log severity levels (ordered by importance)
+    LOG_LEVELS = ('INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL')
+
+    # Recognised log categories used to group events on the dashboard
+    LOG_CATEGORIES = ('GAMEPLAY', 'CONTENT', 'SYSTEM', 'GITHUB', 'AI', 'AUTH')
+
+    # Maximum number of log entries kept in memory before the oldest are dropped
+    MAX_LOGS = 1000
+
+    # Maps raw game-event types (from add_game_event) to the counter/label used
+    # on the dashboard so gameplay activity is captured automatically.
+    GAME_EVENT_STATS = {
+        'game_started': 'games_started',
+        'game_ended': 'games_ended',
+        'player_joined': 'players_joined',
+        'player_left': 'players_left',
+        'question_selected': 'questions_selected',
+        'answer_submitted': 'answers_submitted',
+        'answer_evaluated': 'answers_evaluated',
+        'turn_switch': 'turn_switches',
+        'tool_used': 'tools_used',
+    }
+
     def __init__(self):
         """
         Initialize a new admin setup instance.
@@ -150,6 +173,14 @@ class AdminSetup:
         }
         self.active_sessions = []
         self.logs = []
+        # Named counters accumulating important stats over the process lifetime
+        # (e.g. games_started, git_pushes, errors). In-memory only, reset on
+        # restart. Populated via record_stat()/log_event()/record_game_event().
+        self.stats_counters = {}
+        # Track process start so the dashboard can show uptime.
+        self.start_time = datetime.now()
+        # Peak number of concurrent active sessions observed this run.
+        self.peak_active_sessions = 0
 
         # Load saved settings from file (if available)
         self.load_game_settings()
@@ -179,7 +210,8 @@ class AdminSetup:
             'permission_value': self.PERMISSION_LEVELS[permission_level]
         }
 
-        self.log_event(f"Added admin {username} with permission level {permission_level}")
+        self.log_event(f"Added admin {username} with permission level {permission_level}",
+                       level='SUCCESS', category='AUTH')
         return True
 
     def remove_admin(self, username):
@@ -196,7 +228,7 @@ class AdminSetup:
             return False
 
         del self.admins[username]
-        self.log_event(f"Removed admin {username}")
+        self.log_event(f"Removed admin {username}", level='WARNING', category='AUTH')
         return True
 
     def update_permission(self, username, new_permission_level):
@@ -222,7 +254,8 @@ class AdminSetup:
             'permission_value': self.PERMISSION_LEVELS[new_permission_level]
         }
 
-        self.log_event(f"Updated {username}'s permission from {old_level} to {new_permission_level}")
+        self.log_event(f"Updated {username}'s permission from {old_level} to {new_permission_level}",
+                       category='AUTH')
         return True
 
     def update_game_setting(self, setting_name, value):
@@ -242,15 +275,18 @@ class AdminSetup:
         # Validate specific settings with enforced limits
         if setting_name == 'questions_per_category':
             if not isinstance(value, int) or value < 5 or value > 10:
-                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (5-10)")
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (5-10)",
+                               level='WARNING', category='SYSTEM')
                 return False
         elif setting_name == 'max_categories_per_room':
             if not isinstance(value, int) or value < 3 or value > 7:
-                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (3-7)")
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (3-7)",
+                               level='WARNING', category='SYSTEM')
                 return False
         elif setting_name == 'max_players_per_room':
             if not isinstance(value, int) or value < 2 or value > 8:
-                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (2-8)")
+                self.log_event(f"Failed to update {setting_name}: value {value} is not within allowed range (2-8)",
+                               level='WARNING', category='SYSTEM')
                 return False
 
         old_value = self.game_settings[setting_name]
@@ -259,7 +295,9 @@ class AdminSetup:
         # Save settings to file to make changes permanent
         self.save_game_settings()
 
-        self.log_event(f"Updated game setting {setting_name} from {old_value} to {value}")
+        self.record_stat('settings_changed')
+        self.log_event(f"Updated game setting {setting_name} from {old_value} to {value}",
+                       category='SYSTEM')
         return True
 
     def _make_settings_store(self):
@@ -308,7 +346,7 @@ class AdminSetup:
                 self.log_event("Game settings saved to store")
                 return True, "Game settings saved successfully"
             except Exception as e:
-                self.log_event(f"Error saving game settings via store: {str(e)}")
+                self.log_event(f"Error saving game settings via store: {str(e)}", level='ERROR')
                 # fall through to legacy file write
 
         try:
@@ -319,7 +357,7 @@ class AdminSetup:
             self.log_event("Game settings saved to file")
             return True, "Game settings saved successfully"
         except Exception as e:
-            self.log_event(f"Error saving game settings: {str(e)}")
+            self.log_event(f"Error saving game settings: {str(e)}", level='ERROR')
             return False, f"Error saving game settings: {str(e)}"
 
     def load_game_settings(self):
@@ -340,7 +378,7 @@ class AdminSetup:
                 self.log_event("Game settings loaded from store")
                 return True, "Game settings loaded successfully"
             except Exception as e:
-                self.log_event(f"Error loading game settings via store: {str(e)}")
+                self.log_event(f"Error loading game settings via store: {str(e)}", level='ERROR')
                 # fall through to legacy file load
 
         try:
@@ -355,7 +393,7 @@ class AdminSetup:
             self.log_event("Game settings loaded from file")
             return True, "Game settings loaded successfully"
         except Exception as e:
-            self.log_event(f"Error loading game settings: {str(e)}")
+            self.log_event(f"Error loading game settings: {str(e)}", level='ERROR')
             return False, f"Error loading game settings: {str(e)}"
 
     def register_active_session(self, session_info):
@@ -369,7 +407,12 @@ class AdminSetup:
             bool: True if session was registered successfully
         """
         self.active_sessions.append(session_info)
-        self.log_event(f"Registered new game session: {session_info.get('room_id', 'Unknown')}")
+        self.record_stat('sessions_registered')
+        current = len(self.active_sessions)
+        if current > self.peak_active_sessions:
+            self.peak_active_sessions = current
+        self.log_event(f"Registered new game session: {session_info.get('room_id', 'Unknown')}",
+                       category='GAMEPLAY')
         return True
 
     def end_session(self, session_id):
@@ -385,38 +428,203 @@ class AdminSetup:
         for i, session in enumerate(self.active_sessions):
             if session.get('room_id') == session_id:
                 self.active_sessions.pop(i)
-                self.log_event(f"Ended game session: {session_id}")
+                self.log_event(f"Ended game session: {session_id}", category='GAMEPLAY')
                 return True
 
         return False
 
-    def log_event(self, event_description):
+    def record_stat(self, name, amount=1):
         """
-        Log an event in the system.
+        Increment a named stat counter kept in memory.
 
         Args:
-            event_description (str): Description of the event
+            name (str): Counter name (e.g. 'games_started', 'errors').
+            amount (int, optional): Amount to add. Defaults to 1.
+
+        Returns:
+            int: The new counter value.
         """
-        from datetime import datetime
+        if not name:
+            return 0
+        self.stats_counters[name] = self.stats_counters.get(name, 0) + amount
+        return self.stats_counters[name]
+
+    def get_stat(self, name, default=0):
+        """Return the current value of a named stat counter."""
+        return self.stats_counters.get(name, default)
+
+    def log_event(self, event_description, level='INFO', category='SYSTEM', **details):
+        """
+        Log an event in the system and update stat counters.
+
+        Backward compatible: existing callers that pass only a description keep
+        working and default to an INFO/SYSTEM entry.
+
+        Args:
+            event_description (str): Human-readable description of the event.
+            level (str, optional): Severity, one of LOG_LEVELS. Defaults to 'INFO'.
+            category (str, optional): Grouping, one of LOG_CATEGORIES. Defaults to 'SYSTEM'.
+            **details: Optional structured context stored on the entry.
+
+        Returns:
+            dict: The log entry that was recorded.
+        """
+        level = (level or 'INFO').upper()
+        if level not in self.LOG_LEVELS:
+            level = 'INFO'
+        category = (category or 'SYSTEM').upper()
+        if category not in self.LOG_CATEGORIES:
+            category = 'SYSTEM'
 
         log_entry = {
             'timestamp': datetime.now(),
-            'description': event_description
+            'description': event_description,
+            'level': level,
+            'category': category,
+            'details': details or {},
         }
 
         self.logs.append(log_entry)
+        # Cap in-memory log growth by dropping the oldest entries.
+        if len(self.logs) > self.MAX_LOGS:
+            self.logs = self.logs[-self.MAX_LOGS:]
 
-    def get_logs(self, count=10):
+        # Roll the event up into aggregate counters for the dashboard.
+        self.record_stat('total_events')
+        self.record_stat(f'level:{level}')
+        self.record_stat(f'category:{category}')
+
+        return log_entry
+
+    # -- Convenience wrappers so call sites read clearly -------------------
+    def log_info(self, description, category='SYSTEM', **details):
+        return self.log_event(description, level='INFO', category=category, **details)
+
+    def log_success(self, description, category='SYSTEM', **details):
+        return self.log_event(description, level='SUCCESS', category=category, **details)
+
+    def log_warning(self, description, category='SYSTEM', **details):
+        return self.log_event(description, level='WARNING', category=category, **details)
+
+    def log_error(self, description, category='SYSTEM', **details):
+        return self.log_event(description, level='ERROR', category=category, **details)
+
+    def record_game_event(self, event_type, room_id=None, event_data=None):
         """
-        Get the most recent system logs.
+        Record a gameplay event into the stats/log stream.
+
+        Called from the centralized add_game_event() hook so live game activity
+        (games started/ended, players joining, questions answered, etc.) is
+        captured automatically without touching every call site.
 
         Args:
-            count (int, optional): Number of logs to retrieve. Defaults to 10.
+            event_type (str): The raw event type (e.g. 'player_joined').
+            room_id (str, optional): The room the event occurred in.
+            event_data (dict, optional): Extra event context.
+        """
+        event_data = event_data or {}
+        counter = self.GAME_EVENT_STATS.get(event_type)
+        if counter:
+            self.record_stat(counter)
+        self.record_stat('gameplay_events')
+
+        # Keep the human-readable message when one is available.
+        message = event_data.get('message') or f"Game event: {event_type}"
+        if room_id:
+            message = f"[{room_id}] {message}"
+        self.log_event(message, level='INFO', category='GAMEPLAY',
+                       event_type=event_type, room_id=room_id)
+
+    def get_logs(self, count=10, level=None, category=None):
+        """
+        Get the most recent system logs, optionally filtered.
+
+        Args:
+            count (int, optional): Max number of logs to retrieve. Defaults to 10.
+            level (str, optional): Only return entries with this severity.
+            category (str, optional): Only return entries in this category.
 
         Returns:
-            list: List of recent log entries
+            list: List of recent log entries (most recent last).
         """
-        return self.logs[-count:] if self.logs else []
+        logs = self.logs
+        if level:
+            level = level.upper()
+            logs = [l for l in logs if l.get('level') == level]
+        if category:
+            category = category.upper()
+            logs = [l for l in logs if l.get('category') == category]
+        return logs[-count:] if logs else []
+
+    def get_uptime(self):
+        """Return a human-readable uptime string since process start."""
+        delta = datetime.now() - self.start_time
+        total_seconds = int(delta.total_seconds())
+        days, rem = divmod(total_seconds, 86400)
+        hours, rem = divmod(rem, 3600)
+        minutes, _ = divmod(rem, 60)
+        parts = []
+        if days:
+            parts.append(f"{days}d")
+        if hours or days:
+            parts.append(f"{hours}h")
+        parts.append(f"{minutes}m")
+        return ' '.join(parts)
+
+    def get_stats(self):
+        """
+        Build a structured snapshot of important system stats for the dashboard.
+
+        Returns:
+            dict: Aggregated counters grouped by area (overview, gameplay,
+                  content, github, system), plus per-level/per-category totals.
+        """
+        # Track peak concurrency as a side effect of reading current state.
+        current_sessions = len(self.active_sessions)
+        if current_sessions > self.peak_active_sessions:
+            self.peak_active_sessions = current_sessions
+
+        def c(name):
+            return self.stats_counters.get(name, 0)
+
+        return {
+            'overview': {
+                'active_sessions': current_sessions,
+                'peak_active_sessions': self.peak_active_sessions,
+                'admin_users': len(self.admins),
+                'uptime': self.get_uptime(),
+                'total_events': c('total_events'),
+            },
+            'gameplay': {
+                'games_started': c('games_started'),
+                'games_ended': c('games_ended'),
+                'players_joined': c('players_joined'),
+                'players_left': c('players_left'),
+                'questions_selected': c('questions_selected'),
+                'answers_evaluated': c('answers_evaluated'),
+                'turn_switches': c('turn_switches'),
+            },
+            'content': {
+                'ai_generations': c('ai_generations'),
+                'questions_saved': c('questions_saved'),
+                'bulk_imports': c('bulk_imports'),
+                'questions_reported': c('questions_reported'),
+                'settings_changed': c('settings_changed'),
+            },
+            'github': {
+                'question_pushes': c('github_question_pushes'),
+                'full_source_pushes': c('github_full_pushes'),
+                'auto_pushes': c('github_auto_pushes'),
+                'push_failures': c('github_push_failures'),
+            },
+            'system': {
+                'logins': c('logins'),
+                'errors': c('level:ERROR') + c('level:CRITICAL'),
+                'warnings': c('level:WARNING'),
+            },
+            'by_level': {lvl: c(f'level:{lvl}') for lvl in self.LOG_LEVELS},
+            'by_category': {cat: c(f'category:{cat}') for cat in self.LOG_CATEGORIES},
+        }
 
     def has_permission(self, username, required_level):
         """
@@ -621,7 +829,7 @@ class AdminSetup:
             self.log_event("Custom CSS file generated and saved")
             return True, "Custom CSS file generated and saved successfully"
         except Exception as e:
-            self.log_event(f"Error saving custom CSS: {str(e)}")
+            self.log_event(f"Error saving custom CSS: {str(e)}", level='ERROR')
             return False, f"Error saving custom CSS: {str(e)}"
 
     def save_api_settings_to_file(self):
@@ -643,7 +851,7 @@ class AdminSetup:
             self.log_event("Saved API settings saved to file")
             return True, "Saved API settings saved successfully"
         except Exception as e:
-            self.log_event(f"Error saving API settings: {str(e)}")
+            self.log_event(f"Error saving API settings: {str(e)}", level='ERROR')
             return False, f"Error saving API settings: {str(e)}"
 
     def load_saved_api_settings_from_file(self):
@@ -670,7 +878,7 @@ class AdminSetup:
             self.log_event("Saved API settings loaded from file")
             return True, "Saved API settings loaded successfully"
         except Exception as e:
-            self.log_event(f"Error loading saved API settings: {str(e)}")
+            self.log_event(f"Error loading saved API settings: {str(e)}", level='ERROR')
             return False, f"Error loading saved API settings: {str(e)}"
 
     def save_api_settings(self, name, values=None):
@@ -682,290 +890,4 @@ class AdminSetup:
             name (str): Name to identify the saved settings
             values (dict, optional): openai_* values to snapshot (e.g. the
                 admin's unsaved on-screen edits). If omitted, falls back to
-                snapshotting the live game_settings.
-
-        Returns:
-            tuple: (success, message)
-        """
-        if not name or not name.strip():
-            return False, "Settings name cannot be empty"
-
-        if values is not None:
-            api_settings = dict(values)
-        else:
-            # Snapshot every current OpenAI setting (model, per-model params,
-            # and advanced/global fields) so loading this preset later
-            # restores everything, not just a hardcoded subset.
-            api_settings = {
-                key: value for key, value in self.game_settings.items()
-                if key.startswith('openai_')
-            }
-
-        # Saved presets never store the real API key - only the runtime
-        # OPENAI_API_KEY (env/Secret Manager) is used to actually call OpenAI.
-        api_settings['openai_api_key'] = ''
-
-        # Save the settings with the given name
-        self.saved_api_settings[name.strip()] = api_settings
-
-        # Save to file to make changes permanent
-        success, message = self.save_api_settings_to_file()
-        if not success:
-            return False, f"Failed to save settings permanently: {message}"
-
-        self.log_event(f"API settings saved as '{name}'")
-        return True, f"API settings saved as '{name}'"
-
-    def get_saved_api_settings(self):
-        """
-        Get all saved API settings.
-
-        Returns:
-            dict: Dictionary of saved API settings
-        """
-        return self.saved_api_settings
-
-    def delete_api_settings(self, name):
-        """
-        Delete saved API settings by name.
-
-        Args:
-            name (str): Name of the saved settings to delete
-
-        Returns:
-            tuple: (success, message)
-        """
-        if name not in self.saved_api_settings:
-            return False, f"No saved settings found with name '{name}'"
-
-        # Delete the saved settings
-        del self.saved_api_settings[name]
-
-        # Save to file to make changes permanent
-        success, message = self.save_api_settings_to_file()
-        if not success:
-            return False, f"Failed to save changes permanently: {message}"
-
-        self.log_event(f"Deleted API settings '{name}'")
-        return True, f"Deleted API settings '{name}'"
-
-    def save_model_param_settings_to_file(self):
-        """
-        Save the per-model AI parameter memory to a JSON file for persistence.
-
-        Returns:
-            tuple: (success, message)
-        """
-        try:
-            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                             'admin_controls', 'model_param_settings.json')
-
-            with open(settings_file_path, 'w', encoding="utf-8") as f:
-                json.dump(self.model_param_settings, f, indent=4, ensure_ascii=False)
-
-            self.log_event("Model parameter settings saved to file")
-            return True, "Model parameter settings saved successfully"
-        except Exception as e:
-            self.log_event(f"Error saving model parameter settings: {str(e)}")
-            return False, f"Error saving model parameter settings: {str(e)}"
-
-    def load_model_param_settings_from_file(self):
-        """
-        Load the per-model AI parameter memory from a JSON file.
-
-        Returns:
-            tuple: (success, message)
-        """
-        try:
-            settings_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                             'admin_controls', 'model_param_settings.json')
-
-            if not os.path.exists(settings_file_path):
-                self.log_event("Model parameter settings file not found, using defaults")
-                return False, "Model parameter settings file not found, using defaults"
-
-            with open(settings_file_path, 'r') as f:
-                self.model_param_settings = json.load(f)
-
-            self.log_event("Model parameter settings loaded from file")
-            return True, "Model parameter settings loaded successfully"
-        except Exception as e:
-            self.log_event(f"Error loading model parameter settings: {str(e)}")
-            return False, f"Error loading model parameter settings: {str(e)}"
-
-    def get_model_settings(self, model_id):
-        """
-        Get the effective parameter values for a model: registry defaults
-        overridden by anything previously saved for that model.
-
-        Args:
-            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
-
-        Returns:
-            dict: Effective openai_* parameter values for the model
-        """
-        if not is_known_model(model_id):
-            model_id = DEFAULT_MODEL
-
-        values = get_model_defaults(model_id)
-        values.update(self.model_param_settings.get(model_id, {}))
-        return values
-
-    def set_model_settings(self, model_id, values):
-        """
-        Save parameter overrides for a model, make it the active model, and
-        mirror the values into the live game_settings used at generation time.
-
-        Args:
-            model_id (str): The OpenAI model id (e.g. 'gpt-4o-mini')
-            values (dict): openai_* parameter values to store for this model
-
-        Returns:
-            tuple: (success, message)
-        """
-        if not is_known_model(model_id):
-            return False, f"Unknown model '{model_id}'"
-
-        self.model_param_settings[model_id] = dict(values)
-        success, message = self.save_model_param_settings_to_file()
-        if not success:
-            return False, f"Failed to save model settings permanently: {message}"
-
-        # Make this the active model and apply its values immediately.
-        self.game_settings['openai_model'] = model_id
-        for key, value in values.items():
-            self.game_settings[key] = value
-        self.save_game_settings()
-
-        self.log_event(f"Saved AI parameter settings for model '{model_id}'")
-        return True, f"Settings for '{model_id}' saved successfully"
-
-    # ------------------------------------------------------------------ #
-    # Anthropic (Claude) model settings
-    # ------------------------------------------------------------------ #
-    def get_anthropic_model_settings(self, model_id):
-        """Return effective Claude parameter values: registry defaults merged
-        with whatever is currently active in game_settings for that model."""
-        if not anthropic_models.is_known_model(model_id):
-            model_id = anthropic_models.DEFAULT_MODEL
-        values = anthropic_models.get_model_defaults(model_id)
-        # If this is the active Claude model, prefer the live saved values.
-        if self.game_settings.get('anthropic_model') == model_id:
-            for key in list(values.keys()):
-                if key in self.game_settings:
-                    values[key] = self.game_settings[key]
-        return values
-
-    def set_anthropic_model_settings(self, model_id, values):
-        """Make ``model_id`` the active Claude model and persist its params.
-
-        Anthropic params live directly in game_settings (single active model),
-        keeping the flow simple - no separate per-model memory file.
-        """
-        if not anthropic_models.is_known_model(model_id):
-            return False, f"Unknown Claude model '{model_id}'"
-        self.game_settings['anthropic_model'] = model_id
-        for key, value in (values or {}).items():
-            self.game_settings[key] = value
-        self.save_game_settings()
-        self.log_event(f"Saved Anthropic parameter settings for model '{model_id}'")
-        return True, f"Settings for '{model_id}' saved successfully"
-
-    def get_available_themes(self):
-        """
-        Get a list of available CSS themes from the themes directory.
-
-        Returns:
-            list: List of theme dictionaries with name and path
-        """
-        themes = []
-
-        # Path to the themes directory
-        themes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                                'static', 'css', 'themes')
-
-        # Check if the directory exists
-        if not os.path.exists(themes_dir):
-            # Try to create the directory if it doesn't exist
-            try:
-                os.makedirs(themes_dir)
-                self.log_event(f"Created themes directory at {themes_dir}")
-            except Exception as e:
-                self.log_event(f"Error creating themes directory: {str(e)}")
-            return themes
-
-        # Get all CSS files in the themes directory
-        theme_files = glob.glob(os.path.join(themes_dir, '*.css'))
-
-        for theme_file in theme_files:
-            # Get the theme name from the filename (without extension)
-            theme_name = os.path.splitext(os.path.basename(theme_file))[0]
-
-            # Format the theme name for display (replace underscores with spaces and capitalize)
-            display_name = theme_name.replace('_', ' ').title()
-
-            themes.append({
-                'name': theme_name,
-                'display_name': display_name,
-                'path': theme_file
-            })
-
-        # If no themes were found, log a warning
-        if not themes:
-            self.log_event("No theme files found in the themes directory")
-
-        return themes
-
-    def apply_theme(self, theme_name):
-        """
-        Apply a CSS theme immediately.
-
-        Args:
-            theme_name (str): Name of the theme to apply
-
-        Returns:
-            tuple: (success, message)
-        """
-        # Log the current directory and theme name for debugging
-        current_dir = os.getcwd()
-        self.log_event(f"Current directory: {current_dir}")
-        self.log_event(f"Applying theme: {theme_name}")
-
-        # Path to the themes directory
-        themes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                                'static', 'css', 'themes')
-        self.log_event(f"Themes directory: {themes_dir}")
-
-        # Path to the theme file
-        theme_file = os.path.join(themes_dir, f"{theme_name}.css")
-        self.log_event(f"Theme file path: {theme_file}")
-
-        # Check if the theme file exists
-        if not os.path.exists(theme_file):
-            self.log_event(f"Theme file not found: {theme_file}")
-            return False, f"Theme '{theme_name}' not found"
-
-        try:
-            # Read the theme file
-            with open(theme_file, 'r') as f:
-                theme_content = f.read()
-            self.log_event(f"Successfully read theme file: {len(theme_content)} bytes")
-
-            # Path to the custom CSS file
-            custom_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                                        'static', 'css', 'custom.css')
-            self.log_event(f"Custom CSS path: {custom_css_path}")
-
-            # Save the theme content to the custom CSS file
-            with open(custom_css_path, 'w') as f:
-                f.write(theme_content)
-            self.log_event(f"Successfully wrote to custom CSS file")
-
-            # Store the selected theme in game_settings (for session only)
-            self.game_settings['selected_theme'] = theme_name
-
-            self.log_event(f"Applied theme '{theme_name}'")
-            return True, f"Theme '{theme_name}' applied successfully"
-        except Exception as e:
-            self.log_event(f"Error applying theme '{theme_name}': {str(e)}")
-            return False, f"Error applying theme '{theme_name}': {str(e)}"
+                snapshotting the live game_

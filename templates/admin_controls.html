@@ -706,36 +706,107 @@
 
             <!-- System Information Tab -->
             <div id="system-info" class="tab-pane">
+                {% set stats = system_stats %}
                 <div class="section">
                     <h2>System Information</h2>
-                    <div class="stats-container">
-                        <div class="stats-overview">
-                            <div class="stat-card">
-                                <h3>Active Sessions</h3>
-                                <p class="stat-value">{{ admin_setup.active_sessions|length }}</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Admin Users</h3>
-                                <p class="stat-value">{{ admin_setup.admins|length }}</p>
-                            </div>
+
+                    <!-- Overview -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-ok">
+                            <h3>Active Sessions</h3>
+                            <p class="stat-value">{{ stats.overview.active_sessions }}</p>
+                            <p class="stat-sub">peak {{ stats.overview.peak_active_sessions }}</p>
                         </div>
+                        <div class="stat-card">
+                            <h3>Admin Users</h3>
+                            <p class="stat-value">{{ stats.overview.admin_users }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Uptime</h3>
+                            <p class="stat-value">{{ stats.overview.uptime }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Events</h3>
+                            <p class="stat-value">{{ stats.overview.total_events }}</p>
+                        </div>
+                        <div class="stat-card {% if stats.system.errors %}stat-error{% endif %}">
+                            <h3>Errors</h3>
+                            <p class="stat-value">{{ stats.system.errors }}</p>
+                        </div>
+                        <div class="stat-card {% if stats.system.warnings %}stat-warn{% endif %}">
+                            <h3>Warnings</h3>
+                            <p class="stat-value">{{ stats.system.warnings }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Admin Logins</h3>
+                            <p class="stat-value">{{ stats.system.logins }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Gameplay -->
+                    <h3 class="stats-group-title">Gameplay Activity</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card"><h3>Games Started</h3><p class="stat-value">{{ stats.gameplay.games_started }}</p></div>
+                        <div class="stat-card"><h3>Games Ended</h3><p class="stat-value">{{ stats.gameplay.games_ended }}</p></div>
+                        <div class="stat-card"><h3>Players Joined</h3><p class="stat-value">{{ stats.gameplay.players_joined }}</p></div>
+                        <div class="stat-card"><h3>Players Left</h3><p class="stat-value">{{ stats.gameplay.players_left }}</p></div>
+                        <div class="stat-card"><h3>Questions Selected</h3><p class="stat-value">{{ stats.gameplay.questions_selected }}</p></div>
+                        <div class="stat-card"><h3>Answers Evaluated</h3><p class="stat-value">{{ stats.gameplay.answers_evaluated }}</p></div>
+                        <div class="stat-card"><h3>Turn Switches</h3><p class="stat-value">{{ stats.gameplay.turn_switches }}</p></div>
+                    </div>
+
+                    <!-- Content -->
+                    <h3 class="stats-group-title">Content &amp; Questions</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card"><h3>AI Generations</h3><p class="stat-value">{{ stats.content.ai_generations }}</p></div>
+                        <div class="stat-card"><h3>Questions Saved</h3><p class="stat-value">{{ stats.content.questions_saved }}</p></div>
+                        <div class="stat-card"><h3>Bulk Imports</h3><p class="stat-value">{{ stats.content.bulk_imports }}</p></div>
+                        <div class="stat-card {% if stats.content.questions_reported %}stat-warn{% endif %}"><h3>Questions Reported</h3><p class="stat-value">{{ stats.content.questions_reported }}</p></div>
+                        <div class="stat-card"><h3>Settings Changed</h3><p class="stat-value">{{ stats.content.settings_changed }}</p></div>
+                    </div>
+
+                    <!-- GitHub -->
+                    <h3 class="stats-group-title">GitHub Activity</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card"><h3>Question Pushes</h3><p class="stat-value">{{ stats.github.question_pushes }}</p></div>
+                        <div class="stat-card"><h3>Full Source Pushes</h3><p class="stat-value">{{ stats.github.full_source_pushes }}</p></div>
+                        <div class="stat-card"><h3>Auto Pushes</h3><p class="stat-value">{{ stats.github.auto_pushes }}</p></div>
+                        <div class="stat-card {% if stats.github.push_failures %}stat-error{% endif %}"><h3>Push Failures</h3><p class="stat-value">{{ stats.github.push_failures }}</p></div>
                     </div>
                 </div>
 
                 <div class="inner-section">
                     <h2>Recent Logs</h2>
+                    <div class="log-filters" id="log-level-filters">
+                        <button type="button" class="log-filter-btn active" data-level="ALL">All</button>
+                        <button type="button" class="log-filter-btn" data-level="INFO">Info</button>
+                        <button type="button" class="log-filter-btn" data-level="SUCCESS">Success</button>
+                        <button type="button" class="log-filter-btn" data-level="WARNING">Warning</button>
+                        <button type="button" class="log-filter-btn" data-level="ERROR">Error</button>
+                        <button type="button" class="log-filter-btn" data-level="CRITICAL">Critical</button>
+                    </div>
                     <div class="logs-container">
-                        <table class="logs-table">
+                        <table class="logs-table data-table">
+                            <thead>
                             <tr>
                                 <th>Timestamp</th>
+                                <th>Level</th>
+                                <th>Category</th>
                                 <th>Description</th>
                             </tr>
-                            {% for log in admin_setup.get_logs(10) %}
-                            <tr>
-                                <td>{{ log.timestamp }}</td>
+                            </thead>
+                            <tbody id="logs-body">
+                            {% for log in admin_setup.get_logs(50)|reverse %}
+                            <tr data-level="{{ log.level|default('INFO') }}">
+                                <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp.strftime is defined else log.timestamp }}</td>
+                                <td><span class="log-badge lvl-{{ log.level|default('INFO') }}">{{ log.level|default('INFO') }}</span></td>
+                                <td><span class="log-cat">{{ log.category|default('SYSTEM') }}</span></td>
                                 <td>{{ log.description }}</td>
                             </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="info-text">No events logged yet this session.</td></tr>
                             {% endfor %}
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -1166,6 +1237,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Look and Feel Tab JavaScript
 
     // Individual style variable settings have been removed, only theme selection is available
+});
+
+// System logs: filter rows by severity level
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBar = document.getElementById('log-level-filters');
+    if (!filterBar) return;
+    const rows = Array.from(document.querySelectorAll('#logs-body tr[data-level]'));
+    filterBar.addEventListener('click', function(e) {
+        const btn = e.target.closest('.log-filter-btn');
+        if (!btn) return;
+        filterBar.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const level = btn.getAttribute('data-level');
+        rows.forEach(row => {
+            row.style.display = (level === 'ALL' || row.getAttribute('data-level') === level) ? '' : 'none';
+        });
+    });
 });
 
 </script>

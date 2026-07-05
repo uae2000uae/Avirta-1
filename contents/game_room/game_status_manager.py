@@ -18,6 +18,10 @@ from typing import Dict, List, Optional, Any, Union
 # Global instance of GameStatusManager
 _game_status_manager = None
 
+# Optional stats sink (e.g. AdminSetup). When set, every game event is also
+# forwarded to it via record_game_event() so admin dashboard stats stay current.
+_stats_sink = None
+
 def get_game_status_manager():
     """
     Get the global GameStatusManager instance.
@@ -37,6 +41,19 @@ def set_game_status_manager(manager):
     """
     global _game_status_manager
     _game_status_manager = manager
+
+def set_stats_sink(sink):
+    """
+    Register an object that records gameplay stats.
+
+    The sink must expose ``record_game_event(event_type, room_id, event_data)``.
+    Used to feed the admin dashboard's live gameplay counters.
+
+    Args:
+        sink: Object implementing record_game_event(...), or None to disable.
+    """
+    global _stats_sink
+    _stats_sink = sink
 
 def add_game_event(room_id, event_type, event_data):
     """
@@ -87,6 +104,13 @@ def add_game_event(room_id, event_type, event_data):
 
     if not success:
         print(f"Warning: Failed to add event of type '{event_type}' for room '{room_id}'")
+    elif _stats_sink is not None:
+        # Forward successful events to the admin stats sink. Never let stats
+        # bookkeeping break gameplay, so swallow any errors here.
+        try:
+            _stats_sink.record_game_event(event_type, room_id, event_data)
+        except Exception as e:
+            print(f"Warning: stats sink failed for event '{event_type}': {e}")
     return success
 
 class GameStatusManager:
